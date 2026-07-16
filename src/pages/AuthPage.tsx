@@ -57,7 +57,7 @@ export function AuthPage(){
               <span className="text-brand-600">Every deployment.</span>
             </h1>
             <p className="mt-4 text-base leading-relaxed text-gray-600 max-w-md">
-              Lythouse scans your repositories before every deployment — surfacing security risks, vulnerable dependencies, and configuration issues so your team never ships broken code to production.
+              LytHouse scans your repositories before every deployment — surfacing security risks, vulnerable dependencies, and configuration issues so your team never ships broken code to production.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -106,7 +106,7 @@ export function AuthPage(){
                         {mode==='signin'?'Welcome back':'Create your account'}
                       </h2>
                       <p className="mt-1 text-sm text-gray-500">
-                        {mode==='signin'?'Sign in to your Lythouse workspace.':'Start catching deployment risks in minutes.'}
+                        {mode==='signin'?'Sign in to your LytHouse workspace.':'Start catching deployment risks in minutes.'}
                       </p>
                     </div>
 
