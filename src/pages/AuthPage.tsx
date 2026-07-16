@@ -76,13 +76,7 @@ export function AuthPage(){
               ))}
             </div>
 
-            <div className="mt-8 flex items-center gap-4 text-xs font-medium text-gray-400">
-              <span>SOC 2 Type II</span>
-              <span className="h-3 w-px bg-gray-200"/>
-              <span>GDPR Ready</span>
-              <span className="h-3 w-px bg-gray-200"/>
-              <span>99.9% Uptime SLA</span>
-            </div>
+
           </div>
 
           {/* Right: form */}
@@ -158,9 +152,7 @@ export function AuthPage(){
               </div>
 
               {/* Social proof */}
-              <p className="mt-4 text-center text-xs text-gray-400">
-                Trusted by engineering teams shipping to production daily.
-              </p>
+
             </div>
           </div>
         </div>
