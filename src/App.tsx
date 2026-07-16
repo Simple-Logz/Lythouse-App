@@ -1,5 +1,6 @@
 import{RouterProvider,useRouter}from'./lib/router';
 import{AppShell,usePlanId}from'./pages/AppShell';
+import{AuthPage}from'./pages/AuthPage';
 import{ProjectsPage}from'./pages/ProjectsPage';
 import{ProjectWorkspace}from'./workspace/ProjectWorkspace';
 import{DashboardPage}from'./pages/DashboardPage';
@@ -23,6 +24,8 @@ import{PassportPage}from'./pages/server-validation/PassportPage';
 import{LoadTestingPage}from'./pages/LoadTestingPage';
 import{ApiTestingPage}from'./pages/ApiTestingPage';
 import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
+import{useAuth}from'./lib/auth';
+import{Spinner}from'./lib/ui';
 import type{ReactNode}from'react';
 
 function Routes(){
@@ -57,4 +60,19 @@ else if(seg[0]==='server-validation'){
 else c=<DashboardPage/>;
 return<AppShell>{c}</AppShell>;
 }
-export function App(){return<RouterProvider><Routes/></RouterProvider>;}
+
+function AuthGate(){
+const{session,loading}=useAuth();
+if(loading)return(
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex flex-col items-center gap-3">
+      <Spinner size={28}/>
+      <p className="text-sm text-gray-500">Loading LytHouse…</p>
+    </div>
+  </div>
+);
+if(!session)return<AuthPage/>;
+return<Routes/>;
+}
+
+export function App(){return<RouterProvider><AuthGate/></RouterProvider>;}
