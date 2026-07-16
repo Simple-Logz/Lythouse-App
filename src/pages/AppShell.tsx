@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode, createContext, useContext } from 'react'
-import { LayoutDashboard, FolderGit2, Rocket, FlaskConical, ChartBar as BarChart3, Shield, Users, ScrollText, Settings, Boxes, ChevronDown, Menu, Sparkles, ShieldCheck, ShieldAlert, OctagonAlert as AlertOctagon, Webhook, Network, Scale, Server, Lock, Search, FileCheck, CirclePlay as PlayCircle, Activity, Zap } from 'lucide-react'
+import { LayoutDashboard, FolderGit2, Rocket, FlaskConical, ChartBar as BarChart3, Shield, Users, ScrollText, Settings, Boxes, ChevronDown, Menu, Sparkles, ShieldCheck, ShieldAlert, OctagonAlert as AlertOctagon, Webhook, Network, Scale, Server, Lock, Search, FileCheck, CirclePlay as PlayCircle, Activity, Zap, LogOut } from 'lucide-react'
 import { supabase, type Workspace, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { useRouter, Link } from '../lib/router'
+import { useAuth } from '../lib/auth'
 import { Logo } from '../lib/ui'
 
 const PlanContext = createContext<PlanId>('free')
@@ -17,12 +18,9 @@ const NAV: NavItem[] = [
   { label: 'Projects', to: '/projects', icon: FolderGit2 },
   { label: 'Workspaces', to: '/workspaces', icon: Boxes },
   {
-    label: 'Server Validation', icon: Server, children: [
+    label: 'Validation', icon: ShieldCheck, children: [
       { label: 'Environments', to: '/server-validation', icon: Server },
-      { label: 'Discovery', to: '/server-validation/discovery', icon: Search },
-      { label: 'Findings', to: '/server-validation/findings', icon: ShieldAlert },
-      { label: 'Simulator', to: '/server-validation/simulator', icon: FlaskConical },
-      { label: 'Validation Runs', to: '/server-validation/runs', icon: PlayCircle },
+      { label: 'Validation Runs', to: '/server-validation/passports', icon: PlayCircle },
       { label: 'Deployment Passports', to: '/server-validation/passports', icon: FileCheck },
     ]
   },
@@ -31,30 +29,32 @@ const NAV: NavItem[] = [
       { label: 'Deployments', to: '/deployments', icon: Rocket },
       { label: 'Simulator', to: '/simulator', icon: FlaskConical },
       { label: 'Analytics', to: '/analytics', icon: BarChart3 },
-      { label: 'Compliance', to: '/compliance', icon: ShieldCheck },
       { label: 'Incidents', to: '/incidents', icon: AlertOctagon },
     ]
   },
   {
-    label: 'Governance', icon: Scale, children: [
-      { label: 'Integrations', to: '/integrations', icon: Webhook },
-      { label: 'Policies', to: '/policies', icon: Shield },
-      { label: 'Team', to: '/team', icon: Users },
-      { label: 'Audit Log', to: '/audit', icon: ScrollText },
-    ]
-  },
-  {
-    label: 'Testing Engines', icon: Activity, children: [
+    label: 'Testing', icon: Activity, children: [
       { label: 'Load Testing', to: '/load-testing', icon: Activity },
       { label: 'API Testing', to: '/api-testing', icon: Network },
       { label: 'Chaos Engineering', to: '/chaos', icon: Zap },
     ]
   },
+  {
+    label: 'Governance', icon: Scale, children: [
+      { label: 'Compliance', to: '/compliance', icon: ShieldCheck },
+      { label: 'Policies', to: '/policies', icon: Shield },
+      { label: 'Integrations', to: '/integrations', icon: Webhook },
+      { label: 'Audit Log', to: '/audit', icon: ScrollText },
+    ]
+  },
+  { label: 'Team', to: '/team', icon: Users },
+  { label: 'Plans', to: '/plans', icon: Sparkles },
   { label: 'Settings', to: '/settings', icon: Settings },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { path } = useRouter()
+  const { user, profile, signOut } = useAuth()
   const [activeWs, setActiveWs] = useState<Workspace | null>(null)
   const [plan, setPlan] = useState<WorkspacePlan | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -116,17 +116,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           return <Link key={n.to} to={n.to} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setMobileOpen(false)}><n.icon size={16} /> {n.label}</Link>
         })}
       </nav>
-      {activeWs && (
-        <div className="border-t border-gray-200 p-3">
-          <div className="card flex items-center justify-between p-3">
+      <div className="border-t border-gray-200 p-3 space-y-2">
+        {activeWs && (
+          <div className="flex items-center justify-between px-2 py-1.5">
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5"><Sparkles size={13} className="text-brand-500" /><span className={`chip border ${planInfo.badge}`}>{planInfo.name}</span></div>
-              <p className="mt-1 truncate text-xs text-gray-500">{activeWs.name}</p>
+              <div className="flex items-center gap-1.5"><Sparkles size={11} className="text-brand-500"/><span className={`chip border text-xs ${planInfo.badge}`}>{planInfo.name}</span></div>
+              <p className="mt-0.5 truncate text-xs text-gray-500">{activeWs.name}</p>
             </div>
-            {planId !== 'enterprise' && <Link to="/plans" className="text-xs font-medium text-brand-600 hover:underline">Upgrade</Link>}
+            {planId !== 'enterprise' && <Link to="/plans" className="text-xs font-medium text-brand-600 hover:underline shrink-0">Upgrade</Link>}
           </div>
+        )}
+        <div className="flex items-center gap-2.5 rounded-lg px-2 py-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-xs font-bold">
+            {(profile?.full_name||user?.email||'U').charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-navy-900">{profile?.full_name||'My Account'}</p>
+            <p className="truncate text-xs text-gray-400">{user?.email||''}</p>
+          </div>
+          <button onClick={()=>signOut()} title="Sign out" className="shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            <LogOut size={14}/>
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 

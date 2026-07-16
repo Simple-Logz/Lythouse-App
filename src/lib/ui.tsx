@@ -5,9 +5,9 @@ import{useRouter}from'./router';
 
 export function Logo({size=26}:{size?:number}){
 return<div className="flex items-center gap-2.5 select-none">
-<div className="flex items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700" style={{width:size,height:size}}>
+<div className="flex items-center justify-center rounded-xl bg-brand-600" style={{width:size,height:size}}>
 <ShieldCheck size={size*0.56} className="text-white" strokeWidth={2.4}/></div>
-<span className="text-[17px] font-bold tracking-tight text-navy-900">Sandbox<span className="text-brand-600">.ai</span></span></div>;
+<span className="text-[17px] font-bold tracking-tight text-navy-900">Ly<span className="text-brand-600">thouse</span></span></div>;
 }
 export function Spinner({size=16,className=''}:{size?:number;className?:string}){return<Loader2 size={size} className={'animate-spin '+className}/>;}
 export function StatusBadge({status}:{status:ValidationStatus|StepStatus}){
