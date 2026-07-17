@@ -2,7 +2,7 @@ import{useEffect,useState,useCallback}from'react';
 import{supabase,type WorkspaceMember}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState}from'../lib/ui';
 import{useAuth}from'../lib/auth';
-import{Users,Plus,X,Loader as Loader2,Mail,Shield,UserPlus,Users2,ChevronDown,ChevronRight,Trash2,Edit2,Check}from'lucide-react';
+import{Users,Plus,X,Loader as Loader2,Mail,Shield,UserPlus,Users2,ChevronDown,ChevronRight,Trash2,Edit2,Check,FolderGit2,ShieldCheck,Bell,ArrowLeft,Settings,Activity}from'lucide-react';
 
 type Role='owner'|'admin'|'member'|'viewer';
 type MemberRow=WorkspaceMember&{profiles?:{email?:string|null;full_name?:string|null}|null};
@@ -51,6 +51,7 @@ export function TeamPage(){
   // Add member to group
   const[addingToGroup,setAddingToGroup]=useState<string|null>(null);
   const[groupAddUserId,setGroupAddUserId]=useState('');
+  const[selectedGroup,setSelectedGroup]=useState<Group|null>(null);
 
   const wsId=()=>localStorage.getItem('sandbox.activeWs');
 
@@ -154,6 +155,123 @@ export function TeamPage(){
 
   if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
 
+  // Group detail view
+  if(selectedGroup){
+    const gms=groupMembers.filter(gm=>gm.group_id===selectedGroup.id);
+    const grpMembers=members.filter(m=>gms.find(gm=>gm.user_id===m.user_id));
+    const nonGroupMembers=members.filter(m=>!gms.find(gm=>gm.user_id===m.user_id));
+    return(
+      <div>
+        <div className="mb-6">
+          <button onClick={()=>setSelectedGroup(null)} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-navy-900 mb-4 transition-colors">
+            <ArrowLeft size={15}/>Back to Team
+          </button>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><Users2 size={22}/></div>
+              <div>
+                <h1 className="text-xl font-bold text-navy-900">{selectedGroup.name}</h1>
+                <p className="text-sm text-gray-500 mt-0.5">{selectedGroup.description||'No description'} · {gms.length} member{gms.length!==1?'s':''}</p>
+              </div>
+            </div>
+            <button onClick={()=>deleteGroup(selectedGroup.id)} className="btn-secondary text-xs text-danger-600 border-red-200 hover:bg-red-50"><Trash2 size={13}/>Delete group</button>
+          </div>
+        </div>
+
+        {/* Group stats */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 mb-6">
+          {[
+            {label:'Members',value:gms.length,icon:Users,color:'bg-brand-50 text-brand-600'},
+            {label:'Projects access',value:'All workspace',icon:FolderGit2,color:'bg-blue-50 text-blue-600'},
+            {label:'Permission level',value:'Member',icon:Shield,color:'bg-green-50 text-green-600'},
+          ].map(s=>(
+            <div key={s.label} className="card flex items-center gap-3 py-3">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${s.color}`}><s.icon size={16}/></div>
+              <div>
+                <p className="text-base font-bold text-navy-900">{s.value}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Members section */}
+        <div className="card mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-navy-900">Members</h2>
+            {nonGroupMembers.length>0&&(
+              addingToGroup===selectedGroup.id?(
+                <div className="flex items-center gap-2">
+                  <select className="input text-sm py-1.5 h-auto" value={groupAddUserId} onChange={e=>setGroupAddUserId(e.target.value)}>
+                    <option value="">Select member…</option>
+                    {nonGroupMembers.map(m=>(
+                      <option key={m.user_id} value={m.user_id}>{m.profiles?.full_name||m.profiles?.email||m.user_id.slice(0,8)}</option>
+                    ))}
+                  </select>
+                  <button onClick={()=>addMemberToGroup(selectedGroup.id)} disabled={!groupAddUserId} className="btn-primary text-xs">Add</button>
+                  <button onClick={()=>{setAddingToGroup(null);setGroupAddUserId('');}} className="btn-secondary text-xs">Cancel</button>
+                </div>
+              ):(
+                <button onClick={()=>setAddingToGroup(selectedGroup.id)} className="btn-primary text-sm"><UserPlus size={14}/>Add member</button>
+              )
+            )}
+          </div>
+          {grpMembers.length===0
+            ?<div className="text-center py-8 text-gray-400">
+              <Users size={28} className="mx-auto mb-2 opacity-30"/>
+              <p className="text-sm">No members yet</p>
+              <p className="text-xs mt-1">Add workspace members to this group</p>
+            </div>
+            :<div className="divide-y divide-gray-100">
+              {grpMembers.map(m=>{
+                const gm=gms.find(gm=>gm.user_id===m.user_id)!;
+                return(
+                  <div key={m.user_id} className="flex items-center gap-3 py-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-700 text-sm font-bold">
+                      {(m.profiles?.full_name||m.profiles?.email||'?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-navy-900">{m.profiles?.full_name||m.profiles?.email||m.user_id.slice(0,8)}</p>
+                      {m.profiles?.email&&<p className="text-xs text-gray-500">{m.profiles.email}</p>}
+                    </div>
+                    <span className="chip bg-gray-100 text-gray-600 border border-gray-200 capitalize text-xs">{m.role}</span>
+                    <button onClick={()=>removeMemberFromGroup(gm.id)} className="btn-ghost p-1.5 text-gray-400 hover:text-danger-600"><X size={13}/></button>
+                  </div>
+                );
+              })}
+            </div>
+          }
+        </div>
+
+        {/* Group activity */}
+        <div className="card">
+          <h2 className="text-base font-semibold text-navy-900 mb-4">Group Notifications</h2>
+          <div className="space-y-3">
+            {[
+              {icon:ShieldCheck,label:'Validation completed',desc:'Notify group when a validation run completes',enabled:true},
+              {icon:Activity,label:'Critical findings',desc:'Alert group immediately when critical issues are found',enabled:true},
+              {icon:Bell,label:'Deployment ready',desc:'Notify group when a project is cleared for deployment',enabled:false},
+              {icon:FolderGit2,label:'New project added',desc:'Notify group when a new project is created in this workspace',enabled:false},
+            ].map(n=>(
+              <div key={n.label} className="flex items-start justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 mt-0.5"><n.icon size={14}/></div>
+                  <div>
+                    <p className="text-sm font-medium text-navy-900">{n.label}</p>
+                    <p className="text-xs text-gray-500">{n.desc}</p>
+                  </div>
+                </div>
+                <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${n.enabled?'bg-brand-600':'bg-gray-200'}`}>
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${n.enabled?'translate-x-4':'translate-x-0'}`}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div>
       <PageHeader title="Team" description="Manage workspace members and groups."
@@ -228,7 +346,7 @@ export function TeamPage(){
             return(
               <div key={g.id} className="card p-0 overflow-hidden">
                 <div className="flex items-center gap-3 px-4 py-3.5">
-                  <button onClick={()=>setExpandedGroup(isOpen?null:g.id)} className="flex items-center gap-2 flex-1 text-left">
+                  <button onClick={()=>setSelectedGroup(g)} className="flex items-center gap-2 flex-1 text-left">
                     {isOpen?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600"><Users2 size={16}/></div>
                     <div className="flex-1">
