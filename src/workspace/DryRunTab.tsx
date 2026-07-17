@@ -1,7 +1,7 @@
 import{useEffect,useState}from'react';
 import{edgeFunctionUrl,anonKey,supabase,type RepoFile,type Validation,type Finding}from'../lib/supabase';
 import{Spinner,EmptyState,SeverityBadge,RiskGauge,StatusBadge}from'../lib/ui';
-import { Play, X, RefreshCw, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, Circle as XCircle, Clock, Server, Database, Cloud, Network, Zap, Shield, Activity, Gauge, Cpu, HardDrive, Globe, Lock, Layers, ArrowRight, Loader as Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Play, X, RefreshCw, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, Circle as XCircle, Clock, Server, Database, Cloud, Network, Zap, Shield, Activity, Gauge, Cpu, HardDrive, Globe, Lock, Layers, ArrowRight, Loader as Loader2, TrendingUp, TrendingDown, Minus, FileCode } from 'lucide-react';
 
 type SimPhase='idle'|'analyzing'|'checking'|'predicting'|'complete';
 type SimResult={environment:string;overallScore:number;verdict:'go'|'conditional'|'no-go';checks:{label:string;status:'pass'|'warn'|'fail';detail:string;impact:string}[];failurePredictions:{scenario:string;probability:number;severity:'low'|'medium'|'high'|'critical';mitigation:string}[];resourceImpact:{cpu:string;memory:string;disk:string;network:string};estimatedDowntime:string;rollbackComplexity:'simple'|'moderate'|'complex';affectedServices:string[];blastRadius:'small'|'medium'|'large'|'critical'};
