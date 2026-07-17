@@ -48,7 +48,6 @@ const createWorkspace=async()=>{
   await supabase.from('workspace_plans').insert({workspace_id:data.id,plan_id:'free',status:'active'});
   setWorkspaces(prev=>[data,...prev]);
     localStorage.setItem('sandbox.activeWs',data.id);
-    setActiveWs(data);
   setName('');setDesc('');setCreating(false);setSaving(false);
 };
 
@@ -91,7 +90,7 @@ return<div>
         <button onClick={()=>setActive(w)} className="btn-secondary text-xs">{isActive?<Check size={12}/>:null}{isActive?'Active':'Set active'}</button>
         <button onClick={()=>{
   localStorage.setItem('sandbox.activeWs', w.id);
-  setActive(w);
+  setWorkspaces(prev=>prev.map(ws=>ws.id===w.id?ws:ws));
   navigate('/projects');
 }} className="btn-primary text-xs flex items-center gap-1">Open<ArrowRight size={12}/></button>
       </div>

@@ -75,9 +75,6 @@ if(loading)return(
   </div>
 );
 if(!session)return<AuthPage/>;
-// New users with no workspace go to onboarding
-const hasWs=!!localStorage.getItem('sandbox.activeWs');
-if(!hasWs&&path!=='/onboarding')return<OnboardingPage/>;
 return<Routes/>;
 }
 
