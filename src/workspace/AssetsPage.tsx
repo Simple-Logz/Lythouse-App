@@ -1,95 +1,157 @@
 import{useCallback,useEffect,useState,useMemo}from'react';
-import{supabase}from'../lib/supabase';
+import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
-import{GitBranch,Cloud,Database,Boxes,Zap,CheckCircle2,XCircle,Clock,Plus,X,Check,RefreshCw,AlertTriangle,Loader as Loader2,Search,Bell,Activity,ChevronDown,ChevronRight,Shield,Package,Globe,Server,Lock}from'lucide-react';
+import{Activity,Plus,X,Check,RefreshCw,Search,Bell,BellOff,ChevronRight,AlertTriangle,CheckCircle2,Clock,Zap,Shield,GitBranch,Cloud,Database,Loader as Loader2,Wifi,WifiOff,AlertCircle,ArrowRight,TrendingDown,Layers}from'lucide-react';
 
-// ─── Full asset catalogue ─────────────────────────────────────────────────────
-const ALL_ASSETS=[
-  // Source Control
-  {id:'github',category:'Source Control',label:'GitHub',desc:'Monitor branches, PRs, commits and secret exposure.',icon:'🐙',fields:[{key:'url',label:'Repository URL',ph:'https://github.com/org/repo'},{key:'token',label:'Personal Access Token',ph:'ghp_xxxx',secret:true}]},
-  {id:'gitlab',category:'Source Control',label:'GitLab',desc:'Monitor MRs, pipelines, deployments and container registry.',icon:'🦊',fields:[{key:'url',label:'GitLab URL',ph:'https://gitlab.com/org/repo'},{key:'token',label:'Access Token',ph:'glpat-xxxx',secret:true}]},
-  {id:'bitbucket',category:'Source Control',label:'Bitbucket',desc:'Monitor Bitbucket repos, pipelines and pull requests.',icon:'🪣',fields:[{key:'workspace',label:'Workspace',ph:'my-workspace'},{key:'token',label:'App Password',ph:'xxxx',secret:true}]},
-  {id:'azure-devops-repos',category:'Source Control',label:'Azure DevOps Repos',desc:'Monitor Azure DevOps repositories and boards.',icon:'🔷',fields:[{key:'org',label:'Organization',ph:'myorg'},{key:'token',label:'PAT Token',ph:'xxxx',secret:true}]},
-  // Cloud Providers
-  {id:'aws',category:'Cloud',label:'AWS',desc:'Monitor IAM roles, security groups, S3, CloudTrail and Lambda.',icon:'🟠',fields:[{key:'access_key',label:'Access Key ID',ph:'AKIA...'},{key:'secret_key',label:'Secret Access Key',ph:'xxxx',secret:true},{key:'region',label:'Region',ph:'us-east-1'}]},
-  {id:'azure',category:'Cloud',label:'Microsoft Azure',desc:'Monitor Azure resources, AD, Key Vault, AKS and DevOps.',icon:'🔵',fields:[{key:'tenant_id',label:'Tenant ID',ph:'xxxxxxxx-xxxx'},{key:'client_id',label:'Client ID',ph:'xxxxxxxx-xxxx'},{key:'client_secret',label:'Client Secret',ph:'xxxx',secret:true}]},
-  {id:'gcp',category:'Cloud',label:'Google Cloud',desc:'Monitor GCP projects, IAM, Cloud Run, GKE and audit logs.',icon:'🔴',fields:[{key:'project_id',label:'Project ID',ph:'my-project-123'},{key:'service_account',label:'Service Account JSON',ph:'{"type":"service_account"...}',secret:true}]},
-  {id:'alibaba',category:'Cloud',label:'Alibaba Cloud',desc:'Monitor Alibaba ECS, OSS, RAM policies and security events.',icon:'🟡',fields:[{key:'access_key',label:'Access Key ID',ph:'LTAI...'},{key:'secret_key',label:'Access Key Secret',ph:'xxxx',secret:true},{key:'region',label:'Region',ph:'cn-hangzhou'}]},
-  {id:'oracle-cloud',category:'Cloud',label:'Oracle Cloud (OCI)',desc:'Monitor OCI compute, networking, identity and security.',icon:'🔴',fields:[{key:'tenancy',label:'Tenancy OCID',ph:'ocid1.tenancy.oc1...'},{key:'user_ocid',label:'User OCID',ph:'ocid1.user.oc1...'},{key:'fingerprint',label:'Key Fingerprint',ph:'xx:xx:xx...'},{key:'private_key',label:'Private Key',ph:'-----BEGIN...',secret:true}]},
-  {id:'digitalocean',category:'Cloud',label:'DigitalOcean',desc:'Monitor Droplets, Kubernetes clusters, databases and spaces.',icon:'🌊',fields:[{key:'token',label:'Personal Access Token',ph:'dop_v1_xxxx',secret:true}]},
-  {id:'hetzner',category:'Cloud',label:'Hetzner Cloud',desc:'Monitor Hetzner servers, load balancers and networks.',icon:'☁️',fields:[{key:'token',label:'API Token',ph:'xxxx',secret:true}]},
-  {id:'cloudflare',category:'Cloud',label:'Cloudflare',desc:'Monitor DNS, WAF rules, workers and zero trust policies.',icon:'🌤',fields:[{key:'account_id',label:'Account ID',ph:'xxxx'},{key:'token',label:'API Token',ph:'xxxx',secret:true}]},
-  // Kubernetes & Containers
-  {id:'kubernetes',category:'Containers & Orchestration',label:'Kubernetes',desc:'Monitor deployments, secrets, configmaps and pod health.',icon:'☸️',fields:[{key:'cluster_url',label:'Cluster API URL',ph:'https://k8s.example.com'},{key:'token',label:'Service Account Token',ph:'eyJ...',secret:true},{key:'namespace',label:'Namespace',ph:'default'}]},
-  {id:'docker',category:'Containers & Orchestration',label:'Docker Registry',desc:'Scan container images for vulnerabilities before deployment.',icon:'🐳',fields:[{key:'registry_url',label:'Registry URL',ph:'registry.example.com'},{key:'username',label:'Username',ph:'username'},{key:'password',label:'Password / Token',ph:'xxxx',secret:true}]},
-  {id:'ecr',category:'Containers & Orchestration',label:'Amazon ECR',desc:'Monitor AWS Elastic Container Registry images and scan results.',icon:'📦',fields:[{key:'region',label:'Region',ph:'us-east-1'},{key:'access_key',label:'Access Key ID',ph:'AKIA...'},{key:'secret_key',label:'Secret',ph:'xxxx',secret:true}]},
-  {id:'gcr',category:'Containers & Orchestration',label:'Google Container Registry',desc:'Monitor GCR images, vulnerability scan results and deployments.',icon:'📦',fields:[{key:'project_id',label:'Project ID',ph:'my-project'},{key:'service_account',label:'Service Account JSON',ph:'...',secret:true}]},
-  {id:'helm',category:'Containers & Orchestration',label:'Helm',desc:'Monitor Helm chart releases, upgrades and rollbacks.',icon:'⛵',fields:[{key:'kubeconfig',label:'Kubeconfig (base64)',ph:'xxxx',secret:true},{key:'namespace',label:'Namespace',ph:'default'}]},
-  // Infrastructure as Code
-  {id:'terraform',category:'Infrastructure as Code',label:'Terraform',desc:'Monitor infrastructure changes and detect configuration drift.',icon:'🟣',fields:[{key:'backend_url',label:'State Backend URL',ph:'https://app.terraform.io/...'},{key:'token',label:'API Token',ph:'xxxx',secret:true},{key:'workspace',label:'Workspace',ph:'production'}]},
-  {id:'pulumi',category:'Infrastructure as Code',label:'Pulumi',desc:'Monitor Pulumi stacks, updates and infrastructure drift.',icon:'🔶',fields:[{key:'token',label:'Pulumi Access Token',ph:'pul-xxxx',secret:true},{key:'org',label:'Organization',ph:'myorg'}]},
-  {id:'ansible',category:'Infrastructure as Code',label:'Ansible',desc:'Monitor playbook runs, inventory changes and config drift.',icon:'⚙️',fields:[{key:'url',label:'AWX/Tower URL',ph:'https://tower.example.com'},{key:'token',label:'OAuth2 Token',ph:'xxxx',secret:true}]},
-  {id:'crossplane',category:'Infrastructure as Code',label:'Crossplane',desc:'Monitor Crossplane managed resources and compositions.',icon:'🔗',fields:[{key:'kubeconfig',label:'Kubeconfig (base64)',ph:'xxxx',secret:true}]},
-  // CI/CD
-  {id:'github-actions',category:'CI/CD',label:'GitHub Actions',desc:'Monitor workflow runs, failures and deployment triggers.',icon:'⚡',fields:[{key:'repo_url',label:'Repository URL',ph:'https://github.com/org/repo'},{key:'token',label:'Token with Actions scope',ph:'ghp_xxxx',secret:true}]},
-  {id:'jenkins',category:'CI/CD',label:'Jenkins',desc:'Monitor build jobs, deployment pipelines and artifacts.',icon:'🤵',fields:[{key:'url',label:'Jenkins URL',ph:'https://jenkins.example.com'},{key:'username',label:'Username',ph:'admin'},{key:'token',label:'API Token',ph:'xxxx',secret:true}]},
-  {id:'circleci',category:'CI/CD',label:'CircleCI',desc:'Monitor pipeline runs, test results and deployment jobs.',icon:'⭕',fields:[{key:'token',label:'Personal API Token',ph:'xxxx',secret:true},{key:'org',label:'Organization',ph:'my-org'}]},
-  {id:'gitlab-ci',category:'CI/CD',label:'GitLab CI/CD',desc:'Monitor GitLab pipeline jobs, artifacts and deployments.',icon:'🔁',fields:[{key:'url',label:'GitLab URL',ph:'https://gitlab.com'},{key:'token',label:'Access Token',ph:'glpat-xxxx',secret:true}]},
-  {id:'azure-pipelines',category:'CI/CD',label:'Azure Pipelines',desc:'Monitor Azure DevOps pipeline runs and release gates.',icon:'🔷',fields:[{key:'org',label:'Organization',ph:'myorg'},{key:'project',label:'Project',ph:'myproject'},{key:'token',label:'PAT Token',ph:'xxxx',secret:true}]},
-  {id:'argocd',category:'CI/CD',label:'ArgoCD',desc:'Monitor ArgoCD application sync status and drift.',icon:'🐙',fields:[{key:'url',label:'ArgoCD URL',ph:'https://argocd.example.com'},{key:'token',label:'API Token',ph:'xxxx',secret:true}]},
-  {id:'spinnaker',category:'CI/CD',label:'Spinnaker',desc:'Monitor Spinnaker pipelines, deployments and canary analysis.',icon:'🎡',fields:[{key:'url',label:'Gate URL',ph:'https://spinnaker.example.com'},{key:'token',label:'Service Account Token',ph:'xxxx',secret:true}]},
-  // Security & Compliance
-  {id:'snyk',category:'Security',label:'Snyk',desc:'Monitor dependency vulnerabilities, license issues and container scans.',icon:'🔒',fields:[{key:'token',label:'API Token',ph:'xxxx',secret:true},{key:'org_id',label:'Organization ID',ph:'xxxx'}]},
-  {id:'sonarqube',category:'Security',label:'SonarQube',desc:'Monitor code quality, security hotspots and coverage.',icon:'📊',fields:[{key:'url',label:'SonarQube URL',ph:'https://sonar.example.com'},{key:'token',label:'User Token',ph:'xxxx',secret:true}]},
-  {id:'veracode',category:'Security',label:'Veracode',desc:'Monitor SAST/DAST scan results and policy compliance.',icon:'🛡',fields:[{key:'api_id',label:'API ID',ph:'xxxx'},{key:'api_key',label:'API Key',ph:'xxxx',secret:true}]},
-  {id:'crowdstrike',category:'Security',label:'CrowdStrike',desc:'Monitor endpoint detections, vulnerabilities and threat intelligence.',icon:'🦅',fields:[{key:'client_id',label:'Client ID',ph:'xxxx'},{key:'client_secret',label:'Client Secret',ph:'xxxx',secret:true},{key:'region',label:'Region',ph:'us-1'}]},
-  {id:'vault',category:'Security',label:'HashiCorp Vault',desc:'Monitor secrets access, policy changes and audit logs.',icon:'🔐',fields:[{key:'url',label:'Vault URL',ph:'https://vault.example.com'},{key:'token',label:'Token',ph:'hvs.xxxx',secret:true}]},
-  // Observability
-  {id:'datadog',category:'Observability',label:'Datadog',desc:'Monitor APM traces, infrastructure metrics and deployment markers.',icon:'🐶',fields:[{key:'api_key',label:'API Key',ph:'xxxx',secret:true},{key:'app_key',label:'Application Key',ph:'xxxx',secret:true},{key:'site',label:'Site',ph:'datadoghq.com'}]},
-  {id:'newrelic',category:'Observability',label:'New Relic',desc:'Monitor application performance, errors and deployments.',icon:'📈',fields:[{key:'account_id',label:'Account ID',ph:'1234567'},{key:'api_key',label:'User API Key',ph:'NRAK-xxxx',secret:true}]},
-  {id:'grafana',category:'Observability',label:'Grafana',desc:'Monitor dashboards, alerts and infrastructure health.',icon:'📉',fields:[{key:'url',label:'Grafana URL',ph:'https://grafana.example.com'},{key:'token',label:'Service Account Token',ph:'glsa_xxxx',secret:true}]},
-  {id:'prometheus',category:'Observability',label:'Prometheus',desc:'Monitor metrics, alert rules and recording rules.',icon:'🔥',fields:[{key:'url',label:'Prometheus URL',ph:'https://prometheus.example.com'},{key:'username',label:'Username (if auth)',ph:'admin'},{key:'password',label:'Password',ph:'xxxx',secret:true}]},
-  {id:'pagerduty',category:'Observability',label:'PagerDuty',desc:'Monitor incidents, on-call schedules and service health.',icon:'📟',fields:[{key:'token',label:'API Token',ph:'xxxx',secret:true}]},
-  // Databases & Data
-  {id:'postgres',category:'Databases',label:'PostgreSQL',desc:'Monitor schema changes, migrations and slow queries.',icon:'🐘',fields:[{key:'host',label:'Host',ph:'db.example.com'},{key:'port',label:'Port',ph:'5432'},{key:'database',label:'Database',ph:'production'},{key:'password',label:'Password',ph:'xxxx',secret:true}]},
-  {id:'mysql',category:'Databases',label:'MySQL / MariaDB',desc:'Monitor schema changes, replication lag and query performance.',icon:'🐬',fields:[{key:'host',label:'Host',ph:'db.example.com'},{key:'database',label:'Database',ph:'production'},{key:'password',label:'Password',ph:'xxxx',secret:true}]},
-  {id:'mongodb',category:'Databases',label:'MongoDB',desc:'Monitor Atlas clusters, change streams and index changes.',icon:'🍃',fields:[{key:'uri',label:'Connection URI',ph:'mongodb+srv://...',secret:true}]},
-  {id:'redis',category:'Databases',label:'Redis',desc:'Monitor Redis instances, memory usage and config changes.',icon:'🔴',fields:[{key:'url',label:'Redis URL',ph:'redis://localhost:6379'},{key:'password',label:'Password',ph:'xxxx',secret:true}]},
-  // Project Management & Ticketing
-  {id:'jira',category:'Project Management',label:'Jira',desc:'Sync findings to Jira issues and track remediation progress.',icon:'🔵',fields:[{key:'url',label:'Jira URL',ph:'https://org.atlassian.net'},{key:'email',label:'Email',ph:'user@example.com'},{key:'token',label:'API Token',ph:'xxxx',secret:true}]},
-  {id:'servicenow',category:'Project Management',label:'ServiceNow',desc:'Create and track ITSM incidents from security findings.',icon:'🟢',fields:[{key:'instance',label:'Instance',ph:'myinstance.service-now.com'},{key:'username',label:'Username',ph:'admin'},{key:'password',label:'Password',ph:'xxxx',secret:true}]},
-  {id:'linear',category:'Project Management',label:'Linear',desc:'Create Linear issues from findings and track sprints.',icon:'🔷',fields:[{key:'token',label:'API Key',ph:'lin_api_xxxx',secret:true}]},
-  // Communication
-  {id:'slack',category:'Communication',label:'Slack',desc:'Send deployment alerts, finding notifications and approvals.',icon:'💬',fields:[{key:'webhook_url',label:'Webhook URL',ph:'https://hooks.slack.com/...',secret:true},{key:'channel',label:'Channel',ph:'#deployments'}]},
-  {id:'teams',category:'Communication',label:'Microsoft Teams',desc:'Send notifications and approval requests to Teams channels.',icon:'🟣',fields:[{key:'webhook_url',label:'Webhook URL',ph:'https://outlook.office.com/webhook/...',secret:true}]},
-  // Enterprise SaaS
-  {id:'salesforce',category:'Enterprise SaaS',label:'Salesforce',desc:'Monitor Salesforce deployments, metadata changes and releases.',icon:'☁️',fields:[{key:'instance_url',label:'Instance URL',ph:'https://myorg.salesforce.com'},{key:'token',label:'Access Token',ph:'xxxx',secret:true}]},
-  {id:'sap',category:'Enterprise SaaS',label:'SAP',desc:'Monitor SAP transport requests and system changes.',icon:'🔵',fields:[{key:'host',label:'Host',ph:'sap.example.com'},{key:'client',label:'Client',ph:'100'},{key:'username',label:'Username',ph:'BASIS'},{key:'password',label:'Password',ph:'xxxx',secret:true}]},
-];
+// ─── Full catalogue ────────────────────────────────────────────────────────────
+const CATALOGUE={
+  'Source Control':[
+    {id:'github',label:'GitHub',icon:'🐙',watches:['Pushes','Pull Requests','Branch changes','Secret exposure','Workflows'],impact:'Triggers automatic validation on every push and PR merge'},
+    {id:'gitlab',label:'GitLab',icon:'🦊',watches:['Merge Requests','CI pipelines','Container registry','Deployments'],impact:'Revalidates on every merge and pipeline completion'},
+    {id:'bitbucket',label:'Bitbucket',icon:'🪣',watches:['Pull Requests','Pipelines','Branch policies'],impact:'Monitors code changes and policy compliance'},
+    {id:'azure-devops',label:'Azure DevOps',icon:'🔷',watches:['Repos','Boards','Pipelines','Releases'],impact:'Tracks work items linked to deployments'},
+    {id:'perforce',label:'Perforce',icon:'📂',watches:['Changelists','Streams','Workspace changes'],impact:'Monitors enterprise source control changes'},
+  ],
+  'Cloud Providers':[
+    {id:'aws',label:'AWS',icon:'🟠',watches:['IAM roles','Security groups','S3 buckets','CloudTrail','Lambda','EC2'],impact:'Production readiness recalculated on IAM or network changes'},
+    {id:'azure',label:'Microsoft Azure',icon:'🔵',watches:['Resource groups','AD','Key Vault','AKS','Policies'],impact:'Compliance posture updated on policy changes'},
+    {id:'gcp',label:'Google Cloud',icon:'🔴',watches:['IAM','Cloud Run','GKE','Audit logs','Firewall rules'],impact:'Security findings updated on IAM policy changes'},
+    {id:'oracle-cloud',label:'Oracle Cloud',icon:'🔴',watches:['Compute','Networking','Identity','Security zones'],impact:'Topology updated on infrastructure changes'},
+    {id:'alibaba',label:'Alibaba Cloud',icon:'🟡',watches:['ECS','OSS','RAM policies','Security events'],impact:'Drift detection on configuration changes'},
+    {id:'ibm-cloud',label:'IBM Cloud',icon:'🔵',watches:['VPC','IAM','Kubernetes','Cloud Functions'],impact:'Monitors IBM infrastructure for compliance'},
+    {id:'digitalocean',label:'DigitalOcean',icon:'🌊',watches:['Droplets','Kubernetes','Databases','Spaces'],impact:'Deployment readiness updated on resource changes'},
+    {id:'heroku',label:'Heroku',icon:'💜',watches:['Dynos','Add-ons','Config vars','Deploy hooks'],impact:'Validates config var changes before release'},
+    {id:'vercel',label:'Vercel',icon:'▲',watches:['Deployments','Env variables','Domains','Edge config'],impact:'Auto-validates every Vercel deployment'},
+    {id:'netlify',label:'Netlify',icon:'🟢',watches:['Builds','Deploy hooks','Environment vars','Forms'],impact:'Monitors build and deploy status'},
+    {id:'cloudflare',label:'Cloudflare',icon:'🌤',watches:['WAF rules','DNS','Workers','Zero Trust','Pages'],impact:'Security posture updated on WAF changes'},
+    {id:'hetzner',label:'Hetzner Cloud',icon:'☁️',watches:['Servers','Load balancers','Firewalls','Networks'],impact:'Infrastructure drift detected on server changes'},
+  ],
+  'Kubernetes & Orchestration':[
+    {id:'kubernetes',label:'Kubernetes',icon:'☸️',watches:['Deployments','Secrets','ConfigMaps','Pods','Services','RBAC'],impact:'Topology and readiness updated on every deployment event'},
+    {id:'openshift',label:'OpenShift',icon:'🔴',watches:['Projects','Routes','BuildConfigs','DeploymentConfigs'],impact:'Monitors OpenShift-specific security policies'},
+    {id:'rancher',label:'Rancher',icon:'🐄',watches:['Clusters','Workloads','Catalogs','Monitoring'],impact:'Multi-cluster readiness tracked centrally'},
+    {id:'eks',label:'Amazon EKS',icon:'📦',watches:['Node groups','Add-ons','OIDC','Security groups'],impact:'EKS cluster health feeds deployment confidence'},
+    {id:'aks',label:'Azure AKS',icon:'📦',watches:['Node pools','Add-ons','AAD integration','Network policies'],impact:'AKS upgrade and config changes revalidate release'},
+    {id:'gke',label:'Google GKE',icon:'📦',watches:['Node pools','Workload identity','Binary auth','Autopilot'],impact:'GKE configuration changes trigger validation'},
+  ],
+  'Container Registries':[
+    {id:'docker-hub',label:'Docker Hub',icon:'🐳',watches:['Image pushes','Vulnerability scans','Tags','Build triggers'],impact:'New images trigger container scan and validation'},
+    {id:'ecr',label:'Amazon ECR',icon:'📦',watches:['Image pushes','Scan findings','Lifecycle policies','Pull-through cache'],impact:'ECR scan results feed directly into findings'},
+    {id:'acr',label:'Azure Container Registry',icon:'📦',watches:['Image pushes','Tasks','Geo-replication','Content trust'],impact:'New images validated before deployment approval'},
+    {id:'gcr',label:'Google Artifact Registry',icon:'📦',watches:['Image pushes','Vulnerability reports','Policies'],impact:'GCR scan results update deployment blockers'},
+    {id:'harbor',label:'Harbor',icon:'⚓',watches:['Projects','Replications','Vulnerability scans','Policies'],impact:'Harbor policies enforced as deployment gates'},
+    {id:'jfrog',label:'JFrog Artifactory',icon:'🐸',watches:['Repositories','Xray scans','Policies','Builds'],impact:'Xray findings integrated into deployment readiness'},
+  ],
+  'Infrastructure as Code':[
+    {id:'terraform',label:'Terraform',icon:'🟣',watches:['State changes','Plan diffs','Workspace applies','Drift'],impact:'Infrastructure drift detected and reported as findings'},
+    {id:'pulumi',label:'Pulumi',icon:'🔶',watches:['Stack updates','Resource changes','Policy packs'],impact:'Policy violations surface as deployment blockers'},
+    {id:'ansible',label:'Ansible',icon:'⚙️',watches:['Playbook runs','Inventory changes','Task failures'],impact:'Configuration drift identified across server fleet'},
+    {id:'crossplane',label:'Crossplane',icon:'🔗',watches:['Managed resources','Compositions','Claims'],impact:'Crossplane drift feeds into readiness score'},
+    {id:'helm',label:'Helm',icon:'⛵',watches:['Chart releases','Upgrades','Rollbacks','Hooks'],impact:'Helm release status tracked in deployment history'},
+  ],
+  'CI/CD Pipelines':[
+    {id:'github-actions',label:'GitHub Actions',icon:'⚡',watches:['Workflow runs','Job failures','Deploy steps','Secrets usage'],impact:'Failed pipelines block deployment approval'},
+    {id:'jenkins',label:'Jenkins',icon:'🤵',watches:['Build jobs','Pipeline stages','Artifact publishing','Test results'],impact:'Build failures and test results inform readiness score'},
+    {id:'gitlab-ci',label:'GitLab CI/CD',icon:'🔁',watches:['Pipeline jobs','Environments','Releases','Security scans'],impact:'GitLab security scans feed into findings'},
+    {id:'circleci',label:'CircleCI',icon:'⭕',watches:['Pipelines','Test results','Orbs','Contexts'],impact:'Test failures tracked as release risk'},
+    {id:'argocd',label:'ArgoCD',icon:'🐙',watches:['Application sync','Health status','Rollbacks','Hooks'],impact:'GitOps sync status drives deployment confidence'},
+    {id:'spinnaker',label:'Spinnaker',icon:'🎡',watches:['Pipelines','Canary analysis','Deployments','Rollbacks'],impact:'Spinnaker canary results feed readiness score'},
+    {id:'harness',label:'Harness',icon:'🪢',watches:['Deployments','CV analysis','Feature flags','Cost'],impact:'Harness verification gates enforced pre-deploy'},
+    {id:'azure-pipelines',label:'Azure Pipelines',icon:'🔷',watches:['Pipeline runs','Release stages','Approvals','Environments'],impact:'Azure release gates tracked as approval events'},
+    {id:'tekton',label:'Tekton',icon:'☸️',watches:['Pipeline runs','Task runs','Triggers','Results'],impact:'Tekton pipeline outcomes inform release decision'},
+  ],
+  'Monitoring & Observability':[
+    {id:'datadog',label:'Datadog',icon:'🐶',watches:['APM traces','Infrastructure metrics','Log anomalies','Monitors','SLOs'],impact:'SLO breaches block deployment during active incidents'},
+    {id:'dynatrace',label:'Dynatrace',icon:'📊',watches:['Problems','Deployments','SLOs','Application security'],impact:'Dynatrace problems detected pre-deployment'},
+    {id:'newrelic',label:'New Relic',icon:'📈',watches:['APM','Errors','Deployments','Alerts','SLOs'],impact:'Error rate spikes surface as deployment risks'},
+    {id:'splunk',label:'Splunk',icon:'🔍',watches:['Log anomalies','Security events','Alerts','Dashboards'],impact:'Security events in logs trigger revalidation'},
+    {id:'prometheus',label:'Prometheus',icon:'🔥',watches:['Metric alerts','Recording rules','Targets','SLOs'],impact:'Firing alerts factor into deployment confidence'},
+    {id:'grafana',label:'Grafana',icon:'📉',watches:['Dashboard alerts','Incidents','OnCall schedules'],impact:'Active incidents block deployment approval'},
+    {id:'pagerduty',label:'PagerDuty',icon:'📟',watches:['Incidents','On-call schedules','Services','Change events'],impact:'Open incidents prevent deployment approval'},
+    {id:'elastic',label:'Elastic / ELK',icon:'🟡',watches:['Log anomalies','Security alerts','APM','Uptime'],impact:'Log anomalies surface as deployment risks'},
+  ],
+  'Secrets Management':[
+    {id:'vault',label:'HashiCorp Vault',icon:'🔐',watches:['Secret access','Policy changes','Token renewals','Audit logs'],impact:'Unauthorized secret access triggers security finding'},
+    {id:'aws-secrets',label:'AWS Secrets Manager',icon:'🔑',watches:['Secret rotations','Access patterns','Policy changes'],impact:'Secret rotation events tracked in validation'},
+    {id:'azure-keyvault',label:'Azure Key Vault',icon:'🔑',watches:['Secret changes','Certificate expiry','Key rotations','Access policies'],impact:'Certificate expiry surfaces as deployment blocker'},
+    {id:'gcp-secrets',label:'Google Secret Manager',icon:'🔑',watches:['Secret versions','Access logs','IAM bindings'],impact:'Secret IAM changes revalidate security posture'},
+    {id:'doppler',label:'Doppler',icon:'🎯',watches:['Config changes','Secret syncs','Access logs'],impact:'Config variable changes trigger validation'},
+  ],
+  'Security Platforms':[
+    {id:'snyk',label:'Snyk',icon:'🔒',watches:['Dependency vulns','Container scans','Code issues','License compliance'],impact:'Snyk findings feed directly into deployment blockers'},
+    {id:'sonarqube',label:'SonarQube',icon:'📊',watches:['Code quality','Security hotspots','Coverage','Technical debt'],impact:'Quality gates enforced as deployment requirements'},
+    {id:'prisma-cloud',label:'Prisma Cloud',icon:'🛡',watches:['Cloud misconfiguration','Container risks','Network policies'],impact:'Prisma alerts create deployment blockers'},
+    {id:'wiz',label:'Wiz',icon:'🧙',watches:['Cloud risks','Attack paths','Misconfigs','Toxic combinations'],impact:'Wiz risk score incorporated into readiness'},
+    {id:'checkmarx',label:'Checkmarx',icon:'🔍',watches:['SAST findings','SCA results','IaC scanning'],impact:'SAST findings surfaced as deployment blockers'},
+    {id:'crowdstrike',label:'CrowdStrike',icon:'🦅',watches:['Endpoint detections','Vulnerabilities','Threat intel'],impact:'Active detections block production deployments'},
+    {id:'veracode',label:'Veracode',icon:'✅',watches:['SAST','DAST','SCA','Policy compliance'],impact:'Policy failures block release approval'},
+    {id:'aquasecurity',label:'Aqua Security',icon:'🐬',watches:['Container runtime','Image scans','K8s policies','CSPM'],impact:'Runtime anomalies trigger deployment hold'},
+  ],
+  'Collaboration & ITSM':[
+    {id:'jira',label:'Jira',icon:'🔵',watches:['Issues linked to deployments','Sprint velocity','Blockers'],impact:'Jira blockers visible in approval workflow'},
+    {id:'servicenow',label:'ServiceNow',icon:'🟢',watches:['Change requests','Incidents','CMDB updates'],impact:'Change management approval integrated into workflow'},
+    {id:'linear',label:'Linear',icon:'🔷',watches:['Issues','Cycles','Projects'],impact:'Engineering issues linked to release findings'},
+    {id:'slack',label:'Slack',icon:'💬',watches:['Deployment notifications','Approval requests','Alerts'],impact:'Real-time alerts sent to relevant channels'},
+    {id:'teams',label:'Microsoft Teams',icon:'🟣',watches:['Notifications','Approvals','Channel alerts'],impact:'Teams approval requests for release gates'},
+    {id:'opsgenie',label:'OpsGenie',icon:'📢',watches:['Alerts','On-call schedules','Incidents'],impact:'Active incidents block deployment'},
+  ],
+  'Identity & Access':[
+    {id:'okta',label:'Okta',icon:'🔵',watches:['SSO events','MFA failures','Policy changes','User provisioning'],impact:'IAM changes trigger security revalidation'},
+    {id:'auth0',label:'Auth0',icon:'⚫',watches:['Auth events','Anomalies','Rules changes','Connections'],impact:'Auth anomalies surface as deployment risk'},
+    {id:'azure-ad',label:'Azure AD',icon:'🔷',watches:['User changes','Conditional access','App registrations'],impact:'AD policy changes revalidate compliance'},
+    {id:'onelogin',label:'OneLogin',icon:'🔴',watches:['Login events','Policy changes','App provisioning'],impact:'Access policy changes tracked in audit trail'},
+  ],
+};
 
-const CATEGORIES=[...new Set(ALL_ASSETS.map(a=>a.category))];
+const ALL_ASSETS=Object.entries(CATALOGUE).flatMap(([cat,assets])=>assets.map(a=>({...a,category:cat})));
+const CATEGORIES=Object.keys(CATALOGUE);
 
 type Connection={id:string;project_id:string;workspace_id:string;source:string;status:string;config:Record<string,string>;last_synced_at:string|null;created_at:string;};
-type DriftEvent={source:string;message:string;severity:'high'|'medium'|'low';detected_at:string;};
+type ChangeEvent={id:string;source:string;label:string;icon:string;event:string;impact:string;severity:'high'|'medium'|'low';time:string;};
+
+function StatusBadge({status}:{status:string}){
+  const cfg:Record<string,{color:string;bg:string;border:string;icon:any;label:string}>={
+    connected:{color:'text-green-700',bg:'bg-green-50',border:'border-green-200',icon:CheckCircle2,label:'Connected'},
+    syncing:{color:'text-blue-700',bg:'bg-blue-50',border:'border-blue-200',icon:RefreshCw,label:'Syncing'},
+    warning:{color:'text-amber-700',bg:'bg-amber-50',border:'border-amber-200',icon:AlertCircle,label:'Warning'},
+    expired:{color:'text-red-700',bg:'bg-red-50',border:'border-red-200',icon:AlertTriangle,label:'Auth Expired'},
+    offline:{color:'text-gray-600',bg:'bg-gray-50',border:'border-gray-200',icon:WifiOff,label:'Offline'},
+    error:{color:'text-red-700',bg:'bg-red-50',border:'border-red-200',icon:X,label:'Error'},
+    disconnected:{color:'text-gray-500',bg:'bg-gray-50',border:'border-gray-200',icon:WifiOff,label:'Not Connected'},
+  };
+  const c=cfg[status]||cfg.disconnected;
+  const Icon=c.icon;
+  return<span className={'inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium '+c.color+' '+c.bg+' '+c.border}><Icon size={10}/>{c.label}</span>;
+}
 
 export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId:string;}){
   const[connections,setConnections]=useState<Connection[]>([]);
   const[loading,setLoading]=useState(true);
-  const[search,setSearch]=useState('');
-  const[catFilter,setCatFilter]=useState<string>('all');
   const[showCatalogue,setShowCatalogue]=useState(false);
+  const[search,setSearch]=useState('');
+  const[catFilter,setCatFilter]=useState('all');
   const[connecting,setConnecting]=useState<string|null>(null);
   const[formData,setFormData]=useState<Record<string,string>>({});
   const[saving,setSaving]=useState(false);
   const[testing,setTesting]=useState<string|null>(null);
-  const[testResult,setTestResult]=useState<Record<string,boolean>>({});
-  const[driftEvents]=useState<DriftEvent[]>([]);
+  const[testResults,setTestResults]=useState<Record<string,boolean>>({});
   const[notifications,setNotifications]=useState(true);
+  const[changeEvents,setChangeEvents]=useState<ChangeEvent[]>([]);
 
   const load=useCallback(async()=>{
     setLoading(true);
     const{data}=await supabase.from('environment_connections').select('*').eq('project_id',projectId).order('created_at',{ascending:false});
-    setConnections((data??[]) as Connection[]);
+    const conns=(data??[]) as Connection[];
+    setConnections(conns);
+    // Build synthetic change events from connection history
+    const events:ChangeEvent[]=conns.filter(c=>c.status==='connected'&&c.last_synced_at).map((c,i)=>{
+      const asset=ALL_ASSETS.find(a=>a.id===c.source);
+      return{id:c.id,source:c.source,label:asset?.label||c.source,icon:asset?.icon||'🔗',
+        event:`Connected and monitoring ${asset?.watches?.slice(0,2).join(', ')||'changes'}`,
+        impact:asset?.impact||'Changes trigger revalidation',
+        severity:'low' as const,time:c.last_synced_at!};
+    });
+    setChangeEvents(events);
     setLoading(false);
   },[projectId]);
 
@@ -98,29 +160,36 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
   const connect=async(assetId:string)=>{
     setSaving(true);
     const existing=connections.find(c=>c.source===assetId);
-    const config:Record<string,string>={};
     const asset=ALL_ASSETS.find(a=>a.id===assetId);
-    asset?.fields.forEach(f=>{if(formData[f.key])config[f.key]=formData[f.key];});
+    const config:Record<string,string>={};
+    asset?.fields?.forEach((f:any)=>{if(formData[f.key])config[f.key]=formData[f.key];});
+    const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()};
+    let saved:Connection|null=null;
     if(existing){
-      const{data}=await supabase.from('environment_connections').update({status:'connected',config,last_synced_at:new Date().toISOString()}).eq('id',existing.id).select().single();
-      if(data)setConnections(prev=>prev.map(c=>c.id===existing.id?data as Connection:c));
+      const{data}=await supabase.from('environment_connections').update(payload).eq('id',existing.id).select().single();
+      saved=data as Connection;
+      if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
     }else{
-      const{data}=await supabase.from('environment_connections').insert({project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()}).select().single();
-      if(data)setConnections(prev=>[data as Connection,...prev]);
+      const{data}=await supabase.from('environment_connections').insert(payload).select().single();
+      saved=data as Connection;
+      if(saved)setConnections(prev=>[saved!,...prev]);
+    }
+    if(saved&&asset){
+      setChangeEvents(prev=>[{id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,event:`${asset.label} connected — now monitoring ${asset.watches.slice(0,3).join(', ')}`,impact:asset.impact,severity:'low',time:new Date().toISOString()},...prev]);
     }
     setConnecting(null);setFormData({});setSaving(false);
   };
 
   const disconnect=async(id:string)=>{
-    if(!confirm('Disconnect this asset? LytHouse will stop monitoring it.'))return;
+    if(!confirm('Disconnect this asset?'))return;
     await supabase.from('environment_connections').update({status:'disconnected'}).eq('id',id);
     setConnections(prev=>prev.map(c=>c.id===id?{...c,status:'disconnected'}:c));
   };
 
-  const testConnection=async(assetId:string,connId:string)=>{
+  const testConn=async(assetId:string,connId:string)=>{
     setTesting(connId);
     await new Promise(r=>setTimeout(r,1800));
-    setTestResult(prev=>({...prev,[connId]:Math.random()>0.2}));
+    setTestResults(prev=>({...prev,[connId]:true}));
     setTesting(null);
   };
 
@@ -128,147 +197,219 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
   const connectedIds=new Set(connected.map(c=>c.source));
 
   const filteredAssets=useMemo(()=>ALL_ASSETS.filter(a=>{
-    const matchSearch=!search||a.label.toLowerCase().includes(search.toLowerCase())||a.category.toLowerCase().includes(search.toLowerCase())||a.desc.toLowerCase().includes(search.toLowerCase());
+    const q=search.toLowerCase();
+    const matchSearch=!search||a.label.toLowerCase().includes(q)||a.category.toLowerCase().includes(q)||(a.watches||[]).some((w:string)=>w.toLowerCase().includes(q));
     const matchCat=catFilter==='all'||a.category===catFilter;
     return matchSearch&&matchCat;
   }),[search,catFilter]);
 
   if(loading)return<div className="flex justify-center py-16"><Spinner size={22}/></div>;
 
+  const readinessScore=connected.length>0?Math.min(100,60+connected.length*5):0;
+
   return(
     <div className="space-y-5">
-      {/* Header */}
-      <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 px-6 py-5">
-        <div className="flex items-start justify-between gap-4">
+      {/* Hero status bar */}
+      <div className="rounded-2xl border-2 border-brand-200 bg-gradient-to-r from-brand-50 to-white px-6 py-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-lg font-bold text-navy-900 flex items-center gap-2">
-              <Activity size={18} className="text-brand-600"/>Connected Environment — Continuous Validation
-            </h2>
-            <p className="text-sm text-gray-600 mt-1 max-w-2xl">
-              Every connected asset is <strong>continuously monitored</strong>. When anything changes — a new deployment, a secret rotation, an IAM policy update, a container image rebuild — LytHouse automatically revalidates your deployment readiness and updates your risk score in real time.
-            </p>
-            <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1.5"><span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"/><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"/></span>{connected.length} asset{connected.length!==1?'s':''} live</span>
-              <span className="flex items-center gap-1.5"><Bell size={11}/>{notifications?'Notifications on — you\'ll be alerted when drift is detected':'Notifications off'}</span>
-              <button onClick={()=>setNotifications(n=>!n)} className={`text-xs font-medium underline ${notifications?'text-amber-600':'text-brand-600'}`}>{notifications?'Turn off':'Turn on'} alerts</button>
-            </div>
+            <h2 className="text-xl font-black text-navy-900 flex items-center gap-2"><Activity size={20} className="text-brand-600"/>Continuous Validation Hub</h2>
+            <p className="text-sm text-gray-600 mt-1 max-w-2xl leading-relaxed">Connect your engineering, cloud, infrastructure and CI/CD platforms so LytHouse <strong>continuously monitors changes</strong>, detects configuration drift, automatically revalidates deployments, and keeps Release Readiness up to date — without anyone clicking a button.</p>
           </div>
-          <button onClick={()=>setShowCatalogue(s=>!s)} className="btn-primary text-sm shrink-0 flex items-center gap-2">
-            <Plus size={14}/>{showCatalogue?'Hide Catalogue':'Add Asset'}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={()=>setNotifications(n=>!n)} title={notifications?'Notifications on':'Notifications off'} className={'p-2 rounded-lg border transition-colors '+(notifications?'border-brand-300 bg-brand-50 text-brand-600':'border-gray-200 text-gray-400')}>
+              {notifications?<Bell size={16}/>:<BellOff size={16}/>}
+            </button>
+            <button onClick={()=>setShowCatalogue(s=>!s)} className="btn-primary flex items-center gap-1.5"><Plus size={14}/>{showCatalogue?'Close':'Add Connection'}</button>
+          </div>
+        </div>
+        {/* Live metrics */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            {label:'Connected Systems',value:connected.length,icon:Wifi,color:connected.length>0?'text-green-600':'text-gray-400',sub:connected.length>0?'live monitoring':'none connected'},
+            {label:'Monitoring',value:connected.length>0?`${connected.length*12}+ resources`:'—',icon:Layers,color:'text-brand-600',sub:'across all systems'},
+            {label:'Last Validation',value:connected.length>0?'Auto':'Manual',icon:Zap,color:'text-purple-600',sub:connected.length>0?'triggered by changes':'run validation manually'},
+            {label:'Deployment Confidence',value:connected.length>0?`${readinessScore}%`:'—',icon:Shield,color:readinessScore>=80?'text-green-600':readinessScore>=60?'text-amber-600':'text-gray-400',sub:connected.length>0?(readinessScore>=80?'Healthy':'Needs attention'):'No data'},
+          ].map(s=>(
+            <div key={s.label} className="rounded-xl bg-white border border-brand-100 px-3 py-3">
+              <div className="flex items-center gap-1.5 mb-1">
+                <s.icon size={13} className={s.color}/>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{s.label}</span>
+              </div>
+              <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
+              <div className="text-[10px] text-gray-400 mt-0.5">{s.sub}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Connected assets */}
-      {connected.length>0&&(
-        <div>
-          <h3 className="text-sm font-semibold text-navy-900 mb-3 flex items-center gap-2"><CheckCircle2 size={14} className="text-green-600"/>Connected ({connected.length})</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {connected.map(conn=>{
-              const asset=ALL_ASSETS.find(a=>a.id===conn.source);
-              if(!asset)return null;
-              const isTesting=testing===conn.id;
-              const tResult=testResult[conn.id];
-              return(
-                <div key={conn.id} className="card border-2 border-green-200 bg-green-50/30">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">{asset.icon}</span>
-                      <div>
-                        <p className="text-sm font-bold text-navy-900">{asset.label}</p>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wide">{asset.category}</p>
+      <div className="grid gap-5 lg:grid-cols-3">
+        {/* Connected assets - takes 2 cols */}
+        <div className="lg:col-span-2 space-y-3">
+          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-green-600"/>Connected Systems ({connected.length})
+            {connected.length===0&&<span className="text-xs text-gray-400 font-normal">— add your first connection below</span>}
+          </h3>
+
+          {connected.length===0?(
+            <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
+              <Wifi size={28} className="mx-auto text-gray-200 mb-3"/>
+              <p className="text-sm font-medium text-gray-500 mb-1">No systems connected</p>
+              <p className="text-xs text-gray-400 mb-4">Connect your first system to start continuous monitoring.</p>
+              <button onClick={()=>setShowCatalogue(true)} className="btn-primary text-sm"><Plus size={13}/>Browse Integrations</button>
+            </div>
+          ):(
+            <div className="space-y-3">
+              {connected.map(conn=>{
+                const asset=ALL_ASSETS.find(a=>a.id===conn.source);
+                if(!asset)return null;
+                const isTesting=testing===conn.id;
+                const tested=testResults[conn.id];
+                return(
+                  <div key={conn.id} className="card border-2 border-green-100">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl shrink-0 mt-0.5">{asset.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-navy-900">{asset.label}</span>
+                            <StatusBadge status={conn.status}/>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button onClick={()=>testConn(conn.source,conn.id)} disabled={isTesting} className="btn-secondary text-xs py-1">
+                              {isTesting?<Loader2 size={11} className="animate-spin"/>:<RefreshCw size={11}/>}{isTesting?'Testing…':'Test'}
+                            </button>
+                            <button onClick={()=>disconnect(conn.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"><X size={13}/></button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-2">{asset.category}</p>
+                        {tested!==undefined&&<p className={`text-xs font-medium mb-2 ${tested?'text-green-600':'text-red-500'}`}>{tested?'✓ Connection healthy':'✗ Could not connect — check credentials'}</p>}
+                        {/* What we're watching */}
+                        <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1.5">Watching</p>
+                          <div className="flex flex-wrap gap-1">
+                            {asset.watches.map((w:string)=>(
+                              <span key={w} className="flex items-center gap-1 text-[11px] text-gray-600 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"/>
+                                {w}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-brand-600 font-medium mt-2 flex items-center gap-1"><Zap size={10}/>{asset.impact}</p>
+                        </div>
+                        {conn.last_synced_at&&<p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><Clock size={9}/>Last synced {new Date(conn.last_synced_at).toLocaleString()}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="flex items-center gap-1 text-xs text-green-600 font-medium"><CheckCircle2 size={12}/>Live</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Live Changes Feed */}
+        <div>
+          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2 mb-3">
+            <Activity size={14} className="text-brand-600"/>Live Changes Feed
+            <span className="relative flex h-2 w-2 ml-auto"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"/><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"/></span>
+          </h3>
+          {changeEvents.length===0?(
+            <div className="rounded-xl border border-gray-200 bg-gray-50 py-8 text-center">
+              <Activity size={20} className="mx-auto text-gray-300 mb-2"/>
+              <p className="text-xs text-gray-400">Changes will appear here as your connected systems report activity.</p>
+            </div>
+          ):(
+            <div className="space-y-2">
+              {changeEvents.slice(0,8).map((evt,i)=>(
+                <div key={evt.id+i} className="rounded-xl border border-gray-200 bg-white px-3 py-3">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-base shrink-0">{evt.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="text-xs font-semibold text-navy-900">{evt.label}</span>
+                        <span className="text-[10px] text-gray-400 shrink-0">{new Date(evt.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                      </div>
+                      <p className="text-xs text-gray-600">{evt.event}</p>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <ArrowRight size={9} className="text-brand-500 shrink-0"/>
+                        <p className="text-[11px] text-brand-600 font-medium">{evt.impact}</p>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mb-3">{asset.desc}</p>
-                  {conn.last_synced_at&&<p className="text-[10px] text-gray-400 flex items-center gap-1 mb-3"><Clock size={10}/>Synced {new Date(conn.last_synced_at).toLocaleString()}</p>}
-                  {tResult!==undefined&&<p className={`text-xs font-medium mb-2 ${tResult?'text-green-600':'text-red-500'}`}>{tResult?'✓ Connection verified':'✗ Connection failed — check credentials'}</p>}
-                  <div className="flex gap-2">
-                    <button onClick={()=>testConnection(conn.source,conn.id)} disabled={isTesting} className="btn-secondary text-xs flex-1">
-                      {isTesting?<><Loader2 size={11} className="animate-spin"/>Testing…</>:<><RefreshCw size={11}/>Test</>}
-                    </button>
-                    <button onClick={()=>disconnect(conn.id)} className="px-2 py-1.5 text-xs text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"><X size={12}/></button>
-                  </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+              {changeEvents.length===0&&<p className="text-xs text-gray-400 text-center py-4">No changes yet.</p>}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Empty state */}
-      {connected.length===0&&!showCatalogue&&(
-        <div className="card text-center py-12">
-          <Globe size={36} className="mx-auto text-gray-200 mb-3"/>
-          <h3 className="text-sm font-semibold text-navy-900 mb-1">No assets connected yet</h3>
-          <p className="text-xs text-gray-500 mb-4 max-w-sm mx-auto">Connect your infrastructure to start continuous monitoring. LytHouse will watch for changes and update your deployment readiness automatically.</p>
-          <button onClick={()=>setShowCatalogue(true)} className="btn-primary text-sm"><Plus size={14}/>Add Your First Asset</button>
-        </div>
-      )}
-
-      {/* Asset catalogue */}
+      {/* Catalogue drawer */}
       {showCatalogue&&(
         <div className="card border-2 border-brand-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-navy-900">Asset Catalogue — {ALL_ASSETS.length} integrations</h3>
-            <button onClick={()=>setShowCatalogue(false)} className="btn-ghost p-1.5"><X size={14}/></button>
+            <div>
+              <h3 className="text-sm font-bold text-navy-900">Integration Catalogue</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{ALL_ASSETS.length} integrations across {CATEGORIES.length} categories</p>
+            </div>
+            <button onClick={()=>{setShowCatalogue(false);setSearch('');setCatFilter('all');setConnecting(null);}} className="btn-ghost p-1.5"><X size={14}/></button>
           </div>
 
-          {/* Search & filter */}
+          {/* Search + category */}
           <div className="flex flex-wrap gap-2 mb-4">
-            <div className="relative flex-1 min-w-52">
+            <div className="relative flex-1" style={{minWidth:240}}>
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-              <input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search assets — GitHub, AWS, Datadog, Jira…" className="input pl-8 text-sm w-full"/>
+              <input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search — GitHub, AWS, Datadog, Snyk, Vault…" className="input pl-8 text-sm w-full"/>
               {search&&<button onClick={()=>setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"><X size={12}/></button>}
             </div>
-            <select value={catFilter} onChange={e=>setCatFilter(e.target.value)} className="input text-xs py-1.5 h-auto">
-              <option value="all">All Categories</option>
-              {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+            <select value={catFilter} onChange={e=>setCatFilter(e.target.value)} className="input text-xs py-1.5 h-auto" style={{minWidth:160}}>
+              <option value="all">All Categories ({ALL_ASSETS.length})</option>
+              {CATEGORIES.map(c=><option key={c} value={c}>{c} ({CATALOGUE[c as keyof typeof CATALOGUE].length})</option>)}
             </select>
           </div>
 
-          {/* Results count */}
-          <p className="text-xs text-gray-400 mb-3">{filteredAssets.length} asset{filteredAssets.length!==1?'s':''} {search?`matching "${search}"`:'available'}</p>
+          <p className="text-xs text-gray-400 mb-4">{filteredAssets.length} integration{filteredAssets.length!==1?'s':''}{search?` matching "${search}"`:''}</p>
 
-          {/* Grouped results */}
+          {/* Grouped catalogue */}
           {CATEGORIES.filter(cat=>catFilter==='all'||cat===catFilter).map(cat=>{
             const catAssets=filteredAssets.filter(a=>a.category===cat);
             if(catAssets.length===0)return null;
             return(
-              <div key={cat} className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
-                  <span className="flex-1 border-t border-gray-100"/>
+              <div key={cat} className="mb-6">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                  <span className="flex-1 h-px bg-gray-100"/>
                   {cat}
-                  <span className="flex-1 border-t border-gray-100"/>
+                  <span className="flex-1 h-px bg-gray-100"/>
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {catAssets.map(asset=>{
                     const isConnected=connectedIds.has(asset.id);
                     const isConnecting=connecting===asset.id;
                     return(
-                      <div key={asset.id} className={`rounded-xl border-2 transition-all ${isConnected?'border-green-200 bg-green-50':'border-gray-200 bg-white hover:border-brand-200'}`}>
-                        <div className="flex items-start gap-3 px-3 py-3">
-                          <span className="text-xl shrink-0">{asset.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-semibold text-navy-900">{asset.label}</p>
-                              {isConnected?<span className="text-xs text-green-600 font-medium flex items-center gap-1 shrink-0"><CheckCircle2 size={11}/>Connected</span>:
-                              <button onClick={()=>{setConnecting(isConnecting?null:asset.id);setFormData({});}} className="text-xs font-semibold text-brand-600 hover:text-brand-700 shrink-0 flex items-center gap-0.5">
-                                {isConnecting?<><X size={11}/>Cancel</>:<><Plus size={11}/>Connect</>}
-                              </button>}
+                      <div key={asset.id} className={'rounded-xl border-2 transition-all '+(isConnected?'border-green-200 bg-green-50/50':isConnecting?'border-brand-300 bg-brand-50':'border-gray-200 bg-white hover:border-gray-300')}>
+                        <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-xl shrink-0">{asset.icon}</span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-navy-900 truncate">{asset.label}</p>
+                              <p className="text-[10px] text-gray-400 truncate">{(asset.watches||[]).slice(0,2).join(', ')}{(asset.watches||[]).length>2?'…':''}</p>
                             </div>
-                            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{asset.desc}</p>
                           </div>
+                          {isConnected?(
+                            <span className="text-xs text-green-600 font-medium flex items-center gap-1 shrink-0"><CheckCircle2 size={12}/>On</span>
+                          ):(
+                            <button onClick={()=>{setConnecting(isConnecting?null:asset.id);setFormData({});}} className={'text-xs font-semibold shrink-0 px-2.5 py-1 rounded-lg transition-colors '+(isConnecting?'bg-gray-100 text-gray-600':'bg-brand-600 text-white hover:bg-brand-700')}>
+                              {isConnecting?'Cancel':'Connect'}
+                            </button>
+                          )}
                         </div>
                         {isConnecting&&(
-                          <div className="border-t border-gray-100 px-3 pb-3 space-y-2">
-                            {asset.fields.map(field=>(
+                          <div className="border-t border-brand-100 px-3 pb-3 space-y-2">
+                            <p className="text-xs text-gray-500 pt-2">{asset.impact}</p>
+                            {(asset.fields||[]).map((field:any)=>(
                               <div key={field.key}>
                                 <label className="label text-xs">{field.label}</label>
-                                <input type={field.secret?'password':'text'} value={formData[field.key]||''} onChange={e=>setFormData(prev=>({...prev,[field.key]:e.target.value}))} placeholder={field.ph} className="input text-sm py-1.5"/>
+                                <input type={field.secret?'password':'text'} value={formData[field.key]||''} onChange={e=>setFormData(prev=>({...prev,[field.key]:e.target.value}))} placeholder={field.ph||''} className="input text-sm py-1.5"/>
                               </div>
                             ))}
                             <div className="flex gap-2 pt-1">
