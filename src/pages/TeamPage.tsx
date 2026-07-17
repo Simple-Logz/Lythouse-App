@@ -59,10 +59,19 @@ export function TeamPage(){
     const wid=wsId();
     if(!wid){setLoading(false);return;}
     const[mRes,gRes]=await Promise.all([
-      supabase.from('workspace_members').select('*,profiles(email,full_name)').eq('workspace_id',wid).order('created_at',{ascending:true}),
+      supabase.from('workspace_members').select('*').eq('workspace_id',wid).order('created_at',{ascending:true}),
       supabase.from('workspace_groups').select('*').eq('workspace_id',wid).order('created_at',{ascending:true}),
     ]);
-    setMembers(mRes.data??[]);
+    // Load profiles separately for each member
+    const memberData=mRes.data??[];
+    if(memberData.length>0){
+      const userIds=memberData.map((m:any)=>m.user_id);
+      const{data:profileData}=await supabase.from('profiles').select('id,email,full_name').in('id',userIds);
+      const profileMap=Object.fromEntries((profileData??[]).map((p:any)=>[p.id,p]));
+      setMembers(memberData.map((m:any)=>({...m,profiles:profileMap[m.user_id]??null})));
+    } else {
+      setMembers([]);
+    }
     const grps=gRes.data??[];
     setGroups(grps);
     if(grps.length>0){
@@ -78,15 +87,14 @@ export function TeamPage(){
     const wid=wsId();
     if(!wid||!inviteEmail.trim())return;
     setInviting2(true);setInviteError('');
-    const{data:profile,error:pErr}=await supabase.from('profiles').select('id').eq('email',inviteEmail.trim()).maybeSingle();
+    const{data:profile,error:pErr}=await supabase.from('profiles').select('id,email,full_name').eq('email',inviteEmail.trim()).maybeSingle();
     if(pErr||!profile){
-      // If user not found, still create a pending invite record if possible
       setInviteError('No LytHouse account found for that email. They need to sign up first.');
       setInviting2(false);return;
     }
-    const{data,error:iErr}=await supabase.from('workspace_members').insert({workspace_id:wid,user_id:profile.id,role:inviteRole}).select('*,profiles(email,full_name)').single();
+    const{data,error:iErr}=await supabase.from('workspace_members').insert({workspace_id:wid,user_id:profile.id,role:inviteRole}).select('*').single();
     if(iErr){setInviteError(iErr.message.includes('duplicate')?'This person is already a member.':iErr.message);setInviting2(false);return;}
-    setMembers(prev=>[...prev,data]);
+    setMembers(prev=>[...prev,{...data,profiles:{email:profile.email,full_name:profile.full_name}}]);
     setInviteEmail('');setInviteRole('member');setInviting(false);setInviteDone(true);
     setTimeout(()=>setInviteDone(false),3000);
     setInviting2(false);
