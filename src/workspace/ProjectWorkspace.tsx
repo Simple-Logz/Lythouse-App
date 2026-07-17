@@ -238,12 +238,12 @@ return<div>
 
 {/* Metadata — hide on full-screen tabs */}
 {tab!=='ai-assistant'&&tab!=='files'&&<div className="card mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-  <Meta icon={<GitFork size={14}/>} label="Git URL" value={project.git_url||'—'}/>
-  <Meta icon={<GitBranch size={14}/>} label="Branch" value={project.git_branch||'—'}/>
-  <Meta icon={<Code size={14}/>} label="Language" value={project.language||'—'}/>
+  <Meta icon={<GitFork size={14}/>} label="Git URL" value={<span className="truncate font-mono text-xs">{project.git_url||'—'}</span>}/>
+  <Meta icon={<GitBranch size={14}/>} label="Branch" value={project.git_branch||'main'}/>
+  <Meta icon={<Code size={14}/>} label="Language" value={project.language||(validations.find(v=>v.status==='completed')?.summary?.match(/language[:\s]+(\w+)/i)?.[1])||'Auto-detecting…'}/>
   <Meta icon={<Boxes size={14}/>} label="Framework" value={project.framework||'—'}/>
-  <Meta icon={<FolderGit2 size={14}/>} label="Created" value={new Date(project.created_at).toLocaleDateString()}/>
-  <Meta icon={<ShieldCheck size={14}/>} label="Status" value={<span className="capitalize">{project.status}</span>}/>
+  <Meta icon={<FolderGit2 size={14}/>} label="Owner" value={creatorName||'—'}/>
+  <Meta icon={<ShieldCheck size={14}/>} label="Status" value={<span className="capitalize text-green-600 font-semibold">{project.status}</span>}/>
 </div>}
 
 {/* Tabs */}
