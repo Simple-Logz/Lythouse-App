@@ -35,6 +35,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
 const{navigate}=useRouter();
 const[loading,setLoading]=useState(true);
 const[project,setProject]=useState<Project|null>(null);
+const[creatorName,setCreatorName]=useState<string>('');
 const[tab,setTab]=useState<Tab>('files');
 const[validations,setValidations]=useState<Validation[]>([]);
 const[stepsByVid,setStepsByVid]=useState<Record<string,ValidationStep[]>>({});
