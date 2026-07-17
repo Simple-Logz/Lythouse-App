@@ -44,12 +44,6 @@ Deno.serve(async (req: Request) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!project.github_token) {
-      return new Response(JSON.stringify({ error: "No GitHub token configured" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const parsed = parseGitUrl(project.git_url);
     if (!parsed) {
       return new Response(JSON.stringify({ error: "Invalid git URL" }), {
@@ -58,13 +52,16 @@ Deno.serve(async (req: Request) => {
     }
 
     const { owner, repo } = parsed;
-    const token = project.github_token;
+    const token = project.github_token; // optional for public repos
     const ref = branch || project.git_branch;
     const apiBase = getApiBase(project.git_url);
     const isGitLab = apiBase.includes("gitlab");
+    // Build headers — token is optional, public repos work without it
     const headers: Record<string, string> = isGitLab
-      ? { "PRIVATE-TOKEN": token, "Content-Type": "application/json" }
-      : { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "User-Agent": "sandbox-ai" };
+      ? (token ? { "PRIVATE-TOKEN": token, "Content-Type": "application/json" } : { "Content-Type": "application/json" })
+      : (token
+          ? { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "User-Agent": "lythouse-app" }
+          : { Accept: "application/vnd.github+json", "User-Agent": "lythouse-app" });
 
     if (operation === "list") {
       if (isGitLab) {
