@@ -1,6 +1,19 @@
 import{useState}from'react';
 import{PageHeader,EmptyState}from'../lib/ui';
-import{Activity,Plus,X,Loader as Loader2,Zap,Users,Clock,Target,AlertTriangle,CheckCircle2,BarChart3}from'lucide-react';
+import{Activity,Plus,X,Loader as Loader2,Zap,Users,Clock,Target,AlertTriangle,CheckCircle2,BarChart3,HelpCircle}from'lucide-react';
+
+
+function Tip({text}:{text:string}){
+  const[show,setShow]=useState(false);
+  return<span className="relative inline-flex ml-1 align-middle">
+    <button type="button" onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)} onClick={()=>setShow(s=>!s)} className="text-gray-400 hover:text-brand-500 transition-colors">
+      <HelpCircle size={13}/>
+    </button>
+    {show&&<span className="absolute left-5 top-0 z-50 w-56 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-lg leading-relaxed" style={{minWidth:200}}>
+      {text}
+    </span>}
+  </span>;
+}
 
 type TestStatus='idle'|'running'|'completed'|'failed';
 type TestRun={id:string;name:string;concurrentUsers:number;targetRps:number;duration:number;latencySla:number;status:TestStatus;p95:number|null;p99:number|null;actualRps:number|null;errorRate:number|null;createdAt:string;};
@@ -102,32 +115,32 @@ export function LoadTestingPage(){
   <div className="w-full max-w-lg animate-scale-in rounded-xl bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
     <div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold">Configure Load Test</h2><button onClick={()=>setCreating(false)} className="btn-ghost p-1"><X size={16}/></button></div>
     <div className="space-y-3">
-      <div><label className="label">Test name</label><input className="input" value={form.name} onChange={e=>f('name',e.target.value)} placeholder="e.g. Production Baseline"/></div>
+      <div><label className="label">Test name<Tip text="A name to identify this test run later. Example: 'Black Friday Simulation' or 'Production Baseline'."/></label><input className="input" value={form.name} onChange={e=>f('name',e.target.value)} placeholder="e.g. Production Baseline"/></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="label">Concurrent users</label><input className="input" type="number" value={form.concurrentUsers} onChange={e=>f('concurrentUsers',e.target.value)} placeholder="500"/></div>
-        <div><label className="label">Target RPS</label><input className="input" type="number" value={form.targetRps} onChange={e=>f('targetRps',e.target.value)} placeholder="2000"/></div>
+        <div><label className="label">Concurrent users<Tip text="How many people using your app at the same time. 500 means 500 users hitting your server simultaneously."/></label><input className="input" type="number" value={form.concurrentUsers} onChange={e=>f('concurrentUsers',e.target.value)} placeholder="500"/></div>
+        <div><label className="label">Target RPS<Tip text="Requests Per Second — how many times per second your server is hit. 2000 RPS is a heavy load for most apps."/></label><input className="input" type="number" value={form.targetRps} onChange={e=>f('targetRps',e.target.value)} placeholder="2000"/></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="label">Duration (seconds)</label><input className="input" type="number" value={form.duration} onChange={e=>f('duration',e.target.value)} placeholder="300"/></div>
-        <div><label className="label">Latency SLA (ms)</label><input className="input" type="number" value={form.latencySla} onChange={e=>f('latencySla',e.target.value)} placeholder="200"/></div>
+        <div><label className="label">Duration (seconds)<Tip text="How long the test runs. 300 seconds = 5 minutes. Longer tests reveal problems that only appear under sustained load."/></label><input className="input" type="number" value={form.duration} onChange={e=>f('duration',e.target.value)} placeholder="300"/></div>
+        <div><label className="label">Latency SLA (ms)<Tip text="Your speed promise. 200ms means 95% of requests must respond within 200 milliseconds. If they don't, the test fails."/></label><input className="input" type="number" value={form.latencySla} onChange={e=>f('latencySla',e.target.value)} placeholder="200"/></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="label">Ramp-up (seconds)</label><input className="input" type="number" value={form.rampUp} onChange={e=>f('rampUp',e.target.value)} placeholder="60"/></div>
-        <div><label className="label">Ramp-down (seconds)</label><input className="input" type="number" value={form.rampDown} onChange={e=>f('rampDown',e.target.value)} placeholder="30"/></div>
+        <div><label className="label">Ramp-up (seconds)<Tip text="How gradually users are added at the start. 60 seconds means traffic builds slowly over 1 minute, mimicking real traffic patterns."/></label><input className="input" type="number" value={form.rampUp} onChange={e=>f('rampUp',e.target.value)} placeholder="60"/></div>
+        <div><label className="label">Ramp-down (seconds)<Tip text="How gradually traffic reduces at the end. Helps detect memory leaks that only appear when load drops."/></label><input className="input" type="number" value={form.rampDown} onChange={e=>f('rampDown',e.target.value)} placeholder="30"/></div>
       </div>
-      <div><label className="label">Region</label>
+      <div><label className="label">Region<Tip text="Where the simulated traffic comes from. Choose the region closest to your real users for the most accurate results."/></label>
         <select className="input" value={form.region} onChange={e=>f('region',e.target.value)}>
           {['us-east-1','us-west-2','eu-west-1','eu-central-1','ap-southeast-1','ap-northeast-1'].map(r=><option key={r}>{r}</option>)}
         </select>
       </div>
-      <div><label className="label">Authentication</label>
+      <div><label className="label">Authentication<Tip text="Most enterprise APIs require a login token. This lets the load test authenticate as a real user so it can access protected endpoints."/></label>
         <select className="input" value={form.authType} onChange={e=>f('authType',e.target.value)}>
           <option value="none">None</option><option value="jwt">JWT / Bearer Token</option><option value="api-key">API Key</option><option value="oauth">OAuth 2.0 Client Credentials</option>
         </select>
       </div>
       {form.authType==='jwt'&&<div><label className="label">JWT Token</label><input className="input" type="password" value={form.jwtToken} onChange={e=>f('jwtToken',e.target.value)} placeholder="eyJ..."/></div>}
       <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-        <input type="checkbox" checked={form.chaos} onChange={e=>setForm(p=>({...p,chaos:e.target.checked}))}/> Inject chaos during test (CPU spikes, network latency)
+        <input type="checkbox" checked={form.chaos} onChange={e=>setForm(p=>({...p,chaos:e.target.checked}))}/> Inject chaos during test<Tip text="Deliberately introduces problems (CPU spikes, network delays) during the test to see if your app recovers gracefully under stress."/>
       </label>
     </div>
     <div className="mt-5 flex justify-end gap-2">
