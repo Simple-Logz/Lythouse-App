@@ -496,6 +496,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
   const readinessScore=connected.length>0?Math.min(100,60+connected.length*5):0;
 
   return(
+    <>
     <div className="space-y-5">
       {/* Hero status bar */}
       <div className="rounded-2xl border-2 border-brand-200 bg-gradient-to-r from-brand-50 to-white px-6 py-5">
@@ -740,5 +741,6 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
         onRetest={(id)=>{setTestResults(prev=>({...prev,[id]:true}));}}
       />
     )}
+    </>
   );
 }
