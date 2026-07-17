@@ -18,8 +18,10 @@ const[githubToken,setGithubToken]=useState('');
 const[ownerEmail,setOwnerEmail]=useState('');
 const[saving,setSaving]=useState(false);
 const[error,setError]=useState('');
+const[workspaces,setWorkspaces]=useState<{id:string;name:string}[]>([]);
+const[selectedWs,setSelectedWs]=useState(localStorage.getItem('sandbox.activeWs')||'');
 
-const wsId=()=>localStorage.getItem('sandbox.activeWs');
+const wsId=()=>selectedWs||localStorage.getItem('sandbox.activeWs')||'';
 
 const load=async()=>{
   setLoading(true);
@@ -31,7 +33,16 @@ const load=async()=>{
   setLoading(false);
 };
 
-useEffect(()=>{load();},[]);
+useEffect(()=>{
+  load();
+  // Load all workspaces for the selector
+  supabase.from('workspaces').select('id,name').order('created_at',{ascending:false}).then(({data})=>{
+    setWorkspaces(data??[]);
+    if(!selectedWs&&data&&data.length>0){
+      setSelectedWs(data[0].id);
+    }
+  });
+},[]);
 
 const createProject=async()=>{
   const wid=wsId();
@@ -103,6 +114,11 @@ return<div>
 <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">New project</h2><button onClick={resetForm} className="btn-ghost p-1"><X size={16}/></button></div>
 {error&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{error}</div>}
 
+<label className="label">Workspace <span className="text-danger-600">*</span></label>
+<select className="input mb-3" value={selectedWs} onChange={e=>{setSelectedWs(e.target.value);localStorage.setItem('sandbox.activeWs',e.target.value);}}>
+  {workspaces.length===0&&<option value="">No workspaces — create one first</option>}
+  {workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
+</select>
 <label className="label">Name <span className="text-danger-600">*</span></label>
 <input className="input mb-3" value={name} onChange={e=>{setName(e.target.value);setError('');}} placeholder="My project"/>
 
