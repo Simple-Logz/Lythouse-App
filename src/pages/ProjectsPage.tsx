@@ -14,6 +14,7 @@ const[desc,setDesc]=useState('');
 const[gitUrl,setGitUrl]=useState('');
 const[gitBranch,setGitBranch]=useState('main');
 const[repoFolder,setRepoFolder]=useState('');
+const[gitProvider,setGitProvider]=useState('github');
 const[githubToken,setGithubToken]=useState('');
 const[ownerEmail,setOwnerEmail]=useState('');
 const[saving,setSaving]=useState(false);
@@ -120,8 +121,31 @@ return<div>
 <label className="label">Description</label>
 <textarea className="input mb-3" rows={2} value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Optional"/>
 
-<label className="label">Git URL <span className="text-danger-600">*</span></label>
-<input className="input mb-3" value={gitUrl} onChange={e=>{setGitUrl(e.target.value);setError('');}} placeholder="https://github.com/org/repo"/>
+<label className="label">Repository provider <span className="text-danger-600">*</span></label>
+<div className="grid grid-cols-3 gap-2 mb-3">
+{[
+  {id:'github',name:'GitHub',color:'#24292e',bg:'#f6f8fa',border:'#d0d7de',svg:'M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z'},
+  {id:'gitlab',name:'GitLab',color:'#FC6D26',bg:'#fdf6f0',border:'#FC6D26',svg:'M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 0 0-.867 0L16.418 9.45H7.582L4.918 1.263a.455.455 0 0 0-.867 0L1.386 9.45.044 13.587a.924.924 0 0 0 .331 1.023L12 23.054l11.625-8.444a.92.92 0 0 0 .33-1.023'},
+  {id:'bitbucket',name:'Bitbucket',color:'#0052CC',bg:'#f0f4ff',border:'#0052CC',svg:'M.778 1.213a.768.768 0 0 0-.768.892l3.263 19.81c.084.5.515.868 1.022.873H19.95a.772.772 0 0 0 .77-.646l3.27-20.03a.768.768 0 0 0-.768-.891zM14.52 15.53H9.522L8.17 8.466h7.561z'},
+  {id:'azure',name:'Azure DevOps',color:'#0078D4',bg:'#f0f8ff',border:'#0078D4',svg:'M0 17.182L2.538 20l8.347-7.767V20L24 12.909 13.2 4v3.636z'},
+  {id:'onprem-git',name:'Self-hosted Git',color:'#6B7280',bg:'#f9fafb',border:'#d1d5db',svg:'M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z'},
+  {id:'other',name:'Other / HTTPS',color:'#374151',bg:'#f9fafb',border:'#d1d5db',svg:'M13.828 10.172a4 4 0 0 0-5.656 0l-4 4a4 4 0 1 0 5.656 5.656l1.102-1.101m-.758-4.899a4 4 0 0 0 5.656 0l4-4a4 4 0 0 0-5.656-5.656l-1.1 1.1'},
+].map(p=>(
+  <button type="button" key={p.id} onClick={()=>setGitProvider(p.id)} className={`flex flex-col items-center gap-1.5 rounded-lg border-2 px-2 py-2.5 transition-all text-center ${gitProvider===p.id?`border-[${p.border}] bg-[${p.bg}]`:'border-gray-200 bg-white hover:border-gray-300'}`} style={gitProvider===p.id?{borderColor:p.color,background:p.bg}:{}} >
+    <svg viewBox="0 0 24 24" className="w-5 h-5" style={{fill:gitProvider===p.id?p.color:'#9CA3AF'}}><path d={p.svg}/></svg>
+    <span className="text-[10px] font-medium leading-tight" style={{color:gitProvider===p.id?p.color:'#6B7280'}}>{p.name}</span>
+  </button>
+))}
+</div>
+<label className="label">Repository URL <span className="text-danger-600">*</span></label>
+<input className="input mb-3" value={gitUrl} onChange={e=>{setGitUrl(e.target.value);setError('');}} placeholder={
+  gitProvider==='github'?'https://github.com/org/repo':
+  gitProvider==='gitlab'?'https://gitlab.com/org/repo':
+  gitProvider==='bitbucket'?'https://bitbucket.org/org/repo':
+  gitProvider==='azure'?'https://dev.azure.com/org/project/_git/repo':
+  gitProvider==='onprem-git'?'https://git.yourcompany.com/org/repo':
+  'https://your-repo-url.com/org/repo'
+}/>
 
 <label className="label">Owner Email <span className="text-danger-600">*</span></label>
 <input className="input mb-3" type="email" value={ownerEmail} onChange={e=>{setOwnerEmail(e.target.value);setError('');}} placeholder="owner@example.com"/>
