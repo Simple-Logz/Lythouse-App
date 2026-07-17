@@ -252,52 +252,98 @@ return<div>
 </div>
 
 {tab==='validations'&&(
-  <div>
+  <div className="space-y-4">
+    {/* What to do next */}
+    {validations.length>0&&(()=>{
+      const latest=validations[0];
+      const isComplete=latest.status==='completed';
+      const hasIssues=latest.critical_count>0||latest.high_count>0;
+      return<div className={`rounded-xl border px-5 py-4 ${latest.critical_count>0?'border-red-200 bg-red-50':latest.high_count>0?'border-amber-200 bg-amber-50':isComplete?'border-green-200 bg-green-50':'border-brand-200 bg-brand-50'}`}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className={`text-sm font-bold ${latest.critical_count>0?'text-danger-600':latest.high_count>0?'text-amber-700':isComplete?'text-green-700':'text-brand-700'}`}>
+              {latest.status==='pending'||latest.status==='running'?'Validation in progress…':
+               latest.critical_count>0?`⛔ ${latest.critical_count} critical issue${latest.critical_count!==1?'s':''} — do not deploy`:
+               latest.high_count>0?`⚠ ${latest.high_count} high-severity issue${latest.high_count!==1?'s':''} — review before deploying`:
+               latest.total_findings>0?`${latest.total_findings} findings — low risk, safe to deploy with caution`:
+               '✓ Clean scan — safe to deploy'}
+            </p>
+            <p className={`text-xs mt-1 ${latest.critical_count>0?'text-red-600':latest.high_count>0?'text-amber-600':isComplete?'text-green-600':'text-brand-600'}`}>
+              {hasIssues?'Go to Findings tab to see what needs fixing and resolve each issue.':isComplete?'All checks passed. You can proceed with deployment.':'Scanning your repository…'}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {hasIssues&&<button onClick={()=>setTab('findings')} className="btn-primary text-xs">View findings →</button>}
+            {isComplete&&!hasIssues&&<button className="btn-primary text-xs">Deploy now</button>}
+            <button onClick={runValidation} disabled={running} className="btn-secondary text-xs">
+              {running?<RefreshCw size={13} className="animate-spin"/>:<Play size={13}/>}Re-scan
+            </button>
+          </div>
+        </div>
+      </div>;
+    })()}
+
     {validations.length===0
-    ?<EmptyState icon={<ShieldCheck size={22}/>} title="No validations yet" description="Click Run Validation above to scan your repository for security issues, secrets, and vulnerable dependencies." action={<button onClick={runValidation} disabled={running} className="btn-primary"><Play size={15}/>Run Validation</button>}/>
+    ?<EmptyState icon={<ShieldCheck size={22}/>} title="No validations yet" description="Run a validation to scan your repository for security issues, exposed secrets, and vulnerable dependencies. Results appear here in real time." action={<button onClick={runValidation} disabled={running} className="btn-primary"><Play size={15}/>Run Validation</button>}/>
     :<div className="space-y-3">
       {validations.map(v=>{
         const open=expandedVid===v.id;
         const isLive=v.status==='running'||v.status==='pending';
+        const verdict=v.critical_count>0?{label:'Do not deploy',color:'text-danger-600',bg:'bg-red-50 border-red-200'}:
+          v.high_count>0?{label:'Review required',color:'text-amber-600',bg:'bg-amber-50 border-amber-200'}:
+          v.status==='completed'?{label:'Safe to deploy',color:'text-green-600',bg:'bg-green-50 border-green-200'}:
+          {label:'In progress',color:'text-brand-600',bg:'bg-brand-50 border-brand-200'};
         return<div key={v.id} className="card p-0 overflow-hidden">
           <button onClick={()=>toggleVid(v.id)} className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors">
             {open?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={v.status}/>
+                <span className={`chip border text-xs ${verdict.bg} ${verdict.color}`}>{verdict.label}</span>
                 {v.severity&&<SeverityBadge severity={v.severity}/>}
                 <span className="chip bg-gray-50 text-gray-600 border border-gray-200">{v.total_findings} findings</span>
-                <span className="chip bg-gray-50 text-gray-500 border border-gray-200 capitalize">{v.trigger}</span>
                 {isLive&&<span className="flex items-center gap-1 text-xs text-brand-600"><RefreshCw size={11} className="animate-spin"/>Live</span>}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                <span className="text-danger-600 font-medium">Crit {v.critical_count}</span>
-                <span className="text-amber-600 font-medium">High {v.high_count}</span>
-                <span className="text-blue-600 font-medium">Med {v.medium_count}</span>
-                <span className="text-gray-500 font-medium">Low {v.low_count}</span>
+                {v.critical_count>0&&<span className="text-danger-600 font-semibold">● {v.critical_count} critical</span>}
+                {v.high_count>0&&<span className="text-amber-600 font-semibold">● {v.high_count} high</span>}
+                {v.medium_count>0&&<span className="text-blue-500">● {v.medium_count} medium</span>}
+                {v.low_count>0&&<span className="text-gray-400">● {v.low_count} low</span>}
                 <span>· {timeAgo(v.created_at)}</span>
                 {v.duration_ms&&<span>· {fmtDuration(v.duration_ms)}</span>}
               </div>
-              {v.summary&&<p className="mt-1.5 text-xs text-gray-500 line-clamp-1">{v.summary}</p>}
+              {v.summary&&<p className="mt-1.5 text-xs text-gray-500 line-clamp-2 italic">"{v.summary}"</p>}
             </div>
-            <RiskGauge score={v.risk_score} size={56}/>
+            <div className="flex items-center gap-3">
+              {v.status==='completed'&&v.total_findings>0&&(
+                <button onClick={e=>{e.stopPropagation();setTab('findings');}} className="text-xs text-brand-600 hover:underline font-medium">Fix issues →</button>
+              )}
+              <RiskGauge score={v.risk_score} size={56}/>
+            </div>
           </button>
           {open&&(
             <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-3">
               {(stepsByVid[v.id]??[]).length===0
-                ?<p className="py-3 text-sm text-gray-400">{isLive?'Starting scan…':'No step data available.'}</p>
-                :<ol className="space-y-2">
+                ?<p className="py-3 text-sm text-gray-400">{isLive?'Scan starting — steps will appear here…':'No step detail available for this run.'}</p>
+                :<div className="space-y-2">
                   {(stepsByVid[v.id]??[]).map(s=>(
-                    <li key={s.id} className="flex items-start gap-3 rounded-lg bg-white px-3 py-2.5 border border-gray-100">
+                    <div key={s.id} className={`flex items-start gap-3 rounded-lg px-3 py-2.5 border ${s.status==='completed'?'bg-green-50 border-green-100':s.status==='failed'?'bg-red-50 border-red-100':'bg-white border-gray-100'}`}>
                       <StatusBadge status={s.status}/>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-navy-900">{s.name}</p>
                         {s.detail&&<p className="mt-0.5 text-xs text-gray-500">{s.detail}</p>}
+                        {s.status==='failed'&&<p className="mt-1 text-xs text-danger-600 font-medium">→ Go to Findings to resolve this issue</p>}
                       </div>
                       <span className="shrink-0 text-xs text-gray-400">{fmtDuration(s.duration_ms)}</span>
-                    </li>
+                    </div>
                   ))}
-                </ol>}
+                  {v.status==='completed'&&v.total_findings>0&&(
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <p className="text-xs text-gray-500">{v.total_findings} issue{v.total_findings!==1?'s':''} found that need your attention.</p>
+                      <button onClick={()=>setTab('findings')} className="btn-primary text-xs">Resolve findings →</button>
+                    </div>
+                  )}
+                </div>}
             </div>
           )}
         </div>;
