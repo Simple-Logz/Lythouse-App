@@ -2,14 +2,23 @@ import{useEffect,useState,useRef}from'react';
 import{useRouter}from'../lib/router';
 import{supabase,type Project,type Validation,type ValidationStep,type Finding,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadge,RiskGauge,Breadcrumb,timeAgo,fmtDuration}from'../lib/ui';
-import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw}from'lucide-react';
+import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge}from'lucide-react';
 import AIAssistantTab from'./AIAssistantTab';
 import{FindingsTab}from'./FindingsTab';
+import{ReadinessTab}from'./ReadinessTab';
+import{TopologyView}from'./TopologyView';
+import{DryRunTab}from'./DryRunTab';
+import{DependenciesTab}from'./DependenciesTab';
+import{DriftTab}from'./DriftTab';
 
-type Tab='validations'|'findings'|'ai-assistant'|'settings';
+type Tab='validations'|'findings'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck}[]=[
 {id:'validations',label:'Validations',icon:ShieldCheck},
 {id:'findings',label:'Findings',icon:ShieldAlert},
+{id:'readiness',label:'Readiness',icon:Gauge},
+{id:'topology',label:'Topology',icon:Network},
+{id:'dependencies',label:'Dependencies',icon:Package},
+{id:'simulator',label:'Simulator',icon:FlaskConical},
 {id:'ai-assistant',label:'AI Assistant',icon:Sparkles},
 {id:'settings',label:'Settings',icon:Cog},
 ];
@@ -305,6 +314,10 @@ return<div>
   />
 )}
 
+{tab==='readiness'&&(<ReadinessTab projectId={projectId}/>)}
+{tab==='topology'&&project&&(<TopologyView projectId={projectId} project={project} onOpenFile={(path)=>console.log('open',path)}/>)}
+{tab==='dependencies'&&(<DependenciesTab projectId={projectId}/>)}
+{tab==='simulator'&&(<DryRunTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>)}
 {tab==='ai-assistant'&&(
 <AIAssistantTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>
 )}
