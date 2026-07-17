@@ -2,8 +2,9 @@ import{createContext,useContext}from'react';
 import{createClient}from'@supabase/supabase-js';
 
 const url=import.meta.env.VITE_SUPABASE_URL;
-const anonKey=import.meta.env.VITE_SUPABASE_ANON_KEY;
-export const supabase=createClient(url,anonKey,{auth:{persistSession:false}});
+export const anonKey=import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+export const edgeFunctionUrl=(import.meta.env.VITE_SUPABASE_URL as string)+'/functions/v1';
+export const supabase=createClient(url,anonKey,{auth:{persistSession:true}});
 
 export type PlanId='free'|'developer'|'enterprise';
 export type Workspace={id:string;name:string;slug:string;owner_id:string|null;description:string|null;created_at:string};
