@@ -97,8 +97,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
         <div className="flex items-center gap-2.5 rounded-lg px-2 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-xs font-bold">
-            {(profile?.full_name||user?.email||'U').charAt(0).toUpperCase()}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-xs font-bold overflow-hidden">
+            {profile?.avatar_url
+              ?<img src={profile.avatar_url} alt="Avatar" className="h-8 w-8 object-cover rounded-full"/>
+              :(profile?.full_name||user?.email||'U').charAt(0).toUpperCase()
+            }
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-medium text-navy-900">{profile?.full_name||'My Account'}</p>

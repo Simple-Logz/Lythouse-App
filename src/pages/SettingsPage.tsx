@@ -2,7 +2,7 @@ import{useEffect,useState}from'react';
 import{supabase}from'../lib/supabase';
 import{useAuth}from'../lib/auth';
 import{PageHeader,Spinner}from'../lib/ui';
-import{User,Bell,Shield,Globe,Key,Palette,Save,Check,Loader as Loader2,Eye,EyeOff,AlertTriangle,Monitor,Moon,Sun}from'lucide-react';
+import{User,Bell,Shield,Globe,Key,Palette,Save,Check,Loader as Loader2,Eye,EyeOff,AlertTriangle,Monitor,Moon,Sun,Camera,Upload}from'lucide-react';
 
 type NotifPref={email_validations:boolean;email_critical:boolean;email_digest:boolean;email_deployments:boolean;};
 type AppPref={theme:'light'|'dark'|'system';timezone:string;language:string;};
@@ -20,6 +20,38 @@ export function SettingsPage(){
   // Profile
   const[fullName,setFullName]=useState('');
   const[avatarUrl,setAvatarUrl]=useState('');
+  const[uploadingAvatar,setUploadingAvatar]=useState(false);
+
+  const uploadAvatar=async(file:File)=>{
+    if(!user)return;
+    if(file.size>2*1024*1024){alert('Image must be under 2MB.');return;}
+    if(!file.type.startsWith('image/')){alert('Please upload an image file.');return;}
+    setUploadingAvatar(true);
+    try{
+      const ext=file.name.split('.').pop();
+      const path=`avatars/${user.id}.${ext}`;
+      const{error:upErr}=await supabase.storage.from('avatars').upload(path,file,{upsert:true,contentType:file.type});
+      if(upErr){
+        // Storage bucket may not exist - use base64 fallback
+        const reader=new FileReader();
+        reader.onload=async(e)=>{
+          const base64=e.target?.result as string;
+          setAvatarUrl(base64);
+          await supabase.from('profiles').update({avatar_url:base64}).eq('id',user.id);
+          await refreshProfile();
+          setUploadingAvatar(false);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+      const{data}=supabase.storage.from('avatars').getPublicUrl(path);
+      const url=data.publicUrl+'?t='+Date.now();
+      setAvatarUrl(url);
+      await supabase.from('profiles').update({avatar_url:url}).eq('id',user.id);
+      await refreshProfile();
+    }catch(e){console.error(e);}
+    setUploadingAvatar(false);
+  };
 
   // Notifications
   const[notif,setNotif]=useState<NotifPref>({
@@ -108,15 +140,30 @@ export function SettingsPage(){
         <div className="card">
           <h2 className="text-base font-semibold text-navy-900 mb-4 flex items-center gap-2"><User size={17} className="text-brand-600"/>Personal information</h2>
 
-          {/* Avatar */}
-          <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-2xl font-bold shrink-0">
-              {(fullName||user?.email||'U').charAt(0).toUpperCase()}
+          {/* Avatar upload */}
+          <div className="flex items-center gap-5 mb-5 pb-5 border-b border-gray-100">
+            <div className="relative group shrink-0">
+              {avatarUrl?(
+                <img src={avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover border-2 border-gray-200"/>
+              ):(
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-3xl font-bold border-2 border-gray-200">
+                  {(fullName||user?.email||'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                {uploadingAvatar?<Loader2 size={20} className="text-white animate-spin"/>:<Camera size={20} className="text-white"/>}
+                <input type="file" accept="image/*" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)uploadAvatar(f);}}/>
+              </label>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-navy-900">{fullName||'No name set'}</p>
+              <p className="text-sm font-semibold text-navy-900">{fullName||'No name set'}</p>
               <p className="text-xs text-gray-500">{user?.email}</p>
-              <p className="text-xs text-gray-400 mt-0.5">Member since {user?.created_at?new Date(user.created_at).toLocaleDateString():'—'}</p>
+              <p className="text-xs text-gray-400 mt-1">Member since {user?.created_at?new Date(user.created_at).toLocaleDateString():'—'}</p>
+              <label className="mt-2 inline-flex items-center gap-1.5 text-xs text-brand-600 hover:underline cursor-pointer font-medium">
+                <Upload size={12}/>{uploadingAvatar?'Uploading…':'Upload photo'}
+                <input type="file" accept="image/*" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)uploadAvatar(f);}}/>
+              </label>
+              {avatarUrl&&<button onClick={async()=>{setAvatarUrl('');await supabase.from('profiles').update({avatar_url:null}).eq('id',user!.id);await refreshProfile();}} className="ml-3 text-xs text-gray-400 hover:text-danger-600">Remove</button>}
             </div>
           </div>
 
