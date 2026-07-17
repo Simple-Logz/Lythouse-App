@@ -479,12 +479,12 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                   {cat}
                   <span className="flex-1 h-px bg-gray-100"/>
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {catAssets.map(asset=>{
                     const isConnected=connectedIds.has(asset.id);
                     const isConnecting=connecting===asset.id;
                     return(
-                      <div key={asset.id} className={'rounded-xl border-2 transition-all '+(isConnected?'border-green-200 bg-green-50/50':isConnecting?'border-brand-300 bg-brand-50':'border-gray-200 bg-white hover:border-gray-300')}>
+                      <div key={asset.id} className={'rounded-xl border-2 transition-all '+(isConnected?'border-green-200 bg-green-50/50':isConnecting?'border-brand-400 bg-white shadow-lg ring-2 ring-brand-200':'border-gray-200 bg-white hover:border-gray-300')}>
                         <div className="flex items-center justify-between gap-2 px-3 py-2.5">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="text-xl shrink-0">{asset.icon}</span>
@@ -496,14 +496,19 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                           {isConnected?(
                             <span className="text-xs text-green-600 font-medium flex items-center gap-1 shrink-0"><CheckCircle2 size={12}/>On</span>
                           ):(
-                            <button onClick={()=>{setConnecting(isConnecting?null:asset.id);setFormData({});}} className={'text-xs font-semibold shrink-0 px-2.5 py-1 rounded-lg transition-colors '+(isConnecting?'bg-gray-100 text-gray-600':'bg-brand-600 text-white hover:bg-brand-700')}>
-                              {isConnecting?'Cancel':'Connect'}
+                            <button onClick={()=>{if(!isConnecting){setConnecting(asset.id);setFormData({});setTestError(prev=>({...prev,[asset.id]:''}));setTestSuccess(prev=>({...prev,[asset.id]:''}));}}} className="text-xs font-semibold shrink-0 px-2.5 py-1 rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors">
+                              Connect
                             </button>
                           )}
                         </div>
                         {isConnecting&&(
-                          <div className="border-t border-brand-100 px-3 pb-3 space-y-2">
-                            <p className="text-xs text-gray-500 pt-2 italic">{asset.impact}</p>
+                          <div className="border-t border-brand-200 px-4 pb-4 pt-3 space-y-3 bg-gray-50/50 rounded-b-xl">
+                            <div className="rounded-lg bg-brand-50 border border-brand-200 px-3 py-2">
+                              <p className="text-xs font-medium text-brand-700">What LytHouse will monitor:</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {(asset.watches||[]).map((w:string)=><span key={w} className="text-[10px] bg-white border border-brand-200 text-brand-600 px-1.5 py-0.5 rounded-full">{w}</span>)}
+                              </div>
+                            </div>
                             {(asset.fields||[]).map((field:any)=>(
                               <div key={field.key}>
                                 <label className="label text-xs">{field.label} <span className="text-red-500">*</span></label>
