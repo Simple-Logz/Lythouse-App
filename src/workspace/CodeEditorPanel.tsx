@@ -35,10 +35,51 @@ function getLanguage(path:string){
   return map[ext??'']||'text';
 }
 
-function getFileIcon(name:string){
+function getFileIcon(name:string,isSelected=false):React.ReactNode{
   const ext=name.split('.').pop()?.toLowerCase();
-  const icons:Record<string,string>={ts:'🔷',tsx:'⚛️',js:'🟨',jsx:'⚛️',py:'🐍',rb:'💎',go:'🔵',rs:'🦀',java:'☕',cs:'🟣',cpp:'⚙️',c:'⚙️',php:'🐘',swift:'🍎',kt:'🟣',md:'📝',json:'📋',yaml:'⚙️',yml:'⚙️',env:'🔐',sh:'💻',dockerfile:'🐳',css:'🎨',scss:'🎨',html:'🌐',sql:'🗄️',png:'🖼️',jpg:'🖼️',svg:'🖼️',gif:'🖼️',lock:'🔒',gitignore:'🔀'};
-  return icons[ext??'']||'📄';
+  const lower=name.toLowerCase();
+  const s=14;
+
+  // Special filenames
+  if(lower==='.env'||lower.startsWith('.env'))return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#ECD53F"/><text x="2" y="12" fontSize="9" fontWeight="bold" fill="#1a1a1a">.E</text></svg>;
+  if(lower==='.gitignore'||lower==='.gitattributes')return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#F05032"/><path d="M8 2L14 6v8H2V6z" fill="none" stroke="#fff" strokeWidth="1.5"/><circle cx="8" cy="9" r="2" fill="#fff"/></svg>;
+  if(lower==='dockerfile'||lower.startsWith('dockerfile'))return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#2496ED"/><text x="1" y="12" fontSize="8" fontWeight="bold" fill="#fff">🐳</text></svg>;
+  if(lower==='readme.md')return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#083FA1"/><text x="2" y="12" fontSize="8" fontWeight="bold" fill="#fff">MD</text></svg>;
+  if(lower==='package.json'||lower==='package-lock.json')return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#CB3837"/><text x="2" y="12" fontSize="9" fontWeight="bold" fill="#fff">npm</text></svg>;
+  if(lower==='tsconfig.json'||lower.startsWith('tsconfig'))return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#3178C6"/><text x="1" y="12" fontSize="8" fontWeight="bold" fill="#fff">TSC</text></svg>;
+
+  switch(ext){
+    case'ts':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#3178C6"/><text x="2" y="12" fontSize="9" fontWeight="bold" fill="#fff">TS</text></svg>;
+    case'tsx':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#3178C6"/><path d="M8 5.5c-1.4 0-2.5.6-2.5 1.5S6.6 8 8 8.5c1.4.5 2.5 1 2.5 2s-1.1 1.5-2.5 1.5" stroke="#61DAFB" strokeWidth="1.2" fill="none"/><circle cx="8" cy="8" r="1.2" fill="#61DAFB"/></svg>;
+    case'js':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#F7DF1E"/><text x="2" y="12" fontSize="9" fontWeight="bold" fill="#222">JS</text></svg>;
+    case'jsx':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#F7DF1E"/><path d="M8 5.5c-1.4 0-2.5.6-2.5 1.5S6.6 8 8 8.5c1.4.5 2.5 1 2.5 2s-1.1 1.5-2.5 1.5" stroke="#222" strokeWidth="1.2" fill="none"/><circle cx="8" cy="8" r="1.2" fill="#222"/></svg>;
+    case'py':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#3572A5"/><path d="M5 4h3c1 0 2 .9 2 2v1H5V4z" fill="#FFD43B"/><path d="M11 8H8c-1 0-2 .9-2 2v2h5V8z" fill="#FFD43B"/><circle cx="6.5" cy="5.5" r=".7" fill="#3572A5"/><circle cx="9.5" cy="10.5" r=".7" fill="#3572A5"/></svg>;
+    case'rb':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#CC342D"/><text x="3" y="12" fontSize="10" fontWeight="bold" fill="#fff">rb</text></svg>;
+    case'go':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#00ADD8"/><text x="2" y="12" fontSize="9" fontWeight="bold" fill="#fff">Go</text></svg>;
+    case'rs':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#DEA584"/><text x="3" y="12" fontSize="9" fontWeight="bold" fill="#000">rs</text></svg>;
+    case'java':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#ED8B00"/><text x="2" y="12" fontSize="8" fontWeight="bold" fill="#fff">Java</text></svg>;
+    case'cs':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#9B4F96"/><text x="3" y="12" fontSize="9" fontWeight="bold" fill="#fff">C#</text></svg>;
+    case'cpp':case'cc':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#004488"/><text x="2" y="12" fontSize="8" fontWeight="bold" fill="#fff">C++</text></svg>;
+    case'c':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#555599"/><text x="4" y="12" fontSize="10" fontWeight="bold" fill="#fff">C</text></svg>;
+    case'php':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#777BB4"/><text x="1" y="12" fontSize="8" fontWeight="bold" fill="#fff">PHP</text></svg>;
+    case'swift':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#FA7343"/><path d="M12 5C10.5 3.5 7.5 3 5 5c2 1 3.5 2.5 4 4.5C10 8 11 6.5 12 5z" fill="#fff"/><path d="M4 11c1.5 1.5 5 2 7 0-2-.5-3.5-2-4-4C6 8.5 4.5 10 4 11z" fill="#fff"/></svg>;
+    case'kt':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#7F52FF"/><path d="M3 3h5l-5 5V3zm0 5l5 5H3v-5zm5 0l5-5v10L8 8z" fill="#fff"/></svg>;
+    case'md':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#083FA1"/><path d="M2 11V5h2l2 2.5L8 5h2v6h-2V8L8 10H6L4.5 8v3H2z" fill="#fff"/><path d="M11 5v6h2V9l1.5 2 1.5-2v3h2V5h-2l-1.5 2L13 5h-2z" fill="#fff"/></svg>;
+    case'json':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#CBCB41"/><text x="2" y="12" fontSize="8" fontWeight="bold" fill="#222">{"{}"}</text></svg>;
+    case'yaml':case'yml':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#CB171E"/><text x="1" y="12" fontSize="7" fontWeight="bold" fill="#fff">YAML</text></svg>;
+    case'toml':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#9C4121"/><text x="1" y="12" fontSize="7" fontWeight="bold" fill="#fff">TOML</text></svg>;
+    case'sh':case'bash':case'zsh':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#89E051"/><text x="2" y="12" fontSize="9" fontWeight="bold" fill="#222">$_</text></svg>;
+    case'css':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#1572B6"/><text x="1" y="12" fontSize="8" fontWeight="bold" fill="#fff">CSS</text></svg>;
+    case'scss':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#CD6799"/><text x="1" y="12" fontSize="7" fontWeight="bold" fill="#fff">SCSS</text></svg>;
+    case'html':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#E34C26"/><text x="1" y="12" fontSize="7" fontWeight="bold" fill="#fff">HTML</text></svg>;
+    case'xml':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#F16529"/><text x="2" y="12" fontSize="8" fontWeight="bold" fill="#fff">XML</text></svg>;
+    case'sql':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#DA3434"/><text x="2" y="12" fontSize="8" fontWeight="bold" fill="#fff">SQL</text></svg>;
+    case'svg':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#FFB13B"/><circle cx="8" cy="8" r="4" stroke="#fff" strokeWidth="1.5" fill="none"/></svg>;
+    case'png':case'jpg':case'jpeg':case'gif':case'webp':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#A074C4"/><path d="M2 12l3-4 2 2.5 3-4 4 5.5H2z" fill="#fff"/><circle cx="11" cy="5" r="2" fill="#FFD700"/></svg>;
+    case'lock':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#6e7681"/><rect x="4" y="7" width="8" height="6" rx="1" fill="#fff"/><path d="M6 7V5a2 2 0 0 1 4 0v2" stroke="#fff" strokeWidth="1.5" fill="none"/></svg>;
+    case'pdf':return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#E34234"/><text x="1" y="12" fontSize="7" fontWeight="bold" fill="#fff">PDF</text></svg>;
+    default:return<svg width={s} height={s} viewBox="0 0 16 16"><rect width="16" height="16" rx="2" fill="#6e7681"/><path d="M4 4h5l3 3v5H4V4z" fill="none" stroke="#ccc" strokeWidth="1"/><path d="M9 4v3h3" fill="none" stroke="#ccc" strokeWidth="1"/></svg>;
+  }
 }
 
 function TreeItem({node,depth,expanded,selected,onToggle,onSelect}:{node:TreeNode;depth:number;expanded:Set<string>;selected:string|null;onToggle:(p:string)=>void;onSelect:(p:string)=>void;}){
@@ -47,7 +88,7 @@ function TreeItem({node,depth,expanded,selected,onToggle,onSelect}:{node:TreeNod
   return<div>
     <div onClick={()=>isDir?onToggle(node.path):onSelect(node.path)} style={{paddingLeft:depth*14+6}} className={`flex items-center gap-1.5 py-[3px] cursor-pointer rounded-sm transition-all text-[12px] select-none ${isSel?'bg-[#2d4a3e] text-white':'hover:bg-white/8 text-[#cccccc]'}`}>
       {isDir?(isOpen?<ChevronDown size={10} className="shrink-0 text-gray-500"/>:<ChevronRight size={10} className="shrink-0 text-gray-500"/>):<span className="w-2.5"/>}
-      {isDir?<FolderOpen size={13} className={`shrink-0 ${isOpen?'text-[#e8c27a]':'text-[#dcb67a]'}`}/>:<span className="text-[11px] shrink-0 leading-none">{getFileIcon(node.name)}</span>}
+      {isDir?<FolderOpen size={13} className={`shrink-0 ${isOpen?'text-[#e8c27a]':'text-[#dcb67a]'}`}/>:<span className="shrink-0 flex items-center">{getFileIcon(node.name)}</span>}
       <span className="truncate">{node.name}</span>
       {!isDir&&node.size&&<span className="ml-auto text-[10px] text-gray-600 shrink-0 pr-2">{node.size<1024?node.size+'b':Math.round(node.size/1024)+'k'}</span>}
     </div>
@@ -295,7 +336,7 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
           <div className="flex items-center bg-[#181825] border-b border-[#313244] overflow-x-auto shrink-0" style={{minHeight:35}}>
             {openTabs.map(tab=>(
               <div key={tab} className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] border-r border-[#313244] cursor-pointer whitespace-nowrap group transition-colors ${selected===tab?'bg-[#1e1e2e] text-gray-200 border-t-2 border-t-brand-500':'text-gray-600 hover:text-gray-400'}`} onClick={()=>selectFile(tab)}>
-                <span className="text-[11px]">{getFileIcon(tab)}</span>
+                <span className="shrink-0 flex items-center">{getFileIcon(tab)}</span>
                 <span>{tab.split('/').pop()}</span>
                 {isDirty&&selected===tab&&<span className="text-amber-400 text-[10px]">●</span>}
                 <button onClick={e=>{e.stopPropagation();if(isDirty&&selected===tab&&!confirm('Discard changes?'))return;setOpenTabs(p=>p.filter(t=>t!==tab));if(selected===tab){setSelected(null);setEditedContent('');setFileContent('');}}} className="opacity-0 group-hover:opacity-60 hover:!opacity-100 ml-0.5 rounded hover:bg-white/20 p-0.5 transition-all"><X size={9}/></button>
@@ -323,7 +364,7 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
                     ?<p className="text-[11px] text-gray-600 px-3 py-2">No matches</p>
                     :filteredFiles.map(f=>(
                       <div key={f.path} onClick={()=>selectFile(f.path)} className={`flex items-center gap-1.5 px-2 py-1 text-[12px] cursor-pointer rounded-sm mx-1 transition-colors ${selected===f.path?'bg-[#2d4a3e] text-white':'text-gray-400 hover:bg-white/8 hover:text-gray-300'}`}>
-                        <span className="text-[11px]">{getFileIcon(f.path)}</span>
+                        <span className="shrink-0 flex items-center">{getFileIcon(f.path)}</span>
                         <span className="truncate">{f.path}</span>
                       </div>
                     ))
