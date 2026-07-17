@@ -27,6 +27,7 @@ export function AuthPage(){
         else if(typeof res.error==='object'&&res.error!==null){
           msg=(res.error as any).message||(res.error as any).error_description||JSON.stringify(res.error);
         }
+        if(msg==='EMAIL_CONFIRMATION_REQUIRED'){setDone(true);return;}
         if(msg.includes('Invalid login credentials')||msg.includes('invalid_credentials')) msg='Incorrect email or password. Please try again.';
         else if(msg.includes('already registered')||msg.includes('already exists')) msg='An account with this email already exists. Try signing in instead.';
         else if(msg.toLowerCase().includes('password')) msg='Password must be at least 6 characters.';

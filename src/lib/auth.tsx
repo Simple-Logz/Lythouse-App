@@ -96,11 +96,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { full_name: fullName } },
     });
     if (error) return { error: error.message };
-    if (data.user) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) return { error: signInError.message };
-      await ensureWorkspace(data.user.id);
+
+    // If user exists but is unconfirmed, data.user is non-null but session is null
+    // Try signing in immediately — works when email confirmation is disabled
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (!signInError && signInData.user) {
+      await ensureWorkspace(signInData.user.id);
+      return { error: null };
     }
+
+    // Email confirmation is required — tell the user clearly
+    if (data.user && !data.session) {
+      return { error: 'EMAIL_CONFIRMATION_REQUIRED' };
+    }
+
+    if (signInError) return { error: signInError.message };
     return { error: null };
   };
 
