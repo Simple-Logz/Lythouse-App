@@ -258,6 +258,20 @@ export function WorkspaceDetailPage({workspaceId}:{workspaceId:string}){
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1 mt-3">Slug</p>
             <p className="text-xs text-gray-500 font-mono">{workspace.slug}</p>
           </div>
+          <div className="mt-8 pt-6 border-t border-red-100">
+            <h3 className="text-sm font-semibold text-danger-600 mb-1">Danger Zone</h3>
+            <p className="text-xs text-gray-500 mb-3">Deleting this workspace permanently removes all projects, validations, and findings. This cannot be undone.</p>
+            <button onClick={async()=>{
+              if(!confirm(`Delete workspace "${workspace.name}"? This will permanently delete all projects and data inside it.`))return;
+              const confirmed=prompt('Type the workspace name to confirm:');
+              if(confirmed!==workspace.name){alert('Name did not match. Workspace not deleted.');return;}
+              await supabase.from('workspaces').delete().eq('id',workspaceId);
+              localStorage.removeItem('sandbox.activeWs');
+              navigate('/workspaces');
+            }} className="px-4 py-2 text-sm font-medium text-danger-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
+              Delete workspace
+            </button>
+          </div>
         </div>
       )}
     </div>

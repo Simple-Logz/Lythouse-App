@@ -1,4 +1,5 @@
 import{useEffect,useState,useRef}from'react';
+import{useRouter}from'../lib/router';
 import{supabase,type Project,type Validation,type ValidationStep,type Finding,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadge,RiskGauge,Breadcrumb,timeAgo,fmtDuration}from'../lib/ui';
 import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw}from'lucide-react';
@@ -19,6 +20,7 @@ const SUPABASE_URL=import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY=import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export function ProjectWorkspace({projectId}:{projectId:string}){
+const{navigate}=useRouter();
 const[loading,setLoading]=useState(true);
 const[project,setProject]=useState<Project|null>(null);
 const[tab,setTab]=useState<Tab>('validations');
