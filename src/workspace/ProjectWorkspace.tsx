@@ -449,16 +449,6 @@ return<div>
   onClose={()=>{setEditorOpen(false);setFindingContext(null);}}
 />
 )}
-</div>;
-}
-
-function Meta({icon,label,value}:{icon:React.ReactNode;label:string;value:React.ReactNode}){
-return<div className="flex items-start gap-2.5">
-  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-400">{icon}</div>
-  <div className="min-w-0">
-    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
-    <p className="mt-0.5 truncate text-sm font-medium text-navy-900">{value}</p>
-  </div>
 {editorOpen&&project&&(
 <CodeEditorPanel
   projectId={projectId}
@@ -469,5 +459,15 @@ return<div className="flex items-start gap-2.5">
   onClose={()=>{setEditorOpen(false);setFindingContext(null);}}
 />
 )}
+</div>;
+}
+
+function Meta({icon,label,value}:{icon:React.ReactNode;label:string;value:React.ReactNode}){
+return<div className="flex items-start gap-2.5">
+  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-400">{icon}</div>
+  <div className="min-w-0">
+    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
+    <p className="mt-0.5 truncate text-sm font-medium text-navy-900">{value}</p>
+  </div>
 </div>;
 }
