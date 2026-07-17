@@ -301,31 +301,32 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
             <span className="text-gray-500">{project.git_branch||'main'}</span>
             {isDirty&&<span className="ml-1 text-amber-400 text-[10px]">● unsaved</span>}
           </div>
-          <div className="ml-auto flex items-center gap-1">
-            {/* Toolbar actions */}
-            <button onClick={()=>setShowLineNumbers(l=>!l)} title="Toggle line numbers" className={`p-1.5 rounded text-xs transition-colors ${showLineNumbers?'text-brand-400':'text-gray-600'} hover:bg-white/10`}><Eye size={13}/></button>
-            <button onClick={()=>setWordWrap(w=>!w)} title="Toggle word wrap" className={`p-1.5 rounded text-xs transition-colors ${wordWrap?'text-brand-400':'text-gray-600'} hover:bg-white/10`}><span className="text-[11px] font-bold">⏎</span></button>
-            <div className="w-px h-4 bg-gray-700 mx-1"/>
-            <button onClick={()=>setActivePanel(p=>p==='ai'?'none':'ai')} title="AI Code Review" className={`p-1.5 rounded transition-colors ${activePanel==='ai'?'bg-brand-600 text-white':'text-gray-500 hover:text-gray-300 hover:bg-white/10'}`}><Sparkles size={13}/></button>
-            <button onClick={()=>setActivePanel(p=>p==='comments'?'none':'comments')} title="Comments" className={`p-1.5 rounded transition-colors relative ${activePanel==='comments'?'bg-brand-600 text-white':'text-gray-500 hover:text-gray-300 hover:bg-white/10'}`}>
-              <MessageSquare size={13}/>
-              {openComments.length>0&&<span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center">{openComments.length}</span>}
+          <div className="ml-auto flex items-center gap-0.5">
+            {/* Toolbar actions — larger, brighter */}
+            <button onClick={()=>setShowLineNumbers(l=>!l)} title="Toggle line numbers" className={`p-2 rounded transition-colors ${showLineNumbers?'text-brand-400':'text-gray-500'} hover:text-white hover:bg-white/10`}><Eye size={16}/></button>
+            <button onClick={()=>setWordWrap(w=>!w)} title="Toggle word wrap" className={`p-2 rounded transition-colors ${wordWrap?'text-brand-400':'text-gray-500'} hover:text-white hover:bg-white/10`}><span className="text-[13px] font-bold leading-none">⏎</span></button>
+            <div className="w-px h-5 bg-gray-600 mx-1.5"/>
+            <button onClick={()=>setActivePanel(p=>p==='ai'?'none':'ai')} title="AI Code Review" className={`p-2 rounded transition-colors ${activePanel==='ai'?'bg-brand-600 text-white':'text-gray-400 hover:text-white hover:bg-white/10'}`}><Sparkles size={16}/></button>
+            <button onClick={()=>setActivePanel(p=>p==='comments'?'none':'comments')} title="Comments" className={`p-2 rounded transition-colors relative ${activePanel==='comments'?'bg-brand-600 text-white':'text-gray-400 hover:text-white hover:bg-white/10'}`}>
+              <MessageSquare size={16}/>
+              {openComments.length>0&&<span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">{openComments.length}</span>}
             </button>
-            <div className="w-px h-4 bg-gray-700 mx-1"/>
-            <button onClick={downloadRepo} disabled={downloading} title="Download repository as zip" className="flex items-center gap-1 p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors disabled:opacity-50">
-              {downloading?<><Loader2 size={13} className="animate-spin"/><span className="text-[10px]">{downloadProgress}%</span></>:<Download size={13}/>}
+            <div className="w-px h-5 bg-gray-600 mx-1.5"/>
+            <button onClick={downloadRepo} disabled={downloading} title="Download repository as zip" className="flex items-center gap-1.5 p-2 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40">
+              {downloading?<><Loader2 size={16} className="animate-spin"/><span className="text-[11px] font-medium">{downloadProgress}%</span></>:<Download size={16}/>}
             </button>
-            <button onClick={async()=>{if(editedContent){await navigator.clipboard.writeText(editedContent);setCopied(true);setTimeout(()=>setCopied(false),2000);}}} title="Copy all" className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors">
-              {copied?<Check size={13} className="text-green-400"/>:<Copy size={13}/>}
+            <button onClick={async()=>{if(editedContent){await navigator.clipboard.writeText(editedContent);setCopied(true);setTimeout(()=>setCopied(false),2000);}}} title="Copy entire file" className="p-2 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+              {copied?<Check size={16} className="text-green-400"/>:<Copy size={16}/>}
             </button>
-            <button onClick={saveFile} disabled={!isDirty||saving} title="Save (Ctrl+S)" className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-all ${isDirty?'bg-brand-600 text-white hover:bg-brand-700':'text-gray-600 cursor-not-allowed'}`}>
-              {saving?<Loader2 size={12} className="animate-spin"/>:saved?<Check size={12}/>:<Save size={12}/>}
-              {saved?'Saved':'Save'}
+            <div className="w-px h-5 bg-gray-600 mx-1.5"/>
+            <button onClick={saveFile} disabled={!isDirty||saving} title="Save (Ctrl+S)" className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-all ${isDirty?'bg-brand-600 text-white hover:bg-brand-700 shadow-sm':'text-gray-600 cursor-not-allowed'}`}>
+              {saving?<Loader2 size={14} className="animate-spin"/>:saved?<Check size={14}/>:<Save size={14}/>}
+              {saved?'Saved!':'Save'}
             </button>
-            <button onClick={()=>setFullscreen(f=>!f)} className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors ml-1">
-              {fullscreen?<Minimize2 size={13}/>:<Maximize2 size={13}/>}
+            <button onClick={()=>setFullscreen(f=>!f)} title={fullscreen?'Exit fullscreen':'Fullscreen'} className="p-2 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors ml-1">
+              {fullscreen?<Minimize2 size={16}/>:<Maximize2 size={16}/>}
             </button>
-            <button onClick={onClose} className="p-1.5 rounded text-gray-500 hover:text-red-400 hover:bg-white/10 transition-colors"><X size={13}/></button>
+            <button onClick={onClose} title="Close editor" className="p-2 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"><X size={16}/></button>
           </div>
         </div>
 
