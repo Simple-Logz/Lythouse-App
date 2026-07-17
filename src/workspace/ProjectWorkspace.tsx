@@ -2,7 +2,7 @@ import{useEffect,useState,useRef}from'react';
 import{useRouter}from'../lib/router';
 import{supabase,type Project,type Validation,type ValidationStep,type Finding,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadge,RiskGauge,Breadcrumb,timeAgo,fmtDuration}from'../lib/ui';
-import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen,Code2}from'lucide-react';
+import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen,Code2,Activity,BarChart3}from'lucide-react';
 import AIAssistantTab from'./AIAssistantTab';
 import{DeploymentCenter}from'./DeploymentCenter';
 import{ReleaseApprovalCenter}from'./ReleaseApprovalCenter';
