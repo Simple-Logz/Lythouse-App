@@ -227,22 +227,24 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
   const downloadRepo=async()=>{
     setDownloading(true);
     try{
+      // Dynamically load JSZip
+      const {default:JSZip}=await import('jszip');
+      const zip=new JSZip();
       const d=await call({operation:'list',projectId});
-      const allFiles:RepoFile[]=d.files??[];
-      // Build a simple text archive of all files
-      const chunks:string[]=[];
-      chunks.push(`# Repository: ${project.name}\n# Branch: ${project.git_branch||'main'}\n# Downloaded: ${new Date().toISOString()}\n\n`);
-      for(const f of allFiles.filter(f=>f.type==='file').slice(0,50)){
+      const allFiles:RepoFile[]=(d.files??[]).filter((f:RepoFile)=>f.type==='file');
+      let done=0;
+      for(const f of allFiles){
         try{
           const fd=await call({operation:'read',projectId,path:f.path});
-          chunks.push(`${'='.repeat(60)}\n# FILE: ${f.path}\n${'='.repeat(60)}\n${fd.content||''}\n\n`);
-        }catch{chunks.push(`# FILE: ${f.path} (could not read)\n\n`);}
+          zip.file(f.path,fd.content||'');
+        }catch{zip.file(f.path,'// Could not read file');}
+        done++;
       }
-      const blob=new Blob([chunks.join('')],{type:'text/plain'});
+      const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
-      a.download=`${project.name}-${project.git_branch||'main'}.txt`;
+      a.download=`${project.name}-${project.git_branch||'main'}.zip`;
       a.click();
       URL.revokeObjectURL(url);
     }catch(e:any){alert('Download failed: '+e.message);}
