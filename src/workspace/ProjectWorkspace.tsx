@@ -42,6 +42,7 @@ const{navigate}=useRouter();
 const[loading,setLoading]=useState(true);
 const[project,setProject]=useState<Project|null>(null);
 const[creatorName,setCreatorName]=useState<string>('');
+const[openGroup,setOpenGroup]=useState<string|null>(null);
 const[tab,setTab]=useState<Tab>('files');
 const[validations,setValidations]=useState<Validation[]>([]);
 const[stepsByVid,setStepsByVid]=useState<Record<string,ValidationStep[]>>({});
@@ -254,33 +255,34 @@ return<div>
 </div>}
 
 {/* Tabs */}
-<div className="mb-5 border-b border-gray-200">
+<div className="mb-5 border-b border-gray-200" onMouseLeave={()=>setOpenGroup(null)}>
 <div className="flex items-end gap-0 flex-wrap">
 {[
-  {label:'Files',tabs:TABS.filter(t=>t.group==='Repository')},
-  {label:'Release',tabs:TABS.filter(t=>t.group==='Release')},
-  {label:'Security',tabs:TABS.filter(t=>t.group==='Security')},
-  {label:'Intelligence',tabs:TABS.filter(t=>t.group==='Intelligence')},
-  {label:'Settings',tabs:TABS.filter(t=>t.group==='Config')},
+  {id:'repo',label:'Files',tabs:TABS.filter(t=>t.group==='Repository')},
+  {id:'release',label:'Release',tabs:TABS.filter(t=>t.group==='Release')},
+  {id:'security',label:'Security',tabs:TABS.filter(t=>t.group==='Security')},
+  {id:'intelligence',label:'Intelligence',tabs:TABS.filter(t=>t.group==='Intelligence')},
+  {id:'config',label:'Settings',tabs:TABS.filter(t=>t.group==='Config')},
 ].filter(g=>g.tabs.length>0).map(g=>{
   const active=g.tabs.find(t=>t.id===tab);
   const isActive=!!active;
+  const isOpen=openGroup===g.id;
   if(g.tabs.length===1){
     const t=g.tabs[0];
     return<button key={t.id} onClick={()=>setTab(t.id)} className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab===t.id?'tab-active':'tab-inactive'}`}><t.icon size={14}/>{t.label}</button>;
   }
-  return<div key={g.label} className="relative group/dd">
+  return<div key={g.id} className="relative" onMouseEnter={()=>setOpenGroup(g.id)}>
     <button className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${isActive?'tab-active':'tab-inactive'}`}>
       {active?<active.icon size={14}/>:<g.tabs[0].icon size={14}/>}
-      {isActive?active?.label:g.label}
+      {isActive?active.label:g.label}
       <ChevronDown size={11} className="opacity-50"/>
     </button>
-    <div className="absolute left-0 top-full z-40 hidden group-hover/dd:block bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[200px]">
-      {g.tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${tab===t.id?'text-brand-600 font-semibold bg-brand-50':'text-gray-700'}`}>
+    {isOpen&&<div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[200px]">
+      {g.tabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);setOpenGroup(null);}} className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${tab===t.id?'text-brand-600 font-semibold bg-brand-50':'text-gray-700'}`}>
         <t.icon size={14} className={tab===t.id?'text-brand-600':'text-gray-400'}/>{t.label}
         {tab===t.id&&<Check size={12} className="ml-auto text-brand-600"/>}
       </button>)}
-    </div>
+    </div>}
   </div>;
 })}
 </div>
