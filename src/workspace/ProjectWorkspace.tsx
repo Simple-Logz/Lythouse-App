@@ -102,7 +102,6 @@ const pollValidation=async(validationId:string)=>{
 const runValidation=async()=>{
   if(!project)return;
   if(!project.git_url){setRunError('This project has no Git URL configured. Add one in Settings.');return;}
-  if(!project.github_token){setRunError('No GitHub Personal Access Token configured for this project. Edit the project in Settings to add one.');return;}
   setRunning(true);setRunError('');
 
   // Create a validation record
