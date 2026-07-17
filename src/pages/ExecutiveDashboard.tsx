@@ -9,7 +9,9 @@ type TeamRisk={project_name:string;project_id:string;risk_score:number;critical:
 export function ExecutiveDashboard(){
   const[loading,setLoading]=useState(true);
   const[projectSearch,setProjectSearch]=useState('');
-  const[riskFilter,setRiskFilter]=useState<'all'|'high'|'medium'|'low'>('all');
+  const[riskFilter,setRiskFilter]=useState<Set<string>>(new Set());
+  const[envFilter,setEnvFilter]=useState<string>('all');
+  const[showFilters,setShowFilters]=useState(false);
   const[projects,setProjects]=useState<Project[]>([]);
   const[validations,setValidations]=useState<Validation[]>([]);
   const[findings,setFindings]=useState<Finding[]>([]);
@@ -171,25 +173,73 @@ export function ExecutiveDashboard(){
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2"><AlertTriangle size={15} className="text-brand-600"/>Projects by Deployment Risk</h3>
           <div className="flex items-center gap-2">
-            <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
-              {(['all','high','medium','low'] as const).map(f=>(
-                <button key={f} onClick={()=>setRiskFilter(f)} className={'px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors '+(riskFilter===f?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
-                  {f==='all'?'All Risk':f==='high'?'🔴 High':f==='medium'?'🟡 Medium':'🟢 Low'}
-                </button>
-              ))}
-            </div>
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
               <input value={projectSearch} onChange={e=>setProjectSearch(e.target.value)} placeholder="Search projects…" className="input pl-8 pr-8 py-1.5 text-sm w-44"/>
               {projectSearch&&<button onClick={()=>setProjectSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
             </div>
+            <button onClick={()=>setShowFilters(f=>!f)} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors '+(showFilters||riskFilter.size>0?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 text-gray-600 hover:bg-gray-50')}>
+              <Users size={12}/>Filters{riskFilter.size>0?` (${riskFilter.size})`:''}
+            </button>
+            {(riskFilter.size>0||projectSearch)&&<button onClick={()=>{setRiskFilter(new Set());setProjectSearch('');}} className="text-xs text-gray-400 hover:text-gray-600 underline">Clear all</button>}
           </div>
         </div>
+        {showFilters&&(
+          <div className="mb-4 p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Risk Level (select multiple)</p>
+              <div className="flex flex-wrap gap-2">
+                {[{id:'critical',label:'Critical',color:'bg-red-100 text-red-700 border-red-300'},{id:'high',label:'High',color:'bg-orange-100 text-orange-700 border-orange-300'},{id:'medium',label:'Medium',color:'bg-amber-100 text-amber-700 border-amber-300'},{id:'low',label:'Low',color:'bg-green-100 text-green-700 border-green-300'}].map(r=>(
+                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?r.color+' ring-2 ring-offset-1 ring-current':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
+                    {riskFilter.has(r.id)?'✓ ':''}{r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Has Blockers</p>
+              <div className="flex flex-wrap gap-2">
+                {[{id:'has-critical',label:'Has Critical Issues'},{id:'has-high',label:'Has High Issues'},{id:'no-issues',label:'Clean (No Issues)'}].map(r=>(
+                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
+                    {riskFilter.has(r.id)?'✓ ':''}{r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Scan Status</p>
+              <div className="flex flex-wrap gap-2">
+                {[{id:'never-scanned',label:'Never Scanned'},{id:'scanned-today',label:'Scanned Today'},{id:'stale',label:'Stale (7+ days)'}].map(r=>(
+                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
+                    {riskFilter.has(r.id)?'✓ ':''}{r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         {projectRisks.length===0?(
           <p className="text-sm text-gray-400 py-4 text-center">No projects yet</p>
         ):(
           <div className="divide-y divide-gray-100">
-            {projectRisks.filter(p=>{const matchSearch=!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase());const matchRisk=riskFilter==='all'||(riskFilter==='high'&&p.risk_score>70)||(riskFilter==='medium'&&p.risk_score>40&&p.risk_score<=70)||(riskFilter==='low'&&p.risk_score<=40);return matchSearch&&matchRisk;}).map((p,i)=>(
+            {projectRisks.filter(p=>{
+  const matchSearch=!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase());
+  if(!matchSearch)return false;
+  if(riskFilter.size===0)return true;
+  const riskChecks=[];
+  if(riskFilter.has('critical'))riskChecks.push(p.critical>0);
+  if(riskFilter.has('high'))riskChecks.push(p.risk_score>70);
+  if(riskFilter.has('medium'))riskChecks.push(p.risk_score>40&&p.risk_score<=70);
+  if(riskFilter.has('low'))riskChecks.push(p.risk_score<=40);
+  if(riskFilter.has('has-critical'))riskChecks.push(p.critical>0);
+  if(riskFilter.has('has-high'))riskChecks.push(p.high>0);
+  if(riskFilter.has('no-issues'))riskChecks.push(p.critical===0&&p.high===0);
+  const now=new Date();const lastScan=new Date(p.last_scan);const daysSince=Math.floor((now.getTime()-lastScan.getTime())/(1000*60*60*24));
+  if(riskFilter.has('never-scanned'))riskChecks.push(p.risk_score===0);
+  if(riskFilter.has('scanned-today'))riskChecks.push(daysSince===0);
+  if(riskFilter.has('stale'))riskChecks.push(daysSince>=7);
+  return riskChecks.some(Boolean);
+}).map((p,i)=>(
               <div key={p.project_id} className="flex items-center gap-4 py-3">
                 <span className="text-sm font-bold text-gray-400 w-5">{i+1}</span>
                 <div className="flex-1 min-w-0">
