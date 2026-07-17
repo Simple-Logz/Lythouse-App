@@ -217,13 +217,12 @@ return<div>
 )}
 
 {/* Missing config warning */}
-{(!hasGitUrl||!hasToken)&&(
+{!hasGitUrl&&(
   <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
     <AlertTriangle size={16} className="shrink-0 text-amber-600 mt-0.5"/>
     <p className="text-sm text-amber-800">
-      {!hasGitUrl&&!hasToken?'This project needs a Git URL and GitHub Personal Access Token to run validations.':
-       !hasGitUrl?'Add a Git URL in Settings to enable validation.':
-       'Add a GitHub Personal Access Token in Settings to enable validation.'}
+      {!hasGitUrl?'Add a Git URL in Settings to enable validation.':
+       'Add a Git URL in Settings to connect your repository.'}
       {' '}<button onClick={()=>setTab('settings')} className="underline font-medium">Open Settings →</button>
     </p>
   </div>
