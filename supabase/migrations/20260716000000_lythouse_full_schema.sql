@@ -1,5 +1,4 @@
--- LytHouse Full Schema
--- Run this in your new Supabase SQL editor
+-- LytHouse Full Schema (fixed order)
 
 -- PROFILES
 CREATE TABLE IF NOT EXISTS profiles (
@@ -10,10 +9,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "profiles_self" ON profiles;
+DROP POLICY IF EXISTS "profiles_read" ON profiles;
 CREATE POLICY "profiles_self" ON profiles FOR ALL USING (auth.uid()=id) WITH CHECK (auth.uid()=id);
 CREATE POLICY "profiles_read" ON profiles FOR SELECT USING (true);
 
--- Auto-create profile on signup
 CREATE OR REPLACE FUNCTION handle_new_user() RETURNS trigger AS $$
 BEGIN
   INSERT INTO profiles(id,full_name,email)
@@ -25,7 +25,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
--- WORKSPACES
+-- WORKSPACES (no member policy yet)
 CREATE TABLE IF NOT EXISTS workspaces (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -35,10 +35,8 @@ CREATE TABLE IF NOT EXISTS workspaces (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "workspaces_owner" ON workspaces;
 CREATE POLICY "workspaces_owner" ON workspaces FOR ALL USING (auth.uid()=owner_id) WITH CHECK (auth.uid()=owner_id);
-CREATE POLICY "workspaces_member_read" ON workspaces FOR SELECT USING (
-  EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=workspaces.id AND user_id=auth.uid())
-);
 
 -- WORKSPACE MEMBERS
 CREATE TABLE IF NOT EXISTS workspace_members (
@@ -50,6 +48,8 @@ CREATE TABLE IF NOT EXISTS workspace_members (
   UNIQUE(workspace_id,user_id)
 );
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "wm_member_read" ON workspace_members;
+DROP POLICY IF EXISTS "wm_owner_write" ON workspace_members;
 CREATE POLICY "wm_member_read" ON workspace_members FOR SELECT USING (
   user_id=auth.uid() OR EXISTS(SELECT 1 FROM workspaces WHERE id=workspace_id AND owner_id=auth.uid())
 );
@@ -58,6 +58,12 @@ CREATE POLICY "wm_owner_write" ON workspace_members FOR ALL USING (
 );
 CREATE INDEX IF NOT EXISTS workspace_members_workspace_idx ON workspace_members(workspace_id);
 CREATE INDEX IF NOT EXISTS workspace_members_user_idx ON workspace_members(user_id);
+
+-- Now add the member read policy to workspaces
+DROP POLICY IF EXISTS "workspaces_member_read" ON workspaces;
+CREATE POLICY "workspaces_member_read" ON workspaces FOR SELECT USING (
+  EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=workspaces.id AND user_id=auth.uid())
+);
 
 -- WORKSPACE GROUPS
 CREATE TABLE IF NOT EXISTS workspace_groups (
@@ -68,6 +74,8 @@ CREATE TABLE IF NOT EXISTS workspace_groups (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE workspace_groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "wg_member_read" ON workspace_groups;
+DROP POLICY IF EXISTS "wg_owner_write" ON workspace_groups;
 CREATE POLICY "wg_member_read" ON workspace_groups FOR SELECT USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=workspace_groups.workspace_id AND user_id=auth.uid())
 );
@@ -84,6 +92,8 @@ CREATE TABLE IF NOT EXISTS workspace_group_members (
   UNIQUE(group_id,user_id)
 );
 ALTER TABLE workspace_group_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "wgm_read" ON workspace_group_members;
+DROP POLICY IF EXISTS "wgm_write" ON workspace_group_members;
 CREATE POLICY "wgm_read" ON workspace_group_members FOR SELECT USING (
   EXISTS(SELECT 1 FROM workspace_groups wg JOIN workspace_members wm ON wm.workspace_id=wg.workspace_id WHERE wg.id=workspace_group_members.group_id AND wm.user_id=auth.uid())
 );
@@ -100,6 +110,8 @@ CREATE TABLE IF NOT EXISTS workspace_plans (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE workspace_plans ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "wp_member_read" ON workspace_plans;
+DROP POLICY IF EXISTS "wp_owner_write" ON workspace_plans;
 CREATE POLICY "wp_member_read" ON workspace_plans FOR SELECT USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=workspace_plans.workspace_id AND user_id=auth.uid())
 );
@@ -124,6 +136,7 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "projects_member" ON projects;
 CREATE POLICY "projects_member" ON projects FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=projects.workspace_id AND user_id=auth.uid())
 );
@@ -151,6 +164,7 @@ CREATE TABLE IF NOT EXISTS validations (
   completed_at timestamptz
 );
 ALTER TABLE validations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "validations_member" ON validations;
 CREATE POLICY "validations_member" ON validations FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=validations.workspace_id AND user_id=auth.uid())
 );
@@ -169,6 +183,7 @@ CREATE TABLE IF NOT EXISTS validation_steps (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE validation_steps ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "vsteps_member" ON validation_steps;
 CREATE POLICY "vsteps_member" ON validation_steps FOR ALL USING (
   EXISTS(SELECT 1 FROM validations v JOIN workspace_members wm ON wm.workspace_id=v.workspace_id WHERE v.id=validation_steps.validation_id AND wm.user_id=auth.uid())
 );
@@ -194,6 +209,7 @@ CREATE TABLE IF NOT EXISTS findings (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE findings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "findings_member" ON findings;
 CREATE POLICY "findings_member" ON findings FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=findings.workspace_id AND user_id=auth.uid())
 );
@@ -215,6 +231,7 @@ CREATE TABLE IF NOT EXISTS deployments (
   completed_at timestamptz
 );
 ALTER TABLE deployments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "deployments_member" ON deployments;
 CREATE POLICY "deployments_member" ON deployments FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=deployments.workspace_id AND user_id=auth.uid())
 );
@@ -231,6 +248,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "audit_member_read" ON audit_logs;
 CREATE POLICY "audit_member_read" ON audit_logs FOR SELECT USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=audit_logs.workspace_id AND user_id=auth.uid())
 );
@@ -249,6 +267,7 @@ CREATE TABLE IF NOT EXISTS deployment_policies (
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE deployment_policies ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "dp_member" ON deployment_policies;
 CREATE POLICY "dp_member" ON deployment_policies FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=deployment_policies.workspace_id AND user_id=auth.uid())
 );
@@ -270,6 +289,7 @@ CREATE TABLE IF NOT EXISTS incidents (
   resolved_at timestamptz
 );
 ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "incidents_member" ON incidents;
 CREATE POLICY "incidents_member" ON incidents FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=incidents.workspace_id AND user_id=auth.uid())
 );
@@ -286,11 +306,12 @@ CREATE TABLE IF NOT EXISTS ai_insights (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE ai_insights ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ai_insights_member" ON ai_insights;
 CREATE POLICY "ai_insights_member" ON ai_insights FOR ALL USING (
   EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id=ai_insights.workspace_id AND user_id=auth.uid())
 );
 
--- Auto-create workspace member record when workspace is created
+-- AUTO-CREATE WORKSPACE MEMBER + PLAN ON WORKSPACE CREATION
 CREATE OR REPLACE FUNCTION handle_new_workspace() RETURNS trigger AS $$
 BEGIN
   INSERT INTO workspace_members(workspace_id,user_id,role)
