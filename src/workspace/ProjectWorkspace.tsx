@@ -238,15 +238,15 @@ return<div>
   </div>
 )}
 
-{/* Metadata */}
-<div className="card mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+{/* Metadata — hide on full-screen tabs */}
+{tab!=='ai-assistant'&&tab!=='files'&&<div className="card mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
   <Meta icon={<GitFork size={14}/>} label="Git URL" value={project.git_url||'—'}/>
   <Meta icon={<GitBranch size={14}/>} label="Branch" value={project.git_branch||'—'}/>
   <Meta icon={<Code size={14}/>} label="Language" value={project.language||'—'}/>
   <Meta icon={<Boxes size={14}/>} label="Framework" value={project.framework||'—'}/>
   <Meta icon={<FolderGit2 size={14}/>} label="Created" value={new Date(project.created_at).toLocaleDateString()}/>
   <Meta icon={<ShieldCheck size={14}/>} label="Status" value={<span className="capitalize">{project.status}</span>}/>
-</div>
+</div>}
 
 {/* Tabs */}
 <div className="mb-5 flex gap-1 border-b border-gray-200">

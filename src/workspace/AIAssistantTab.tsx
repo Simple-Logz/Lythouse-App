@@ -176,7 +176,7 @@ export default function AIAssistantTab({projectId,workspaceId}:{projectId:string
   };
 
   return(
-    <div className="flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
+    <div className="flex flex-col" style={{height:"calc(100vh - 300px)",minHeight:480}}>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center">
           <Sparkles size={20} className="text-white"/>
