@@ -15,6 +15,7 @@ const[gitUrl,setGitUrl]=useState('');
 const[gitBranch,setGitBranch]=useState('main');
 const[repoFolder,setRepoFolder]=useState('');
 const[gitProvider,setGitProvider]=useState('github');
+const[repoVisibility,setRepoVisibility]=useState<'public'|'private'>('public');
 const[githubToken,setGithubToken]=useState('');
 const[ownerEmail,setOwnerEmail]=useState('');
 const[saving,setSaving]=useState(false);
@@ -150,8 +151,31 @@ return<div>
 <label className="label">Owner Email <span className="text-danger-600">*</span></label>
 <input className="input mb-3" type="email" value={ownerEmail} onChange={e=>{setOwnerEmail(e.target.value);setError('');}} placeholder="owner@example.com"/>
 
-<label className="label">GitHub Personal Access Token</label>
-<input className="input mb-3" type="password" value={githubToken} onChange={e=>setGithubToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx"/>
+<label className="label">Repository visibility</label>
+<div className="grid grid-cols-2 gap-2 mb-3">
+  <button type="button" onClick={()=>{setRepoVisibility('public');setGithubToken('');}} className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${repoVisibility==='public'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    Public
+  </button>
+  <button type="button" onClick={()=>setRepoVisibility('private')} className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${repoVisibility==='private'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Private
+  </button>
+</div>
+
+{repoVisibility==='private'&&(
+  <>
+    <label className="label">Personal Access Token <span className="text-danger-600">*</span></label>
+    <input className="input mb-1" type="password" value={githubToken} onChange={e=>setGithubToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx"/>
+    <p className="text-xs text-gray-400 mb-3">Required for private repositories. <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create a token →</a></p>
+  </>
+)}
+{repoVisibility==='public'&&(
+  <p className="text-xs text-gray-400 mb-3 flex items-center gap-1.5">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    Public repositories don't require a token.
+  </p>
+)}
 
 <label className="label">Folder within branch <span className="text-gray-400 font-normal">(optional)</span></label>
 <input className="input mb-3" value={repoFolder} onChange={e=>setRepoFolder(e.target.value)} placeholder="e.g. src — leave blank for root"/>
