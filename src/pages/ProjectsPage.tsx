@@ -65,7 +65,7 @@ const createProject=async()=>{
     description:desc.trim()||null,
     git_url:gitUrl.trim(),
     git_branch:gitBranch.trim()||'main',
-    repo_folder:repoFolder.trim()||null,
+    repo_folder:repoFolder.trim()||'',
     github_token:githubToken.trim()||null,
     language:ownerEmail.trim(),
     status:'active',
