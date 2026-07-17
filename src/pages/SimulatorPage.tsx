@@ -71,61 +71,99 @@ return<div>
 }/>
 
 {simulations.length===0
-?<EmptyState icon={<FlaskConical size={22}/>} title="No simulations yet" description="Run a deployment simulation to predict risk scores, blast radius, and affected services." action={<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New simulation</button>}/>
-:<div className="grid gap-4 lg:grid-cols-2">
-{simulations.map(s=>(
-<div key={s.id} className="card">
-<div className="flex items-start justify-between">
-<div className="flex items-center gap-3">
-<div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><FlaskConical size={20}/></div>
+?<EmptyState icon={<FlaskConical size={22}/>} title="No simulations yet" description="Run a deployment simulation to predict risk scores, blast radius, and affected services before deploying." action={<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New simulation</button>}/>
+:<div className="space-y-4">
+{simulations.map(s=>{
+const isRunning=s.status==='running'||s.status==='pending';
+const isDone=s.status==='completed';
+const isFailed=s.status==='failed';
+const isExpanded=expanded===s.id;
+const verdict=isDone?(s.predicted_risk_score??0)<40?'go':(s.predicted_risk_score??0)<70?'conditional':'no-go':null;
+const verdictStyle=verdict==='go'?'border-green-200 bg-green-50 text-green-700':verdict==='conditional'?'border-amber-200 bg-amber-50 text-amber-700':verdict==='no-go'?'border-red-200 bg-red-50 text-danger-600':'border-gray-200 bg-gray-50 text-gray-600';
+return<div key={s.id} className="card p-0 overflow-hidden">
+<button onClick={()=>setExpanded(isExpanded?null:s.id)} className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors">
+{isExpanded?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
+<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><FlaskConical size={20}/></div>
+<div className="flex-1 min-w-0">
+<div className="flex flex-wrap items-center gap-2 mb-1">
+<span className="text-sm font-semibold text-navy-900">{s.project_name??'Unknown project'}</span>
+<span className={`chip border text-xs ${ENV_COLORS[s.environment]??'bg-gray-100 text-gray-600 border-gray-200'}`}>{s.environment}</span>
+{isRunning&&<span className="flex items-center gap-1 text-xs text-brand-600"><RefreshCw size={11} className="animate-spin"/>Analyzing…</span>}
+{isDone&&verdict&&<span className={`chip border text-xs font-semibold uppercase ${verdictStyle}`}>{verdict==='go'?'✓ Safe to deploy':verdict==='conditional'?'⚠ Review required':'⛔ Do not deploy'}</span>}
+{isFailed&&<span className="chip border text-xs bg-red-50 text-danger-600 border-red-200">Failed</span>}
+</div>
+{isDone&&(
+<div className="flex flex-wrap gap-3 text-xs text-gray-500">
+{s.predicted_risk_score!==null&&<span>Risk score: <strong className={`${(s.predicted_risk_score??0)>70?'text-danger-600':(s.predicted_risk_score??0)>40?'text-amber-600':'text-green-600'}`}>{s.predicted_risk_score}/100</strong></span>}
+{s.blast_radius&&<span>Blast radius: <strong className="text-navy-900 capitalize">{s.blast_radius}</strong></span>}
+{s.confidence&&<span>Confidence: <strong className="text-navy-900">{s.confidence}%</strong></span>}
+</div>
+)}
+</div>
+{isDone&&s.predicted_risk_score!==null&&(
+<div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold ${(s.predicted_risk_score??0)>70?'bg-red-50 text-danger-600':(s.predicted_risk_score??0)>40?'bg-amber-50 text-amber-600':'bg-green-50 text-green-600'}`}>
+{s.predicted_risk_score}
+</div>
+)}
+</button>
+
+{isExpanded&&isDone&&(
+<div className="border-t border-gray-100 bg-gray-50/50 px-4 py-4 space-y-4">
+{/* Verdict */}
+<div className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${verdictStyle}`}>
+{verdict==='go'?<CheckCircle2 size={17} className="shrink-0 mt-0.5"/>:verdict==='no-go'?<AlertTriangle size={17} className="shrink-0 mt-0.5"/>:<Zap size={17} className="shrink-0 mt-0.5"/>}
 <div>
-<h3 className="text-sm font-semibold text-navy-900">{s.project_name??'Unknown'}</h3>
-<div className="mt-1 flex items-center gap-2">
-<span className={`chip border ${ENV_COLORS[s.environment]??''}`}>{s.environment}</span>
-<StatusBadge status={s.status}/>
+<p className="text-sm font-bold">{verdict==='go'?'Safe to deploy to '+s.environment:verdict==='conditional'?'Conditional — review before deploying':'Do not deploy — risk too high'}</p>
+<p className="text-xs mt-0.5 opacity-80">{s.impact_summary||'Simulation complete. Review results below.'}</p>
 </div>
 </div>
-</div>
-<RiskGauge score={s.predicted_risk_score} size={80}/>
-</div>
-<div className="mt-4 grid grid-cols-2 gap-3">
-<div className="rounded-lg bg-gray-50 p-3">
-<p className="text-xs font-medium uppercase tracking-wide text-gray-400">Blast Radius</p>
-{s.blast_radius
-?<span className={`chip mt-1 border ${BLAST_COLORS[s.blast_radius]??''}`}>{s.blast_radius}</span>
-:<span className="mt-1 block text-sm text-gray-400">—</span>}
-</div>
-<div className="rounded-lg bg-gray-50 p-3">
-<p className="text-xs font-medium uppercase tracking-wide text-gray-400">Affected Services</p>
-{s.affected_services.length
-?<div className="mt-1 flex flex-wrap gap-1">{s.affected_services.slice(0,3).map((sv,i)=><span key={i} className="chip bg-white text-gray-600 border border-gray-200"><Boxes size={10}/>{sv}</span>)}{s.affected_services.length>3&&<span className="text-xs text-gray-400">+{s.affected_services.length-3}</span>}</div>
-:<span className="mt-1 block text-sm text-gray-400">None</span>}
-</div>
-</div>
-{s.impact_summary&&<p className="mt-3 text-sm text-gray-500">{s.impact_summary}</p>}
+
+{/* Risk breakdown */}
+<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+{[
+['Predicted Risk',`${s.predicted_risk_score??'—'}/100`,(s.predicted_risk_score??0)>70?'text-danger-600':(s.predicted_risk_score??0)>40?'text-amber-600':'text-green-600'],
+['Blast Radius',s.blast_radius?s.blast_radius.charAt(0).toUpperCase()+s.blast_radius.slice(1):'—',s.blast_radius==='critical'?'text-danger-600':s.blast_radius==='large'?'text-amber-600':'text-green-600'],
+['Confidence',s.confidence?`${s.confidence}%`:'—','text-navy-900'],
+['Severity',s.predicted_severity?s.predicted_severity.charAt(0).toUpperCase()+s.predicted_severity.slice(1):'None',s.predicted_severity==='critical'?'text-danger-600':s.predicted_severity==='high'?'text-amber-600':'text-green-600'],
+].map(([label,val,color])=>(
+<div key={label as string} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-center">
+<p className={`text-lg font-bold ${color}`}>{val}</p>
+<p className="text-xs text-gray-500 mt-0.5">{label}</p>
 </div>
 ))}
-</div>}
+</div>
 
-{creating&&(
-<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={()=>setCreating(false)}>
-<div className="w-full max-w-md animate-scale-in rounded-xl bg-white p-5 shadow-xl" onClick={e=>e.stopPropagation()}>
-<div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">New simulation</h2><button onClick={()=>setCreating(false)} className="btn-ghost p-1"><X size={16}/></button></div>
-{error&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{error}</div>}
-<label className="label">Project</label>
-<select className="input mb-3" value={selProject} onChange={e=>setSelProject(e.target.value)}>
-<option value="">Select a project…</option>
-{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-</select>
-<label className="label">Environment</label>
-<select className="input mb-3" value={selEnv} onChange={e=>setSelEnv(e.target.value as any)}>
-<option value="production">Production</option><option value="staging">Staging</option><option value="preview">Preview</option>
-</select>
-<label className="label">Config overrides (JSON)</label>
-<textarea className="input mb-4" rows={4} value={overrides} onChange={e=>setOverrides(e.target.value)} placeholder='{"replicas":3}'/>
-<div className="flex justify-end gap-2"><button onClick={()=>setCreating(false)} className="btn-secondary">Cancel</button><button onClick={createSimulation} disabled={saving||!selProject} className="btn-primary">{saving?<Loader2 size={16} className="animate-spin"/>:<Activity size={16}/>} Run</button></div>
+{/* Affected services */}
+{s.affected_services&&s.affected_services.length>0&&(
+<div>
+<p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Affected Services</p>
+<div className="flex flex-wrap gap-2">
+{s.affected_services.map((svc:string)=>(
+<span key={svc} className="chip bg-gray-100 text-gray-700 border border-gray-200">{svc}</span>
+))}
 </div>
 </div>
 )}
+
+{/* Rollback plan */}
+{s.rollback_plan&&(
+<div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+<p className="text-xs font-semibold uppercase tracking-wide text-brand-700 mb-1">Rollback Plan</p>
+<p className="text-sm text-brand-900">{s.rollback_plan}</p>
+</div>
+)}
+</div>
+)}
+
+{isExpanded&&isRunning&&(
+<div className="border-t border-gray-100 bg-gray-50/50 px-4 py-6 text-center">
+<RefreshCw size={20} className="animate-spin text-brand-500 mx-auto mb-2"/>
+<p className="text-sm text-gray-600">Analyzing your deployment…</p>
+<p className="text-xs text-gray-400 mt-1">This takes about 10-15 seconds</p>
+</div>
+)}
+</div>;
+})}
+</div>}
 </div>;
 }
