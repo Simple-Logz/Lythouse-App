@@ -259,103 +259,168 @@ return<div>
 </div>
 
 {tab==='validations'&&(
-  <div className="space-y-4">
-    {/* What to do next */}
-    {validations.length>0&&(()=>{
-      const latest=validations[0];
-      const isComplete=latest.status==='completed';
-      const hasIssues=latest.critical_count>0||latest.high_count>0;
-      return<div className={`rounded-xl border px-5 py-4 ${latest.critical_count>0?'border-red-200 bg-red-50':latest.high_count>0?'border-amber-200 bg-amber-50':isComplete?'border-green-200 bg-green-50':'border-brand-200 bg-brand-50'}`}>
-        <div className="flex items-start justify-between gap-4">
+  <div className="space-y-5">
+    {/* Deployment decision — the only thing that matters */}
+    <div className={`rounded-2xl border-2 px-6 py-5 ${
+      running?'border-brand-300 bg-brand-50':
+      validations.length===0?'border-gray-200 bg-gray-50':
+      validations[0]?.critical_count>0?'border-red-300 bg-red-50':
+      validations[0]?.high_count>0?'border-amber-300 bg-amber-50':
+      validations[0]?.status==='completed'?'border-green-300 bg-green-50':
+      'border-gray-200 bg-gray-50'
+    }`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black ${
+            running?'bg-brand-100 text-brand-600':
+            validations.length===0?'bg-gray-100 text-gray-400':
+            validations[0]?.critical_count>0?'bg-red-100 text-danger-600':
+            validations[0]?.high_count>0?'bg-amber-100 text-amber-600':
+            validations[0]?.status==='completed'?'bg-green-100 text-green-600':
+            'bg-gray-100 text-gray-400'
+          }`}>
+            {running?'⟳':validations.length===0?'–':
+             validations[0]?.critical_count>0?'⛔':
+             validations[0]?.high_count>0?'⚠':
+             validations[0]?.status==='completed'?'✓':'–'}
+          </div>
           <div>
-            <p className={`text-sm font-bold ${latest.critical_count>0?'text-danger-600':latest.high_count>0?'text-amber-700':isComplete?'text-green-700':'text-brand-700'}`}>
-              {latest.status==='pending'||latest.status==='running'?'Validation in progress…':
-               latest.critical_count>0?`⛔ ${latest.critical_count} critical issue${latest.critical_count!==1?'s':''} — do not deploy`:
-               latest.high_count>0?`⚠ ${latest.high_count} high-severity issue${latest.high_count!==1?'s':''} — review before deploying`:
-               latest.total_findings>0?`${latest.total_findings} findings — low risk, safe to deploy with caution`:
-               '✓ Clean scan — safe to deploy'}
-            </p>
-            <p className={`text-xs mt-1 ${latest.critical_count>0?'text-red-600':latest.high_count>0?'text-amber-600':isComplete?'text-green-600':'text-brand-600'}`}>
-              {hasIssues?'Go to Findings tab to see what needs fixing and resolve each issue.':isComplete?'All checks passed. You can proceed with deployment.':'Scanning your repository…'}
+            <h2 className="text-xl font-bold text-navy-900">
+              {running?'Scanning your repository…':
+               validations.length===0?'No scans yet':
+               validations[0]?.critical_count>0?'Do not deploy — critical issues found':
+               validations[0]?.high_count>0?`Review before deploying — ${validations[0].high_count} high severity issue${validations[0].high_count!==1?'s':''}`:
+               validations[0]?.status==='completed'?'Safe to deploy — all checks passed':
+               validations[0]?.status==='failed'?'Scan failed':'Scanning…'}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {running?'Checking for secrets, vulnerabilities, and security issues across all files.':
+               validations.length===0?'Run a scan to find security issues, exposed secrets, and vulnerable dependencies before deploying.':
+               validations[0]?.critical_count>0?`Found ${validations[0].critical_count} critical issue${validations[0].critical_count!==1?'s':''} that must be fixed before this code goes to production. Go to Findings to resolve them.`:
+               validations[0]?.high_count>0?`Found ${validations[0].high_count} high-severity issue${validations[0].high_count!==1?'s':''}. Review and resolve in the Findings tab before deploying to production.`:
+               validations[0]?.status==='completed'?`Scanned ${validations[0].total_findings===0?'all files':'all files'} — no issues blocking deployment. Risk score: ${validations[0].risk_score??'—'}/100.`:
+               'Scan in progress…'}
             </p>
           </div>
-          <div className="flex gap-2 shrink-0">
-            {hasIssues&&<button onClick={()=>setTab('findings')} className="btn-primary text-xs">View findings →</button>}
-            {isComplete&&!hasIssues&&<button className="btn-primary text-xs">Deploy now</button>}
-            <button onClick={runValidation} disabled={running} className="btn-secondary text-xs">
-              {running?<RefreshCw size={13} className="animate-spin"/>:<Play size={13}/>}Re-scan
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          {validations[0]?.risk_score!==null&&validations.length>0&&<RiskGauge score={validations[0]?.risk_score} size={72}/>}
+          <div className="flex gap-2">
+            {validations.length>0&&validations[0]?.total_findings>0&&(
+              <button onClick={()=>setTab('findings')} className="btn-primary text-sm">View findings →</button>
+            )}
+            <button onClick={runValidation} disabled={running} className="btn-secondary text-sm">
+              {running?<><RefreshCw size={14} className="animate-spin"/>Scanning…</>:<><Play size={14}/>{validations.length>0?'Re-scan':'Run scan'}</>}
             </button>
           </div>
         </div>
-      </div>;
-    })()}
+      </div>
 
-    {validations.length===0
-    ?<EmptyState icon={<ShieldCheck size={22}/>} title="No validations yet" description="Run a validation to scan your repository for security issues, exposed secrets, and vulnerable dependencies. Results appear here in real time." action={<button onClick={runValidation} disabled={running} className="btn-primary"><Play size={15}/>Run Validation</button>}/>
-    :<div className="space-y-3">
-      {validations.map(v=>{
-        const open=expandedVid===v.id;
-        const isLive=v.status==='running'||v.status==='pending';
-        const verdict=v.critical_count>0?{label:'Do not deploy',color:'text-danger-600',bg:'bg-red-50 border-red-200'}:
-          v.high_count>0?{label:'Review required',color:'text-amber-600',bg:'bg-amber-50 border-amber-200'}:
-          v.status==='completed'?{label:'Safe to deploy',color:'text-green-600',bg:'bg-green-50 border-green-200'}:
-          {label:'In progress',color:'text-brand-600',bg:'bg-brand-50 border-brand-200'};
-        return<div key={v.id} className="card p-0 overflow-hidden">
-          <button onClick={()=>toggleVid(v.id)} className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors">
-            {open?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge status={v.status}/>
-                <span className={`chip border text-xs ${verdict.bg} ${verdict.color}`}>{verdict.label}</span>
-                {v.severity&&<SeverityBadge severity={v.severity}/>}
-                <span className="chip bg-gray-50 text-gray-600 border border-gray-200">{v.total_findings} findings</span>
-                {isLive&&<span className="flex items-center gap-1 text-xs text-brand-600"><RefreshCw size={11} className="animate-spin"/>Live</span>}
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                {v.critical_count>0&&<span className="text-danger-600 font-semibold">● {v.critical_count} critical</span>}
-                {v.high_count>0&&<span className="text-amber-600 font-semibold">● {v.high_count} high</span>}
-                {v.medium_count>0&&<span className="text-blue-500">● {v.medium_count} medium</span>}
-                {v.low_count>0&&<span className="text-gray-400">● {v.low_count} low</span>}
-                <span>· {timeAgo(v.created_at)}</span>
-                {v.duration_ms&&<span>· {fmtDuration(v.duration_ms)}</span>}
-              </div>
-              {v.summary&&<p className="mt-1.5 text-xs text-gray-500 line-clamp-2 italic">"{v.summary}"</p>}
-            </div>
-            <div className="flex items-center gap-3">
-              {v.status==='completed'&&v.total_findings>0&&(
-                <button onClick={e=>{e.stopPropagation();setTab('findings');}} className="text-xs text-brand-600 hover:underline font-medium">Fix issues →</button>
-              )}
-              <RiskGauge score={v.risk_score} size={56}/>
-            </div>
+      {/* What was scanned */}
+      {validations.length>0&&validations[0]?.summary&&(
+        <div className="mt-4 pt-4 border-t border-black/10">
+          <p className="text-sm text-gray-600 italic">"{validations[0].summary}"</p>
+        </div>
+      )}
+    </div>
+
+    {/* Findings breakdown — only show if there are findings */}
+    {validations.length>0&&validations[0]?.total_findings>0&&(
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          {label:'Critical',count:validations[0].critical_count,color:'text-danger-600',bg:'bg-red-50',border:'border-red-200',action:()=>{setSevFilter('critical' as any);setTab('findings');}},
+          {label:'High',count:validations[0].high_count,color:'text-amber-600',bg:'bg-amber-50',border:'border-amber-200',action:()=>{setSevFilter('high' as any);setTab('findings');}},
+          {label:'Medium',count:validations[0].medium_count,color:'text-blue-600',bg:'bg-blue-50',border:'border-blue-200',action:()=>{setSevFilter('medium' as any);setTab('findings');}},
+          {label:'Low',count:validations[0].low_count,color:'text-gray-600',bg:'bg-gray-50',border:'border-gray-200',action:()=>{setSevFilter('low' as any);setTab('findings');}},
+        ].map(s=>(
+          <button key={s.label} onClick={s.action} className={`card border ${s.border} ${s.bg} hover:shadow-md transition-all text-left`}>
+            <div className={`text-3xl font-black tabular-nums ${s.color}`}>{s.count}</div>
+            <div className="text-xs font-semibold text-gray-500 mt-1">{s.label} severity</div>
+            {s.count>0&&<div className="text-xs text-gray-400 mt-0.5">Click to view →</div>}
           </button>
-          {open&&(
-            <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-3">
-              {(stepsByVid[v.id]??[]).length===0
-                ?<p className="py-3 text-sm text-gray-400">{isLive?'Scan starting — steps will appear here…':'No step detail available for this run.'}</p>
-                :<div className="space-y-2">
-                  {(stepsByVid[v.id]??[]).map(s=>(
-                    <div key={s.id} className={`flex items-start gap-3 rounded-lg px-3 py-2.5 border ${s.status==='completed'?'bg-green-50 border-green-100':s.status==='failed'?'bg-red-50 border-red-100':'bg-white border-gray-100'}`}>
-                      <StatusBadge status={s.status}/>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-navy-900">{s.name}</p>
-                        {s.detail&&<p className="mt-0.5 text-xs text-gray-500">{s.detail}</p>}
-                        {s.status==='failed'&&<p className="mt-1 text-xs text-danger-600 font-medium">→ Go to Findings to resolve this issue</p>}
-                      </div>
-                      <span className="shrink-0 text-xs text-gray-400">{fmtDuration(s.duration_ms)}</span>
-                    </div>
-                  ))}
-                  {v.status==='completed'&&v.total_findings>0&&(
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <p className="text-xs text-gray-500">{v.total_findings} issue{v.total_findings!==1?'s':''} found that need your attention.</p>
-                      <button onClick={()=>setTab('findings')} className="btn-primary text-xs">Resolve findings →</button>
-                    </div>
-                  )}
-                </div>}
+        ))}
+      </div>
+    )}
+
+    {/* What to do next — clear action plan */}
+    {validations.length>0&&validations[0]?.status==='completed'&&(
+      <div className="card">
+        <h3 className="text-sm font-semibold text-navy-900 mb-3">What to do next</h3>
+        <div className="space-y-2">
+          {validations[0].critical_count>0&&(
+            <div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2.5">
+              <span className="text-danger-600 font-bold text-sm shrink-0">1.</span>
+              <div>
+                <p className="text-sm font-semibold text-danger-600">Fix {validations[0].critical_count} critical issue{validations[0].critical_count!==1?'s':''} immediately</p>
+                <p className="text-xs text-red-600/70 mt-0.5">Critical findings are deployment blockers. Open the Findings tab, expand each critical finding, use "Generate Fix" to get AI-written code fixes, apply them, then re-scan.</p>
+                <button onClick={()=>setTab('findings')} className="mt-2 text-xs font-semibold text-danger-600 underline">Go to Findings →</button>
+              </div>
             </div>
           )}
-        </div>;
-      })}
-    </div>}
+          {validations[0].high_count>0&&(
+            <div className="flex items-start gap-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+              <span className="text-amber-600 font-bold text-sm shrink-0">{validations[0].critical_count>0?'2.':'1.'}</span>
+              <div>
+                <p className="text-sm font-semibold text-amber-700">Review {validations[0].high_count} high-severity issue{validations[0].high_count!==1?'s':''}</p>
+                <p className="text-xs text-amber-600/70 mt-0.5">High findings should be fixed before deploying to production. Each finding has a recommended fix and an AI-generated code fix you can apply immediately.</p>
+                <button onClick={()=>setTab('findings')} className="mt-2 text-xs font-semibold text-amber-700 underline">Review findings →</button>
+              </div>
+            </div>
+          )}
+          {validations[0].critical_count===0&&validations[0].high_count===0&&validations[0].total_findings>0&&(
+            <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5">
+              <span className="text-blue-600 font-bold text-sm shrink-0">1.</span>
+              <div>
+                <p className="text-sm font-semibold text-blue-700">Address {validations[0].total_findings} low/medium finding{validations[0].total_findings!==1?'s':''} when possible</p>
+                <p className="text-xs text-blue-600/70 mt-0.5">These are not deployment blockers but should be addressed over time to keep your risk score low.</p>
+              </div>
+            </div>
+          )}
+          {validations[0].critical_count===0&&validations[0].high_count===0&&(
+            <div className="flex items-start gap-3 rounded-lg bg-green-50 border border-green-200 px-3 py-2.5">
+              <span className="text-green-600 font-bold text-sm shrink-0">✓</span>
+              <div>
+                <p className="text-sm font-semibold text-green-700">You're clear to deploy</p>
+                <p className="text-xs text-green-600/70 mt-0.5">No critical or high-severity issues found. Run the Deployment Simulator for a final pre-flight check before pushing to production.</p>
+                <button onClick={()=>setTab('simulator')} className="mt-2 text-xs font-semibold text-green-700 underline">Run simulator →</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Scan history */}
+    {validations.length>1&&(
+      <div className="card">
+        <h3 className="text-sm font-semibold text-navy-900 mb-3">Scan history</h3>
+        <div className="space-y-1">
+          {validations.map((v,i)=>(
+            <div key={v.id} onClick={()=>toggleVid(v.id)} className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
+              <StatusBadge status={v.status}/>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 text-sm">
+                  {v.critical_count>0&&<span className="text-danger-600 font-semibold text-xs">● {v.critical_count} crit</span>}
+                  {v.high_count>0&&<span className="text-amber-600 font-semibold text-xs">● {v.high_count} high</span>}
+                  {v.critical_count===0&&v.high_count===0&&v.status==='completed'&&<span className="text-green-600 text-xs">✓ Clean</span>}
+                  <span className="text-gray-400 text-xs">{timeAgo(v.created_at)} · {fmtDuration(v.duration_ms)}</span>
+                </div>
+              </div>
+              <RiskGauge score={v.risk_score} size={40}/>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {validations.length===0&&!running&&(
+      <div className="card text-center py-10">
+        <ShieldCheck size={40} className="mx-auto text-gray-300 mb-3"/>
+        <p className="text-sm font-medium text-gray-600 mb-1">No scans have been run yet</p>
+        <p className="text-xs text-gray-400 mb-4">Click "Run scan" to check this repository for security issues, exposed secrets, and vulnerable dependencies.</p>
+        <button onClick={runValidation} className="btn-primary"><Play size={15}/>Run first scan</button>
+      </div>
+    )}
   </div>
 )}
 

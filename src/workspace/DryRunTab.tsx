@@ -18,15 +18,19 @@ const[environment,setEnvironment]=useState<'production'|'staging'|'preview'>('pr
 const[error,setError]=useState<string|null>(null);
 
 async function load(){
-setLoading(true);
+setLoading(true);setError(null);
 try{
-const[fileRes,{data:vals},{data:f}]=await Promise.all([
-fetch(edgeFunctionUrl+'/repo-operation',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anonKey,'apikey':anonKey},body:JSON.stringify({operation:'list',projectId})}),
+const[{data:vals},{data:f}]=await Promise.all([
 supabase.from('validations').select('*').eq('project_id',projectId).order('created_at',{ascending:false}).limit(5),
 supabase.from('findings').select('*').eq('project_id',projectId).order('created_at',{ascending:false}).limit(50),
 ]);
-const fd=await fileRes.json();setFiles((fd.files??[])as RepoFile[]);
-setValidations((vals??[])as Validation[]);setFindings((f??[])as Finding[]);
+setValidations((vals??[])as Validation[]);
+setFindings((f??[])as Finding[]);
+// Try to load repo files but don't fail if unavailable
+try{
+const fileRes=await fetch(edgeFunctionUrl+'/repo-operation',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anonKey,'apikey':anonKey},body:JSON.stringify({operation:'list',projectId})});
+if(fileRes.ok){const fd=await fileRes.json();setFiles((fd.files??[])as RepoFile[]);}
+}catch{/* repo files optional */}
 }catch(e){setError(e instanceof Error?e.message:'Failed to load');}
 setLoading(false);
 }

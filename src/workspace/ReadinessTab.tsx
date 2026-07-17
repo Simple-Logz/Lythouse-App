@@ -16,16 +16,16 @@ const[error,setError]=useState<string|null>(null);
 async function load(){
 setLoading(true);setError(null);
 try{
-const[fileRes,{data:vals},{data:f}]=await Promise.all([
-fetch(edgeFunctionUrl+'/repo-operation',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anonKey,'apikey':anonKey},body:JSON.stringify({operation:'list',projectId})}),
+const[{data:vals},{data:f}]=await Promise.all([
 supabase.from('validations').select('*').eq('project_id',projectId).order('created_at',{ascending:false}).limit(10),
 supabase.from('findings').select('*').eq('project_id',projectId).order('created_at',{ascending:false}).limit(50),
 ]);
-if(!fileRes.ok)throw new Error('Failed to fetch repo files');
-const fd=await fileRes.json();
-setFiles((fd.files??[])as RepoFile[]);
 setValidations((vals??[])as Validation[]);
 setFindings((f??[])as Finding[]);
+try{
+const fileRes=await fetch(edgeFunctionUrl+'/repo-operation',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+anonKey,'apikey':anonKey},body:JSON.stringify({operation:'list',projectId})});
+if(fileRes.ok){const fd=await fileRes.json();setFiles((fd.files??[])as RepoFile[]);}
+}catch{/* optional */}
 }catch(e){setError(e instanceof Error?e.message:'Failed to load');}
 setLoading(false);
 }
