@@ -9,7 +9,7 @@ function Tip({text}:{text:string}){
     <button type="button" onMouseEnter={()=>setShow(true)} onMouseLeave={()=>setShow(false)} onClick={()=>setShow(s=>!s)} className="text-gray-400 hover:text-brand-500 transition-colors">
       <HelpCircle size={13}/>
     </button>
-    {show&&<span className="absolute left-5 top-0 z-50 w-56 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-lg leading-relaxed" style={{minWidth:200}}>
+    {show&&<span className="absolute z-50 w-56 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-lg leading-relaxed" style={{minWidth:200,right:0,top:'1.5rem'}}>
       {text}
     </span>}
   </span>;
