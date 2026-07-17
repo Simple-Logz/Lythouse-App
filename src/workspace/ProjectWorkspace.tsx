@@ -277,7 +277,7 @@ return<div>
       {isActive?active.label:g.label}
       <ChevronDown size={11} className="opacity-50"/>
     </button>
-    {isOpen&&<div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 min-w-[200px]">
+    {isOpen&&<div className="absolute left-0 top-full z-40 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5" style={{minWidth:200}}>
       {g.tabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);setOpenGroup(null);}} className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${tab===t.id?'text-brand-600 font-semibold bg-brand-50':'text-gray-700'}`}>
         <t.icon size={14} className={tab===t.id?'text-brand-600':'text-gray-400'}/>{t.label}
         {tab===t.id&&<Check size={12} className="ml-auto text-brand-600"/>}
