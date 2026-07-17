@@ -402,9 +402,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
     setLoading(true);
     const{data}=await supabase.from('environment_connections').select('*').eq('project_id',projectId).order('created_at',{ascending:false});
     const conns=(data??[]) as Connection[];
-    // Mark connections saved before real verification was enforced as 'unverified'
-    const verified=conns.map(c=>({...c,status:c.config&&Object.keys(c.config).length>0?c.status:'unverified'}));
-    setConnections(verified);
+    setConnections(conns);
     // Build synthetic change events from connection history
     const events:ChangeEvent[]=conns.filter(c=>c.status==='connected'&&c.last_synced_at).map((c,i)=>{
       const asset=ALL_ASSETS.find(a=>a.id===c.source);
@@ -510,7 +508,6 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
   };
 
   const connected=connections.filter(c=>c.status==='connected');
-  const unverified=connections.filter(c=>c.status==='unverified'||Object.keys(c.config||{}).length===0);
   const connectedIds=new Set(connected.map(c=>c.source));
 
   const filteredAssets=useMemo(()=>ALL_ASSETS.filter(a=>{
@@ -564,16 +561,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Connected assets - takes 2 cols */}
         <div className="lg:col-span-2 space-y-3">
-          {unverified.length>0&&(
-            <div className="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 flex items-start gap-3">
-              <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5"/>
-              <div>
-                <p className="text-sm font-bold text-red-700">{unverified.length} connection{unverified.length!==1?'s':''} saved without real verification</p>
-                <p className="text-xs text-red-600 mt-0.5">These were connected before credential verification was enforced. Please disconnect and reconnect them with real credentials after deploying the verification service.</p>
-                <button onClick={async()=>{for(const c of unverified){await supabase.from('environment_connections').update({status:'disconnected'}).eq('id',c.id);}await load();}} className="mt-2 text-xs font-semibold text-red-700 underline">Remove all unverified connections</button>
-              </div>
-            </div>
-          )}
+
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2">
               <CheckCircle2 size={14} className="text-green-600"/>Connected Systems ({connected.length})
