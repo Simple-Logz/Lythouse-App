@@ -27,6 +27,8 @@ const[selEnv,setSelEnv]=useState<DeploymentSimulation['environment']>('staging')
 const[overrides,setOverrides]=useState('');
 const[saving,setSaving]=useState(false);
 const[error,setError]=useState('');
+const[expanded,setExpanded]=useState<string|null>(null);
+const[polling,setPolling]=useState<string|null>(null);
 
 const wsId=()=>localStorage.getItem('sandbox.activeWs');
 
