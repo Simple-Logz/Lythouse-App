@@ -79,7 +79,19 @@ export function SettingsPage(){
       const saved=localStorage.getItem('lythouse.notif');
       if(saved)setNotif(JSON.parse(saved));
       const savedApp=localStorage.getItem('lythouse.appPref');
-      if(savedApp)setAppPref(JSON.parse(savedApp));
+      if(savedApp){
+        const parsed=JSON.parse(savedApp);
+        setAppPref(parsed);
+        // Apply saved theme immediately
+        const root=document.documentElement;
+        if(parsed.theme==='dark'){root.classList.add('dark');root.style.colorScheme='dark';}
+        else if(parsed.theme==='light'){root.classList.remove('dark');root.style.colorScheme='light';}
+        else{
+          const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if(prefersDark){root.classList.add('dark');root.style.colorScheme='dark';}
+          else{root.classList.remove('dark');root.style.colorScheme='light';}
+        }
+      }
     }catch{}
   },[profile]);
 
@@ -97,10 +109,32 @@ export function SettingsPage(){
     setTimeout(()=>setSaved(''),2500);
   };
 
+  const applyTheme=(theme:'light'|'dark'|'system')=>{
+    const root=document.documentElement;
+    if(theme==='dark'){
+      root.classList.add('dark');
+      root.style.colorScheme='dark';
+    } else if(theme==='light'){
+      root.classList.remove('dark');
+      root.style.colorScheme='light';
+    } else {
+      // System
+      const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if(prefersDark){root.classList.add('dark');root.style.colorScheme='dark';}
+      else{root.classList.remove('dark');root.style.colorScheme='light';}
+    }
+  };
+
   const saveAppearance=()=>{
     localStorage.setItem('lythouse.appPref',JSON.stringify(appPref));
+    applyTheme(appPref.theme);
     setSaved('appearance');
     setTimeout(()=>setSaved(''),2500);
+  };
+
+  const setTheme=(theme:'light'|'dark'|'system')=>{
+    setAppPref(p=>({...p,theme}));
+    applyTheme(theme);
   };
 
   const changePassword=async()=>{
@@ -265,7 +299,7 @@ export function SettingsPage(){
           <h2 className="text-base font-semibold text-navy-900 mb-4 flex items-center gap-2"><Palette size={17} className="text-brand-600"/>Theme</h2>
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[{id:'light',label:'Light',icon:Sun},{id:'dark',label:'Dark',icon:Moon},{id:'system',label:'System',icon:Monitor}].map(t=>(
-              <button key={t.id} onClick={()=>setAppPref(p=>({...p,theme:t.id as any}))} className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${appPref.theme===t.id?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300'}`}>
+              <button key={t.id} onClick={()=>setTheme(t.id as any)} className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${appPref.theme===t.id?'border-brand-500 bg-brand-50':'border-gray-200 hover:border-gray-300'}`}>
                 <t.icon size={20} className={appPref.theme===t.id?'text-brand-600':'text-gray-400'}/>
                 <span className={`text-sm font-medium ${appPref.theme===t.id?'text-brand-700':'text-gray-600'}`}>{t.label}</span>
               </button>
