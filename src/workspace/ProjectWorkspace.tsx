@@ -95,7 +95,7 @@ const pollValidation=async(validationId:string)=>{
     // Refresh findings
     const{data:fRes}=await supabase.from('findings').select('*').eq('project_id',projectId).order('created_at',{ascending:false});
     setFindings(fRes??[]);
-    if(v.status==='completed'){setTab('validations');}
+    if(v.status==='completed'){setTab('deployment');}
   }
 };
 
@@ -129,7 +129,7 @@ const runValidation=async()=>{
   setValidations(prev=>[v,...prev]);
   setExpandedVid(v.id);
   setActiveRunId(v.id);
-  setTab('validations');
+  setTab('deployment');
 
   // Call the edge function
   try{
