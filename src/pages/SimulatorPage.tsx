@@ -1,7 +1,7 @@
 import{useEffect,useState}from'react';
 import{supabase,type DeploymentSimulation,type Project}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,RiskGauge,StatusBadge}from'../lib/ui';
-import{FlaskConical,Plus,X,Loader as Loader2,Activity,Boxes}from'lucide-react';
+import{FlaskConical,Plus,X,Loader as Loader2,Activity,Boxes,AlertTriangle,CheckCircle2,Zap,RefreshCw,ChevronDown,ChevronRight,Globe}from'lucide-react';
 
 type SRow=DeploymentSimulation&{project_name?:string;}
 
