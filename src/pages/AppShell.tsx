@@ -17,36 +17,6 @@ const NAV: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   { label: 'Projects', to: '/projects', icon: FolderGit2 },
   { label: 'Workspaces', to: '/workspaces', icon: Boxes },
-  {
-    label: 'Validation', icon: ShieldCheck, children: [
-      { label: 'Environments', to: '/server-validation', icon: Server },
-      { label: 'Validation Runs', to: '/server-validation/passports', icon: PlayCircle },
-      { label: 'Deployment Passports', to: '/server-validation/passports', icon: FileCheck },
-    ]
-  },
-  {
-    label: 'Operations', icon: Network, children: [
-      { label: 'Deployments', to: '/deployments', icon: Rocket },
-      { label: 'Simulator', to: '/simulator', icon: FlaskConical },
-      { label: 'Analytics', to: '/analytics', icon: BarChart3 },
-      { label: 'Incidents', to: '/incidents', icon: AlertOctagon },
-    ]
-  },
-  {
-    label: 'Testing', icon: Activity, children: [
-      { label: 'Load Testing', to: '/load-testing', icon: Activity },
-      { label: 'API Testing', to: '/api-testing', icon: Network },
-      { label: 'Chaos Engineering', to: '/chaos', icon: Zap },
-    ]
-  },
-  {
-    label: 'Governance', icon: Scale, children: [
-      { label: 'Compliance', to: '/compliance', icon: ShieldCheck },
-      { label: 'Policies', to: '/policies', icon: Shield },
-      { label: 'Integrations', to: '/integrations', icon: Webhook },
-      { label: 'Audit Log', to: '/audit', icon: ScrollText },
-    ]
-  },
   { label: 'Team', to: '/team', icon: Users },
   { label: 'Plans', to: '/plans', icon: Sparkles },
   { label: 'Settings', to: '/settings', icon: Settings },
