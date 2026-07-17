@@ -5,6 +5,9 @@ import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadg
 import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen,Code2}from'lucide-react';
 import AIAssistantTab from'./AIAssistantTab';
 import{DeploymentCenter}from'./DeploymentCenter';
+import{ReleaseApprovalCenter}from'./ReleaseApprovalCenter';
+import{ReleaseWarRoom}from'./ReleaseWarRoom';
+import{ReleaseHistoryTab}from'./ReleaseHistoryTab';
 import{FindingsTab}from'./FindingsTab';
 import{ReadinessTab}from'./ReadinessTab';
 import{TopologyView}from'./TopologyView';
@@ -14,10 +17,13 @@ import{DriftTab}from'./DriftTab';
 import{FileExplorer}from'./FileExplorer';
 import{CodeEditorPanel}from'./CodeEditorPanel';
 
-type Tab='deployment'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'files'|'settings';
+type Tab='deployment'|'approvals'|'war-room'|'history'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'files'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
 {id:'files',label:'Files',icon:FolderOpen,group:'Repository'},
 {id:'deployment',label:'Deployment Center',icon:ShieldCheck,group:'Release'},
+{id:'approvals',label:'Approvals',icon:ShieldAlert,group:'Release'},
+{id:'war-room',label:'War Room',icon:Activity,group:'Release'},
+{id:'history',label:'Release History',icon:BarChart3,group:'Release'},
 {id:'readiness',label:'Readiness',icon:Gauge,group:'Release'},
 {id:'dependencies',label:'Dependencies',icon:Package,group:'Security'},
 {id:'topology',label:'Topology',icon:Network,group:'Intelligence'},
@@ -302,6 +308,29 @@ return<div>
 </div>
 )}
 
+{tab==='approvals'&&project&&(
+<ReleaseApprovalCenter
+  projectId={projectId}
+  workspaceId={localStorage.getItem('sandbox.activeWs')??''}
+  validationId={validations[0]?.id??null}
+  latestRiskScore={validations.find(v=>v.status==='completed')?.risk_score??null}
+/>
+)}
+{tab==='war-room'&&project&&(
+<ReleaseWarRoom
+  projectId={projectId}
+  workspaceId={localStorage.getItem('sandbox.activeWs')??''}
+  project={project}
+  onRunValidation={runValidation}
+  running={running}
+/>
+)}
+{tab==='history'&&(
+<ReleaseHistoryTab
+  projectId={projectId}
+  workspaceId={localStorage.getItem('sandbox.activeWs')??''}
+/>
+)}
 {tab==='settings'&&(
   <div className="card max-w-2xl">
     <div className="mb-4 flex items-center justify-between">
