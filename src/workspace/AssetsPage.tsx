@@ -171,6 +171,177 @@ const CATALOGUE={
 const ALL_ASSETS=Object.entries(CATALOGUE).flatMap(([cat,assets])=>assets.map(a=>({...a,category:cat})));
 const CATEGORIES=Object.keys(CATALOGUE);
 
+
+// ─── Client-side credential format validation ──────────────────────────────────
+function validateCredentials(source:string,config:Record<string,string>):string|null{
+  const val=(k:string)=>String(config[k]||'').trim();
+  const fake=['test','fake','xxx','abc','123','password','token','secret','example','sample','dummy','placeholder','changeme','random','asdf','qwerty'];
+  const isFake=(v:string)=>fake.includes(v.toLowerCase())||v.length<6||(v.split('').every(c=>c===v[0])&&v.length<20);
+
+  // Universal fake check
+  for(const[k,v] of Object.entries(config)){
+    if(v&&isFake(v)&&!['region','namespace','channel','site','org','project','config','zone'].includes(k)){
+      return`"${v}" doesn't look like a real credential. Please enter your actual ${k.replace(/_/g,' ')}.`;
+    }
+  }
+
+  switch(source){
+    case'github':case'github-actions':{
+      const t=val('token');
+      if(!t.startsWith('ghp_')&&!t.startsWith('github_pat_')&&!t.startsWith('ghs_'))
+        return'Invalid GitHub token — must start with ghp_, github_pat_, or ghs_';
+      const u=val('url')||val('repo_url');
+      if(u&&!u.includes('github.com'))return'URL must be a github.com repository';
+      return null;
+    }
+    case'gitlab':case'gitlab-ci':{
+      const t=val('token');
+      if(!t.startsWith('glpat-')&&!t.startsWith('gldt-')&&t.length<20)
+        return'Invalid GitLab token — must start with glpat- or gldt-';
+      return null;
+    }
+    case'aws':case'aws-secrets':case'ecr':case'eks':{
+      const k=val('access_key');
+      if(k&&!/^(AKIA|ASIA)[A-Z0-9]{16}$/.test(k))
+        return'Invalid AWS Access Key — must be AKIA or ASIA followed by exactly 16 uppercase letters/numbers';
+      const s=val('secret_key');
+      if(s&&s.length<30)return'AWS Secret Access Key is too short — it should be 40 characters';
+      return null;
+    }
+    case'azure':case'azure-ad':case'aks':case'azure-keyvault':case'azure-pipelines':case'acr':{
+      const uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const t=val('tenant_id');if(t&&!uuidRe.test(t))return'Tenant ID must be a valid UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)';
+      const c=val('client_id');if(c&&!uuidRe.test(c))return'Client ID must be a valid UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)';
+      const s=val('subscription_id');if(s&&!uuidRe.test(s))return'Subscription ID must be a valid UUID';
+      return null;
+    }
+    case'gcp':case'gcr':case'gke':case'gcp-secrets':{
+      const sa=val('service_account');
+      if(sa){
+        try{const j=JSON.parse(sa);if(j.type!=='service_account')return'Service Account JSON must have "type":"service_account"';}
+        catch{return'Service Account must be valid JSON — paste the full contents of your service account key file';}
+      }
+      return null;
+    }
+    case'slack':{
+      const w=val('webhook_url');
+      if(!w.startsWith('https://hooks.slack.com/services/'))return'Slack Webhook URL must start with https://hooks.slack.com/services/';
+      if(w.split('/').length<7)return'Slack Webhook URL appears incomplete';
+      return null;
+    }
+    case'teams':{
+      const w=val('webhook_url');
+      if(!w.includes('outlook.office.com')&&!w.includes('webhook.office.com'))
+        return'Teams Webhook URL must be an outlook.office.com or webhook.office.com URL';
+      return null;
+    }
+    case'datadog':{
+      const k=val('api_key');if(k&&k.length!==32)return`Datadog API key must be exactly 32 characters (yours is ${k.length})`;
+      const a=val('app_key');if(a&&a.length!==40)return`Datadog Application key must be exactly 40 characters (yours is ${a.length})`;
+      return null;
+    }
+    case'newrelic':{
+      const k=val('api_key');
+      if(!k.startsWith('NRAK-'))return'New Relic API key must start with NRAK-';
+      return null;
+    }
+    case'snyk':{
+      const t=val('token');
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(t))
+        return'Snyk token must be in UUID format (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)';
+      return null;
+    }
+    case'doppler':{
+      const t=val('token');
+      if(!t.startsWith('dp.st.'))return'Doppler service token must start with dp.st.';
+      return null;
+    }
+    case'pulumi':{
+      const t=val('token');
+      if(!t.startsWith('pul-'))return'Pulumi access token must start with pul-';
+      return null;
+    }
+    case'terraform':{
+      const t=val('token');
+      if(t.length<30)return'Terraform Cloud token appears too short — it should be at least 30 characters';
+      return null;
+    }
+    case'vault':{
+      const u=val('url');
+      if(!u.startsWith('https://'))return'Vault URL must start with https://';
+      const t=val('token');
+      if(!t.startsWith('hvs.')&&!t.startsWith('s.')&&t.length<20)
+        return'Invalid Vault token — modern tokens start with hvs.';
+      return null;
+    }
+    case'kubernetes':case'openshift':case'rancher':case'argocd':{
+      const u=val('cluster_url')||val('url');
+      if(u&&!u.startsWith('https://'))return'Cluster URL must start with https://';
+      const t=val('token');
+      if(t&&!t.startsWith('eyJ')&&t.length<30)
+        return'Service Account Token appears invalid — Kubernetes tokens start with eyJ and are very long';
+      return null;
+    }
+    case'jira':{
+      const u=val('url');
+      if(!u.includes('atlassian.net')&&!u.startsWith('https://'))
+        return'Jira URL must be https://yourorg.atlassian.net or your self-hosted Jira URL';
+      const t=val('token');
+      if(t.length<20)return'Jira API token appears too short';
+      return null;
+    }
+    case'github-actions':{
+      const t=val('token');
+      if(!t.startsWith('ghp_'))return'GitHub token must start with ghp_';
+      return null;
+    }
+    case'circleci':{
+      const o=val('org_slug');
+      if(o&&!o.includes('/'))return'Org slug must be in format: github/org-name or bitbucket/org-name';
+      return null;
+    }
+    case'vercel':{
+      const t=val('token');
+      if(t.length<20)return'Vercel access token appears too short';
+      return null;
+    }
+    case'netlify':{
+      const t=val('token');
+      if(t.length<20)return'Netlify personal access token appears too short — get it from app.netlify.com/user/applications';
+      const s=val('site_id');
+      if(s&&s.length<10)return'Netlify Site ID appears invalid';
+      return null;
+    }
+    case'heroku':{
+      const k=val('api_key');
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(k))
+        return'Heroku API key must be in UUID format — get it from account.heroku.com/account';
+      return null;
+    }
+    case'digitalocean':{
+      const t=val('token');
+      if(!t.startsWith('dop_v1_'))return'DigitalOcean token must start with dop_v1_';
+      return null;
+    }
+    case'cloudflare':{
+      const t=val('token');if(t.length<30)return'Cloudflare API token appears too short';
+      const a=val('account_id');if(a&&a.length!==32)return'Cloudflare Account ID must be 32 characters';
+      return null;
+    }
+    case'pagerduty':{
+      const t=val('token');
+      if(!t.startsWith('u+'))return'PagerDuty v2 token must start with u+';
+      return null;
+    }
+    case'linear':{
+      const t=val('token');
+      if(!t.startsWith('lin_api_'))return'Linear API key must start with lin_api_';
+      return null;
+    }
+    default:return null;
+  }
+}
+
 type Connection={id:string;project_id:string;workspace_id:string;source:string;status:string;config:Record<string,string>;last_synced_at:string|null;created_at:string;};
 type ChangeEvent={id:string;source:string;label:string;icon:string;event:string;impact:string;severity:'high'|'medium'|'low';time:string;};
 
@@ -234,49 +405,66 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
     const config:Record<string,string>={};
     asset?.fields?.forEach((f:any)=>{if(formData[f.key])config[f.key]=String(formData[f.key]).trim();});
 
-    // Validate required fields first
-    const emptyRequired=(asset?.fields||[]).filter((f:any)=>!formData[f.key]?.trim());
-    if(emptyRequired.length>0){
-      setTestError(prev=>({...prev,[assetId]:`Required: ${emptyRequired.map((f:any)=>f.label).join(', ')}`}));
+    // Hard-block if any required field is empty
+    const missingFields=(asset?.fields||[]).filter((f:any)=>!formData[f.key]?.trim());
+    if(missingFields.length>0){
+      setTestError(prev=>({...prev,[assetId]:`Required fields missing: ${missingFields.map((f:any)=>f.label).join(', ')}`}));
       setSaving(false);return;
     }
 
-    // Test connection via edge function BEFORE saving
+    // Client-side format validation — runs regardless of edge function
+    const err=validateCredentials(assetId,config);
+    if(err){setTestError(prev=>({...prev,[assetId]:err}));setSaving(false);return;}
+
+    // Try edge function for real API verification
+    let verificationPassed=false;
+    let verificationMsg='';
     try{
-      const res=await fetch(`https://xrvugcytyfwyxytyqmom.supabase.co/functions/v1/test-connection`,{
+      const res=await fetch('https://xrvugcytyfwyxytyqmom.supabase.co/functions/v1/test-connection',{
         method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE`,'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE'},
+        headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE'},
         body:JSON.stringify({source:assetId,config}),
+        signal:AbortSignal.timeout(10000),
       });
-      const result=await res.json();
-      if(!result.success){
-        setTestError(prev=>({...prev,[assetId]:result.message||'Connection failed'}));
+      if(res.ok){
+        const d=await res.json();
+        if(!d.success){setTestError(prev=>({...prev,[assetId]:d.message}));setSaving(false);return;}
+        verificationPassed=true;
+        verificationMsg=d.message+(d.details?' — '+d.details:'');
+      }else{
+        // Edge function returned error HTTP — still block
+        const d=await res.json().catch(()=>({message:`Server error ${res.status}`}));
+        setTestError(prev=>({...prev,[assetId]:d.message||`Verification failed (${res.status})`}));
         setSaving(false);return;
       }
-      setTestSuccess(prev=>({...prev,[assetId]:result.message+(result.details?' — '+result.details:'')}));
-
-      // Only save to Supabase after successful verification
-      const existing=connections.find(c=>c.source===assetId);
-      const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()};
-      let saved:Connection|null=null;
-      if(existing){
-        const{data}=await supabase.from('environment_connections').update(payload).eq('id',existing.id).select().single();
-        saved=data as Connection;
-        if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
-      }else{
-        const{data}=await supabase.from('environment_connections').insert(payload).select().single();
-        saved=data as Connection;
-        if(saved)setConnections(prev=>[saved!,...prev]);
-      }
-      if(saved&&asset){
-        setChangeEvents(prev=>[{id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,
-          event:`${asset.label} connected — now monitoring ${(asset.watches||[]).slice(0,3).join(', ')}`,
-          impact:asset.impact,severity:'low',time:new Date().toISOString()},...prev]);
-      }
-      setTimeout(()=>{setConnecting(null);setFormData({});},1500);
     }catch(e:any){
-      setTestError(prev=>({...prev,[assetId]:`Network error: ${e.message}`}));
+      // Edge function unreachable — block connection, show clear message
+      setTestError(prev=>({...prev,[assetId]:'Cannot verify credentials — connection service is unreachable. Please deploy the test-connection edge function: npx supabase functions deploy test-connection --project-ref xrvugcytyfwyxytyqmom --no-verify-jwt'}));
+      setSaving(false);return;
     }
+
+    if(!verificationPassed){setSaving(false);return;}
+
+    // Only reach here if real API verification passed
+    const existing=connections.find(c=>c.source===assetId);
+    const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()};
+    let saved:Connection|null=null;
+    if(existing){
+      const{data}=await supabase.from('environment_connections').update(payload).eq('id',existing.id).select().single();
+      saved=data as Connection;
+      if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
+    }else{
+      const{data}=await supabase.from('environment_connections').insert(payload).select().single();
+      saved=data as Connection;
+      if(saved)setConnections(prev=>[saved!,...prev]);
+    }
+    if(saved&&asset){
+      setChangeEvents(prev=>[{id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,
+        event:`${asset.label} connected — now monitoring ${(asset.watches||[]).slice(0,3).join(', ')}`,
+        impact:asset.impact,severity:'low',time:new Date().toISOString()},...prev]);
+    }
+    setTestSuccess(prev=>({...prev,[assetId]:verificationMsg}));
+    setTimeout(()=>{setConnecting(null);setFormData({});},2000);
     setSaving(false);
   };
 
