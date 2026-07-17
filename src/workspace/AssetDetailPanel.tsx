@@ -1,85 +1,206 @@
-import{useState,useEffect}from'react';
-import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
-import{X,RefreshCw,CheckCircle2,AlertTriangle,Clock,Activity,Shield,Zap,Eye,BarChart3,List,ChevronRight,ExternalLink,Loader as Loader2,Bell,BellOff,AlertCircle,Wifi,WifiOff,Trash2}from'lucide-react';
+import{useEffect,useState,useCallback}from'react';
+import{supabase,anonKey}from'../lib/supabase';
+import{X,RefreshCw,CheckCircle2,AlertTriangle,Clock,ExternalLink,Loader as Loader2,Eye,List,ChevronRight,Trash2,Zap,GitBranch,GitPullRequest,Activity,Shield,AlertCircle,CheckCircle,XCircle,Play,Package}from'lucide-react';
+
+const EDGE='https://xrvugcytyfwyxytyqmom.supabase.co/functions/v1';
 
 type Connection={id:string;source:string;status:string;config:Record<string,string>;last_synced_at:string|null;created_at:string;};
 
-type AssetEvent={time:string;type:'change'|'validation'|'finding'|'drift'|'sync';message:string;severity:'low'|'medium'|'high';};
-
-// Simulate asset-specific monitoring data based on what the asset reports
-function getAssetStats(source:string,config:Record<string,string>){
-  // These pull from real config to show meaningful data
-  const stats:Record<string,{label:string;value:string;color:string}[]>={
-    github:[
-      {label:'Repository',value:config.url?.split('github.com/')[1]||'—',color:'text-gray-700'},
-      {label:'Branch monitored',value:'main',color:'text-brand-600'},
-      {label:'Watching events',value:'Pushes, PRs, Secrets',color:'text-gray-600'},
-      {label:'Auto-revalidation',value:'On every push',color:'text-green-600'},
-    ],
-    aws:[
-      {label:'Account region',value:config.region||'us-east-1',color:'text-gray-700'},
-      {label:'Monitoring',value:'IAM, Security Groups, S3, CloudTrail',color:'text-gray-600'},
-      {label:'Drift detection',value:'Enabled',color:'text-green-600'},
-      {label:'Access Key',value:config.access_key?config.access_key.slice(0,8)+'…':'—',color:'text-gray-400'},
-    ],
-    kubernetes:[
-      {label:'Cluster',value:config.cluster_url?.replace('https://','').split(':')[0]||'—',color:'text-gray-700'},
-      {label:'Namespace',value:config.namespace||'default',color:'text-brand-600'},
-      {label:'Watching',value:'Deployments, Secrets, ConfigMaps, Pods',color:'text-gray-600'},
-      {label:'Sync frequency',value:'Every 60 seconds',color:'text-green-600'},
-    ],
-    slack:[
-      {label:'Channel',value:config.channel||'#deployments',color:'text-brand-600'},
-      {label:'Alerts',value:'Deployment events, Findings, Approvals',color:'text-gray-600'},
-      {label:'Webhook',value:'Active',color:'text-green-600'},
-    ],
-    jira:[
-      {label:'Instance',value:config.url?.replace('https://','').split('/')[0]||'—',color:'text-gray-700'},
-      {label:'User',value:config.email||'—',color:'text-gray-600'},
-      {label:'Integration',value:'Findings → Jira issues',color:'text-green-600'},
-    ],
-    datadog:[
-      {label:'Site',value:config.site||'datadoghq.com',color:'text-gray-700'},
-      {label:'Monitoring',value:'APM, Infrastructure, Monitors, SLOs',color:'text-gray-600'},
-      {label:'Alert integration',value:'Active incidents block deployment',color:'text-amber-600'},
-    ],
-  };
-  return stats[source]||[
-    {label:'Source',value:source,color:'text-gray-700'},
-    {label:'Status',value:'Monitoring active',color:'text-green-600'},
-    {label:'Integration',value:'Changes trigger revalidation',color:'text-brand-600'},
-  ];
+function StateIcon({state,size=12}:{state:string;size?:number}){
+  const s=state?.toLowerCase();
+  if(['ready','success','passed','ok','published','resolved','active'].includes(s))return<CheckCircle size={size} className="text-green-500"/>;
+  if(['building','enqueued','running','loading','pending','acknowledged'].includes(s))return<Loader2 size={size} className="text-blue-500 animate-spin"/>;
+  if(['error','failed','failure','critical','triggered'].includes(s))return<XCircle size={size} className="text-red-500"/>;
+  if(['warning','warn','degraded','alert'].includes(s))return<AlertTriangle size={size} className="text-amber-500"/>;
+  return<Activity size={size} className="text-gray-400"/>;
 }
 
-const ASSET_WATCH_DETAIL:Record<string,{item:string;description:string;impact:string}[]>={
-  github:[
-    {item:'Push events',description:'Every commit pushed to the monitored branch',impact:'Triggers automatic validation scan'},
-    {item:'Pull Requests',description:'PR opened, updated, merged or closed',impact:'Validates PR changes before merge'},
-    {item:'Secret scanning',description:'Exposed credentials in code or commits',impact:'Creates critical deployment blocker immediately'},
-    {item:'Workflow runs',description:'GitHub Actions CI/CD pipeline outcomes',impact:'Failed pipelines block deployment approval'},
-    {item:'Branch protection',description:'Changes to branch protection rules',impact:'Policy compliance revalidation'},
-  ],
-  aws:[
-    {item:'IAM changes',description:'Role policies, user permissions, access keys',impact:'Security revalidation triggered immediately'},
-    {item:'Security Groups',description:'Inbound/outbound rule modifications',impact:'Network security finding created if exposure detected'},
-    {item:'CloudTrail',description:'API calls and account activity audit log',impact:'Suspicious activity flags as high-severity finding'},
-    {item:'S3 Buckets',description:'Bucket policy changes, public access settings',impact:'Public bucket exposure creates critical blocker'},
-    {item:'EC2 / Lambda',description:'Instance state changes, function updates',impact:'Topology updated, readiness recalculated'},
-  ],
-  kubernetes:[
-    {item:'Deployments',description:'New deployments, rollouts, rollbacks',impact:'Topology and release history updated automatically'},
-    {item:'Secrets',description:'Kubernetes secret creation, modification, deletion',impact:'Secret changes trigger secrets validation scan'},
-    {item:'ConfigMaps',description:'Application configuration changes',impact:'Configuration drift detected and reported'},
-    {item:'Pod health',description:'CrashLoopBackOff, OOMKilled, Pending states',impact:'Unhealthy pods block deployment approval'},
-    {item:'RBAC',description:'Role and role binding changes',impact:'Security posture revalidated immediately'},
-  ],
-  slack:[
-    {item:'Deployment alerts',description:'Real-time notification on every deployment event',impact:'Team is always informed'},
-    {item:'Finding notifications',description:'Critical and high findings sent immediately',impact:'Engineers notified without checking dashboard'},
-    {item:'Approval requests',description:'Interactive approval buttons in Slack',impact:'Approvals can be done from Slack'},
-    {item:'War Room updates',description:'Live release status during active deployments',impact:'Full team visibility during releases'},
-  ],
-};
+function StateBadge({state}:{state:string}){
+  const s=state?.toLowerCase();
+  const ok=['ready','success','passed','ok','published','resolved','active'];
+  const building=['building','enqueued','running','pending','loading'];
+  const bad=['error','failed','failure','critical','triggered'];
+  const warn=['warning','warn','degraded','alert'];
+  const cls=ok.includes(s)?'bg-green-50 text-green-700 border-green-200':
+    building.includes(s)?'bg-blue-50 text-blue-700 border-blue-200':
+    bad.includes(s)?'bg-red-50 text-red-700 border-red-200':
+    warn.includes(s)?'bg-amber-50 text-amber-700 border-amber-200':
+    'bg-gray-50 text-gray-600 border-gray-200';
+  return<span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium capitalize ${cls}`}><StateIcon state={state} size={10}/>{state||'unknown'}</span>;
+}
+
+function timeAgo(iso:string):string{
+  const ms=Date.now()-new Date(iso).getTime();
+  const m=Math.floor(ms/60000);const h=Math.floor(m/60);const d=Math.floor(h/24);
+  if(m<1)return'just now';if(m<60)return`${m}m ago`;if(h<24)return`${h}h ago`;return`${d}d ago`;
+}
+
+// ─── Source-specific data renderers ──────────────────────────────────────────
+function NetlifyData({data}:{data:any}){
+  return<div className="space-y-4">
+    {data.user&&<div className="flex items-center gap-3 rounded-xl bg-teal-50 border border-teal-200 px-4 py-3">
+      {data.user.avatar&&<img src={data.user.avatar} className="w-9 h-9 rounded-full border border-teal-200"/>}
+      <div><p className="text-sm font-semibold text-navy-900">{data.user.name}</p><p className="text-xs text-gray-500">{data.user.email}</p></div>
+      <div className="ml-auto text-right"><p className="text-2xl font-black text-teal-600">{data.totalSites}</p><p className="text-xs text-gray-500">total sites</p></div>
+    </div>}
+    <div className="grid grid-cols-3 gap-2">
+      {[{l:'Ready',v:data.summary?.healthy,c:'text-green-600',bg:'bg-green-50',b:'border-green-200'},
+        {l:'Building',v:data.summary?.building,c:'text-blue-600',bg:'bg-blue-50',b:'border-blue-200'},
+        {l:'Failed',v:data.summary?.failed,c:'text-red-600',bg:'bg-red-50',b:'border-red-200'}].map(s=>(
+        <div key={s.l} className={`rounded-xl border ${s.b} ${s.bg} px-3 py-3 text-center`}>
+          <div className={`text-2xl font-black ${s.c}`}>{s.v||0}</div>
+          <div className="text-xs text-gray-500">{s.l}</div>
+        </div>
+      ))}
+    </div>
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your Sites</p>
+      <div className="space-y-2">
+        {data.sites?.map((site:any)=>(
+          <div key={site.id} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div>
+                <p className="text-sm font-semibold text-navy-900">{site.name}</p>
+                {site.url&&<a href={site.url} target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline flex items-center gap-1">{site.url}<ExternalLink size={10}/></a>}
+              </div>
+              <StateBadge state={site.state}/>
+            </div>
+            {site.lastDeploy&&<div className="rounded-lg bg-gray-50 px-3 py-2 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Last deploy:</span>
+                <StateBadge state={site.lastDeploy.state}/>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-gray-600 truncate max-w-xs">{site.lastDeploy.title}</span>
+                <span className="text-gray-400 shrink-0 ml-2">{site.lastDeploy.createdAt?timeAgo(site.lastDeploy.createdAt):''}</span>
+              </div>
+              {site.lastDeploy.branch&&<div className="flex items-center gap-1 text-gray-500"><GitBranch size={10}/>{site.lastDeploy.branch}</div>}
+              {site.lastDeploy.deployTime&&<div className="text-gray-400">Deploy time: {site.lastDeploy.deployTime}s</div>}
+              {site.lastDeploy.errorMessage&&<div className="text-red-600 font-medium">Error: {site.lastDeploy.errorMessage}</div>}
+            </div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>;
+}
+
+function GitHubData({data}:{data:any}){
+  return<div className="space-y-4">
+    <div className="rounded-xl bg-gray-900 text-white px-4 py-3">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-bold">{data.repo?.name}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{data.repo?.description||'No description'}</p>
+        </div>
+        <a href={data.repo?.url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white"><ExternalLink size={14}/></a>
+      </div>
+      <div className="flex flex-wrap gap-3 mt-3 text-xs text-gray-400">
+        {data.repo?.language&&<span>🔤 {data.repo.language}</span>}
+        <span>⭐ {data.repo?.stars}</span>
+        <span>🍴 {data.repo?.forks}</span>
+        <span>🐛 {data.repo?.openIssues} issues</span>
+        <span className="capitalize">{data.repo?.visibility}</span>
+        {data.repo?.lastPush&&<span>Pushed {timeAgo(data.repo.lastPush)}</span>}
+      </div>
+    </div>
+    {data.recentRuns?.length>0&&<div>
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Workflow Runs</p>
+      <div className="space-y-1.5">
+        {data.recentRuns.map((r:any,i:number)=>(
+          <div key={i} className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2">
+            <StateIcon state={r.conclusion||r.status} size={14}/>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-navy-900 truncate">{r.name}</p>
+              <p className="text-[10px] text-gray-400">{r.branch} · {r.createdAt?timeAgo(r.createdAt):''}</p>
+            </div>
+            <StateBadge state={r.conclusion||r.status||'unknown'}/>
+            {r.url&&<a href={r.url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-gray-600"><ExternalLink size={12}/></a>}
+          </div>
+        ))}
+      </div>
+    </div>}
+    {data.recentCommits?.length>0&&<div>
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Commits</p>
+      <div className="space-y-1.5">
+        {data.recentCommits.map((c:any,i:number)=>(
+          <div key={i} className="flex items-start gap-3 rounded-lg border border-gray-200 px-3 py-2">
+            <code className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 shrink-0 font-mono">{c.sha}</code>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-navy-900 truncate">{c.message}</p>
+              <p className="text-[10px] text-gray-400">{c.author} · {c.date?timeAgo(c.date):''}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>}
+    {data.openPRs?.length>0&&<div>
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Open Pull Requests ({data.openPRs.length})</p>
+      <div className="space-y-1.5">
+        {data.openPRs.map((pr:any)=>(
+          <div key={pr.number} className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2">
+            <GitPullRequest size={13} className="text-purple-500 shrink-0"/>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-navy-900 truncate">{pr.title}</p>
+              <p className="text-[10px] text-gray-400">#{pr.number} · {pr.author} · {pr.branch}</p>
+            </div>
+            {pr.draft&&<span className="text-[10px] text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded">Draft</span>}
+            <a href={pr.url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-gray-600 shrink-0"><ExternalLink size={11}/></a>
+          </div>
+        ))}
+      </div>
+    </div>}
+  </div>;
+}
+
+function VercelData({data}:{data:any}){
+  return<div className="space-y-4">
+    {data.user&&<div className="flex items-center gap-3 rounded-xl bg-black text-white px-4 py-3">
+      <span className="text-2xl">▲</span>
+      <div><p className="text-sm font-semibold">{data.user.name}</p><p className="text-xs text-gray-400">{data.user.email}</p></div>
+      <div className="ml-auto text-right"><p className="text-2xl font-black">{data.totalProjects}</p><p className="text-xs text-gray-400">projects</p></div>
+    </div>}
+    {data.recentDeploys?.length>0&&<div>
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Deployments</p>
+      <div className="space-y-2">
+        {data.recentDeploys.map((d:any,i:number)=>(
+          <div key={i} className="rounded-xl border border-gray-200 px-4 py-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold text-navy-900">{d.name}</p>
+              <StateBadge state={d.state||'unknown'}/>
+            </div>
+            {d.url&&<a href={d.url} target="_blank" rel="noreferrer" className="text-xs text-brand-600 hover:underline flex items-center gap-1">{d.url}<ExternalLink size={10}/></a>}
+            <div className="flex flex-wrap gap-3 mt-2 text-[10px] text-gray-400">
+              {d.branch&&<span className="flex items-center gap-1"><GitBranch size={9}/>{d.branch}</span>}
+              {d.commit&&<span className="truncate max-w-xs">{d.commit}</span>}
+              {d.target&&<span className="capitalize">{d.target}</span>}
+              {d.createdAt&&<span>{timeAgo(d.createdAt)}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>}
+  </div>;
+}
+
+function GenericData({data,source}:{data:any;source:string}){
+  return<div className="space-y-4">
+    <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Live Data from {source}</p>
+      <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(data,null,2)}</pre>
+    </div>
+  </div>;
+}
+
+function renderData(source:string,data:any){
+  if(!data)return null;
+  switch(source){
+    case'netlify':return<NetlifyData data={data}/>;
+    case'github':case'github-actions':return<GitHubData data={data}/>;
+    case'vercel':return<VercelData data={data}/>;
+    default:return<GenericData data={data} source={source}/>;
+  }
+}
 
 export function AssetDetailPanel({connection,assetMeta,onClose,onDisconnect,onRetest}:{
   connection:Connection;
@@ -88,206 +209,150 @@ export function AssetDetailPanel({connection,assetMeta,onClose,onDisconnect,onRe
   onDisconnect:(id:string)=>void;
   onRetest:(id:string)=>void;
 }){
-  const[view,setView]=useState<'simple'|'detailed'>('simple');
-  const[retesting,setRetesting]=useState(false);
-  const[retestResult,setRetestResult]=useState<{ok:boolean;msg:string}|null>(null);
-  const[events]=useState<AssetEvent[]>([
-    {time:connection.last_synced_at||connection.created_at,type:'sync',message:`${assetMeta.label} connected and monitoring started`,severity:'low'},
-  ]);
+  const[view,setView]=useState<'live'|'details'>('live');
+  const[liveData,setLiveData]=useState<any>(null);
+  const[loading,setLoading]=useState(false);
+  const[error,setError]=useState<string|null>(null);
+  const[lastFetched,setLastFetched]=useState<Date|null>(null);
 
-  const retest=async()=>{
-    setRetesting(true);setRetestResult(null);
+  const fetchData=useCallback(async()=>{
+    setLoading(true);setError(null);
     try{
-      const res=await fetch(`${edgeFunctionUrl}/test-connection`,{
+      const res=await fetch(`${EDGE}/fetch-asset-data`,{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${anonKey}`,'apikey':anonKey},
         body:JSON.stringify({source:connection.source,config:connection.config}),
       });
       const d=await res.json();
-      setRetestResult({ok:d.success,msg:d.success?(d.message+(d.details?' — '+d.details:'')):`Failed: ${d.message}`});
-      if(d.success){
-        await supabase.from('environment_connections').update({last_synced_at:new Date().toISOString()}).eq('id',connection.id);
-      }
-    }catch(e:any){setRetestResult({ok:false,msg:'Network error: '+e.message});}
-    setRetesting(false);
-    onRetest(connection.id);
-  };
+      if(d.success){setLiveData(d.data);setLastFetched(new Date());}
+      else setError(d.error||'Failed to fetch data');
+    }catch(e:any){setError('Could not reach data service — deploy the fetch-asset-data edge function');}
+    setLoading(false);
+  },[connection.source,connection.config]);
 
-  const stats=getAssetStats(connection.source,connection.config);
-  const watchDetail=ASSET_WATCH_DETAIL[connection.source]||assetMeta.watches.map(w=>({item:w,description:`Monitors ${w.toLowerCase()} for changes`,impact:'Changes trigger revalidation'}));
+  useEffect(()=>{fetchData();},[fetchData]);
+
+  // Auto-refresh every 60s
+  useEffect(()=>{
+    const t=setInterval(fetchData,60000);
+    return()=>clearInterval(t);
+  },[fetchData]);
 
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e=>e.stopPropagation()}>
+      <div className="w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 shrink-0">
           <span className="text-3xl">{assetMeta.icon}</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-navy-900">{assetMeta.label}</h2>
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${connection.status==='connected'?'text-green-700 bg-green-50 border-green-200':'text-gray-500 bg-gray-50 border-gray-200'}`}>
-                {connection.status==='connected'?<><CheckCircle2 size={10}/>Connected</>:<><WifiOff size={10}/>Disconnected</>}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border text-green-700 bg-green-50 border-green-200">
+                <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"/><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"/></span>
+                Live
               </span>
             </div>
-            <p className="text-xs text-gray-500">{assetMeta.category} · {connection.last_synced_at?`Last synced ${new Date(connection.last_synced_at).toLocaleString()}`:'Never synced'}</p>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span>{assetMeta.category}</span>
+              {lastFetched&&<span>· Updated {timeAgo(lastFetched.toISOString())}</span>}
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"><X size={18}/></button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={fetchData} disabled={loading} title="Refresh" className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50">
+              <RefreshCw size={16} className={loading?'animate-spin':''}/>
+            </button>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"><X size={16}/></button>
+          </div>
         </div>
 
         {/* View toggle */}
-        <div className="flex items-center gap-2 px-6 pt-4 shrink-0">
+        <div className="flex items-center gap-2 px-6 pt-3 pb-2 border-b border-gray-100 shrink-0">
           <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
-            <button onClick={()=>setView('simple')} className={'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 '+(view==='simple'?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
-              <Eye size={12}/>Simple
+            <button onClick={()=>setView('live')} className={'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 '+(view==='live'?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
+              <Activity size={12}/>Live Data
             </button>
-            <button onClick={()=>setView('detailed')} className={'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 '+(view==='detailed'?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
-              <List size={12}/>Detailed
-            </button>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={retest} disabled={retesting} className="btn-secondary text-xs flex items-center gap-1.5">
-              {retesting?<><Loader2 size={12} className="animate-spin"/>Testing…</>:<><RefreshCw size={12}/>Test Connection</>}
-            </button>
-            <button onClick={()=>{if(confirm(`Disconnect ${assetMeta.label}?`))onDisconnect(connection.id);}} className="btn-secondary text-xs text-red-500 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
-              <Trash2 size={12}/>Disconnect
+            <button onClick={()=>setView('details')} className={'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 '+(view==='details'?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
+              <List size={12}/>Connection Details
             </button>
           </div>
+          <button onClick={()=>{if(confirm(`Disconnect ${assetMeta.label}?`)){onDisconnect(connection.id);}}} className="ml-auto text-xs text-red-500 hover:text-red-700 flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+            <Trash2 size={12}/>Disconnect
+          </button>
         </div>
 
-        {/* Retest result */}
-        {retestResult&&(
-          <div className={`mx-6 mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${retestResult.ok?'bg-green-50 border-green-200 text-green-700':'bg-red-50 border-red-200 text-red-600'}`}>
-            {retestResult.ok?<CheckCircle2 size={13}/>:<AlertTriangle size={13}/>}
-            {retestResult.msg}
-          </div>
-        )}
-
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {view==='simple'&&(
-            <>
-              {/* What it does */}
-              <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-2 flex items-center gap-1.5"><Zap size={11}/>Business Impact</p>
-                <p className="text-sm text-gray-700">{assetMeta.impact}</p>
-              </div>
-
-              {/* Key stats */}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {stats.map((s,i)=>(
-                  <div key={i} className="rounded-xl border border-gray-200 bg-white px-3 py-3">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{s.label}</p>
-                    <p className={`text-sm font-semibold truncate ${s.color}`}>{s.value}</p>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {view==='live'&&(
+            <div>
+              {loading&&!liveData&&(
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <Loader2 size={28} className="animate-spin text-brand-600"/>
+                  <p className="text-sm text-gray-500">Fetching live data from {assetMeta.label}…</p>
+                </div>
+              )}
+              {error&&(
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5"/>
+                    <div>
+                      <p className="text-sm font-semibold text-red-700">Could not load live data</p>
+                      <p className="text-xs text-red-600 mt-1">{error}</p>
+                      {error.includes('deploy')&&<div className="mt-3 rounded-lg bg-red-100 px-3 py-2">
+                        <p className="text-xs font-mono text-red-800">npx supabase functions deploy fetch-asset-data --project-ref xrvugcytyfwyxytyqmom --no-verify-jwt</p>
+                      </div>}
+                      <button onClick={fetchData} className="mt-3 btn-secondary text-xs flex items-center gap-1.5"><RefreshCw size={11}/>Retry</button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+              {liveData&&(
+                <div>
+                  {loading&&<div className="flex items-center gap-2 text-xs text-gray-400 mb-3"><Loader2 size={11} className="animate-spin"/>Refreshing…</div>}
+                  {renderData(connection.source,liveData)}
+                  <p className="text-[10px] text-gray-300 text-center mt-4">Auto-refreshes every 60 seconds</p>
+                </div>
+              )}
+            </div>
+          )}
 
-              {/* Currently watching */}
+          {view==='details'&&(
+            <div className="space-y-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Currently monitoring</p>
                 <div className="flex flex-wrap gap-2">
                   {assetMeta.watches.map(w=>(
                     <span key={w} className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400"/>
-                      {w}
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"/>{w}
                     </span>
                   ))}
                 </div>
               </div>
-
-              {/* Activity */}
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent activity</p>
-                <div className="space-y-2">
-                  {events.map((e,i)=>(
-                    <div key={i} className="flex items-start gap-3 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5">
-                      <span className={`w-2 h-2 rounded-full mt-1 shrink-0 ${e.severity==='high'?'bg-red-400':e.severity==='medium'?'bg-amber-400':'bg-green-400'}`}/>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-700">{e.message}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{new Date(e.time).toLocaleString()}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-xs text-gray-400 text-center py-1">More events will appear as {assetMeta.label} reports changes</p>
-                </div>
+              <div className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-1 flex items-center gap-1.5"><Zap size={11}/>Impact on deployment readiness</p>
+                <p className="text-sm text-gray-700">{assetMeta.impact}</p>
               </div>
-            </>
-          )}
-
-          {view==='detailed'&&(
-            <>
-              {/* Full watch breakdown */}
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">What LytHouse monitors — full breakdown</p>
-                <div className="space-y-2">
-                  {watchDetail.map((w,i)=>(
-                    <div key={i} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-                      <div className="flex items-start gap-3">
-                        <span className="w-2 h-2 rounded-full bg-green-400 mt-1.5 shrink-0"/>
-                        <div>
-                          <p className="text-sm font-semibold text-navy-900">{w.item}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{w.description}</p>
-                          <div className="flex items-center gap-1.5 mt-1.5">
-                            <Zap size={10} className="text-brand-500"/>
-                            <p className="text-xs text-brand-600 font-medium">{w.impact}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Connection details (masked) */}
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Connection details</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Stored credentials</p>
                 <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
-                  {Object.entries(connection.config).map(([k,v])=>(
+                  {Object.entries(connection.config).filter(([,v])=>v).map(([k,v])=>(
                     <div key={k} className="flex items-center justify-between gap-4 text-xs">
-                      <span className="text-gray-500 capitalize">{k.replace(/_/g,' ')}</span>
-                      <span className="font-mono text-gray-700 text-right truncate max-w-xs">
-                        {k.toLowerCase().includes('secret')||k.toLowerCase().includes('password')||k.toLowerCase().includes('key')||k.toLowerCase().includes('token')
-                          ?'•'.repeat(Math.min(String(v).length,20))
-                          :String(v).length>40?String(v).slice(0,40)+'…':String(v)}
+                      <span className="text-gray-500 capitalize shrink-0">{k.replace(/_/g,' ')}</span>
+                      <span className="font-mono text-gray-700 text-right truncate">
+                        {['secret','password','key','token','private'].some(s=>k.toLowerCase().includes(s))
+                          ?'•'.repeat(Math.min(String(v).length,24))
+                          :String(v).length>50?String(v).slice(0,50)+'…':String(v)}
                       </span>
                     </div>
                   ))}
-                  <p className="text-[10px] text-gray-400 pt-1">Credentials are encrypted at rest. Secrets are never displayed in full.</p>
+                  <p className="text-[10px] text-gray-400 pt-1 border-t border-gray-200">Secrets are never shown in full and are encrypted at rest.</p>
                 </div>
               </div>
-
-              {/* Integration diagram */}
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">How it integrates</p>
-                <div className="flex items-start gap-2 overflow-x-auto pb-2">
-                  {[
-                    {label:assetMeta.label,icon:assetMeta.icon,desc:'Source system'},
-                    {label:'Change detected',icon:'🔔',desc:'LytHouse watches for events'},
-                    {label:'Revalidation',icon:'⚡',desc:'Automatic scan triggered'},
-                    {label:'Readiness update',icon:'📊',desc:'Score recalculated'},
-                    {label:'Team notified',icon:'💬',desc:'Findings + alerts sent'},
-                  ].map((step,i,arr)=>(
-                    <div key={i} className="flex items-center gap-2 shrink-0">
-                      <div className="text-center">
-                        <div className="text-xl mb-1">{step.icon}</div>
-                        <p className="text-[10px] font-semibold text-navy-900 w-16 text-center leading-tight">{step.label}</p>
-                        <p className="text-[9px] text-gray-400 w-16 text-center leading-tight mt-0.5">{step.desc}</p>
-                      </div>
-                      {i<arr.length-1&&<ChevronRight size={14} className="text-gray-300 shrink-0 mt-1"/>}
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-gray-500">Connected</span><span className="text-gray-700">{new Date(connection.created_at).toLocaleString()}</span></div>
+                {connection.last_synced_at&&<div className="flex justify-between"><span className="text-gray-500">Last synced</span><span className="text-gray-700">{new Date(connection.last_synced_at).toLocaleString()}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-500">Source ID</span><span className="font-mono text-gray-400">{connection.id.slice(0,12)}…</span></div>
               </div>
-
-              {/* Connected since */}
-              <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center gap-3">
-                <Clock size={14} className="text-gray-400"/>
-                <div>
-                  <p className="text-xs font-medium text-gray-700">Connected since {new Date(connection.created_at).toLocaleString()}</p>
-                  {connection.last_synced_at&&<p className="text-xs text-gray-400">Last successful sync: {new Date(connection.last_synced_at).toLocaleString()}</p>}
-                </div>
-              </div>
-            </>
+            </div>
           )}
         </div>
       </div>
