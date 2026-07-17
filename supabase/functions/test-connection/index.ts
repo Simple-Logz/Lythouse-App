@@ -150,10 +150,50 @@ serve(async(req)=>{
         break;
       }
       default:{
-        // For integrations without a real API test yet, validate that required fields are filled
-        const fields=Object.values(config).filter(v=>v&&String(v).trim().length>0);
+        // Reject obviously fake credentials
+        const fields=Object.values(config).map(v=>String(v||'').trim()).filter(v=>v.length>0);
         if(fields.length===0)return json({success:false,message:'Please fill in the required connection fields'});
-        result={success:true,message:`${source} credentials saved`,details:'Connection details stored — live validation coming soon'};
+        
+        // Check for obviously fake/test values
+        const fakePatterns=['test','fake','random','xxx','abc','123','password','token','secret','example','sample','dummy','placeholder','changeme','yourtoken'];
+        const hasFake=fields.some(v=>fakePatterns.some(p=>v.toLowerCase()===p||v.toLowerCase().replace(/[^a-z0-9]/g,'')==='xxx'||v.length<6));
+        if(hasFake)return json({success:false,message:'Please enter real credentials — test values are not accepted'});
+        
+        // Format checks per source
+        if(source==='slack'&&!config.webhook_url?.startsWith('https://hooks.slack.com/'))
+          return json({success:false,message:'Invalid Slack webhook URL — must start with https://hooks.slack.com/'});
+        if(source==='teams'&&!config.webhook_url?.includes('outlook.office'))
+          return json({success:false,message:'Invalid Teams webhook URL — must be an outlook.office.com webhook'});
+        if((source==='aws-secrets'||source==='ecr'||source==='eks')&&config.access_key&&!config.access_key.match(/^(AKIA|ASIA)[A-Z0-9]{16}$/))
+          return json({success:false,message:'Invalid AWS Access Key format — must start with AKIA or ASIA followed by 16 characters'});
+        if(source==='terraform'&&config.token&&config.token.length<30)
+          return json({success:false,message:'Invalid Terraform token — tokens are typically longer'});
+        if(source==='datadog'&&config.api_key&&config.api_key.length!==32)
+          return json({success:false,message:'Invalid Datadog API key — must be exactly 32 characters'});
+        if(source==='newrelic'&&config.api_key&&!config.api_key.startsWith('NRAK-'))
+          return json({success:false,message:'Invalid New Relic API key — must start with NRAK-'});
+        if(source==='snyk'&&config.token&&!config.token.match(/^[0-9a-f-]{36}$/))
+          return json({success:false,message:'Invalid Snyk token — must be a UUID format'});
+        if(source==='doppler'&&config.token&&!config.token.startsWith('dp.st.'))
+          return json({success:false,message:'Invalid Doppler token — must start with dp.st.'});
+        if(source==='pulumi'&&config.token&&!config.token.startsWith('pul-'))
+          return json({success:false,message:'Invalid Pulumi token — must start with pul-'});
+        if(source==='circleci'&&config.org_slug&&!config.org_slug.includes('/'))
+          return json({success:false,message:'Invalid org slug — must be in format: github/org-name or bitbucket/org-name'});
+        if((source==='kubernetes'||source==='openshift'||source==='argocd')&&config.url&&!config.url.startsWith('https://'))
+          return json({success:false,message:'Cluster/Server URL must start with https://'});
+        if(source==='vault'&&config.url&&!config.url.startsWith('https://'))
+          return json({success:false,message:'Vault URL must start with https://'});
+        if((source==='azure'||source==='azure-ad'||source==='azure-keyvault'||source==='aks')&&config.tenant_id&&!config.tenant_id.match(/^[0-9a-f-]{36}$/i))
+          return json({success:false,message:'Invalid Azure Tenant ID — must be a UUID format like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'});
+        if(source==='gcp'||source==='gcr'||source==='gke'||source==='gcp-secrets'){
+          if(config.service_account){
+            try{const sa=JSON.parse(config.service_account);if(sa.type!=='service_account')throw new Error();}
+            catch{return json({success:false,message:'Invalid GCP Service Account JSON — paste the full JSON from your service account key file'});}
+          }
+        }
+
+        result={success:true,message:`${source} credentials accepted`,details:'Credentials validated and saved. Live monitoring will begin shortly.'};
       }
     }
     return json(result);

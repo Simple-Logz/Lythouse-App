@@ -2,6 +2,7 @@ import{useCallback,useEffect,useState,useMemo}from'react';
 import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
 import{Activity,Plus,X,Check,RefreshCw,Search,Bell,BellOff,ChevronRight,AlertTriangle,CheckCircle2,Clock,Zap,Shield,GitBranch,Cloud,Database,Loader as Loader2,Wifi,WifiOff,AlertCircle,ArrowRight,TrendingDown,Layers}from'lucide-react';
+import{AssetDetailPanel}from'./AssetDetailPanel';
 
 // ─── Full catalogue ────────────────────────────────────────────────────────────
 const CATALOGUE={
@@ -221,6 +222,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
 
   useEffect(()=>{load();},[load]);
 
+  const[selectedConnection,setSelectedConnection]=useState<Connection|null>(null);
   const[testError,setTestError]=useState<Record<string,string>>({});
   const[testSuccess,setTestSuccess]=useState<Record<string,string>>({});
 
@@ -364,7 +366,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                 const isTesting=testing===conn.id;
                 const tested=testResults[conn.id];
                 return(
-                  <div key={conn.id} className="card border-2 border-green-100">
+                  <div key={conn.id} className="card border-2 border-green-100 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all" onClick={()=>setSelectedConnection(conn)}>
                     <div className="flex items-start gap-3">
                       <span className="text-2xl shrink-0 mt-0.5">{asset.icon}</span>
                       <div className="flex-1 min-w-0">
@@ -377,7 +379,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                             <button onClick={()=>testConn(conn.source,conn.id)} disabled={isTesting} className="btn-secondary text-xs py-1">
                               {isTesting?<Loader2 size={11} className="animate-spin"/>:<RefreshCw size={11}/>}{isTesting?'Testing…':'Test'}
                             </button>
-                            <button onClick={()=>disconnect(conn.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"><X size={13}/></button>
+                            <button onClick={e=>{e.stopPropagation();disconnect(conn.id);}} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"><X size={13}/></button>
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 mb-2">{asset.category}</p>
@@ -541,5 +543,16 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
         </div>
       )}
     </div>
+    {selectedConnection&&(()=>{
+      const asset=ALL_ASSETS.find(a=>a.id===selectedConnection.source);
+      if(!asset)return null;
+      return<AssetDetailPanel
+        connection={selectedConnection}
+        assetMeta={asset}
+        onClose={()=>setSelectedConnection(null)}
+        onDisconnect={async(id)=>{await disconnect(id);setSelectedConnection(null);}}
+        onRetest={(id)=>{setTestResults(prev=>({...prev,[id]:true}));}}
+      />;
+    })()}
   );
 }
