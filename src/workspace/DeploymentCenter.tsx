@@ -32,26 +32,47 @@ const BIZ_META:Record<BusinessSeverity,{label:string;color:string;bg:string;bord
 type ReadinessDimension={label:string;score:number;status:'pass'|'warn'|'fail';detail:string;};
 
 function computeReadiness(findings:Finding[],validations:Validation[]):{overall:number;dimensions:ReadinessDimension[];status:'blocked'|'approved'|'pending'}{
+  if(validations.length===0)return{overall:0,dimensions:[],status:'pending'};
+
+  const latest=validations.find(v=>v.status==='completed');
+  if(!latest)return{overall:0,dimensions:[],status:'pending'};
+
+  // Use the ACTUAL risk score from the validation engine, not open findings count
+  // Risk score is 0-100 where higher = more risk, so readiness = 100 - risk
+  const actualRisk=latest.risk_score??50;
+  const baseReadiness=Math.max(0,100-actualRisk);
+
+  // Open findings penalise further
   const open=findings.filter(f=>f.status==='open');
   const critical=open.filter(f=>f.severity==='critical');
   const high=open.filter(f=>f.severity==='high');
-  const secrets=open.filter(f=>f.category==='secret_scan');
+  const secrets=open.filter(f=>f.category==='secret_scan'&&f.status==='open');
   const deps=open.filter(f=>f.category==='dependency_audit');
   const infra=open.filter(f=>f.category==='configuration');
   const code=open.filter(f=>f.category==='static_analysis');
-  const latest=validations.find(v=>v.status==='completed');
+
+  // Each dimension uses a mix of actual scan data + open findings
+  const secScore=Math.max(0,baseReadiness-critical.filter(f=>f.category==='static_analysis').length*20);
+  const secretScore=Math.max(0,100-secrets.length*60);
+  const depScore=Math.max(0,baseReadiness-deps.filter(f=>f.severity==='critical').length*25-deps.filter(f=>f.severity==='high').length*10);
+  const codeScore=Math.max(0,baseReadiness-code.filter(f=>f.severity==='critical').length*20);
+  const infraScore=Math.max(0,100-infra.length*15);
+  const complianceScore=critical.length===0&&secrets.length===0?Math.min(100,baseReadiness+10):Math.max(0,baseReadiness-30);
 
   const dimensions:ReadinessDimension[]=[
-    {label:'Security',score:Math.max(0,100-critical.length*40-high.length*15),status:critical.length>0?'fail':high.length>0?'warn':'pass',detail:critical.length>0?`${critical.length} critical security issue${critical.length!==1?'s':''} must be fixed`:high.length>0?`${high.length} high-severity issues found`:'No critical security issues'},
-    {label:'Secrets & Credentials',score:Math.max(0,100-secrets.length*50),status:secrets.length>0?'fail':'pass',detail:secrets.length>0?`${secrets.length} exposed secret${secrets.length!==1?'s':''} detected`:'No exposed credentials'},
-    {label:'Dependencies',score:Math.max(0,100-deps.filter(f=>f.severity==='critical').length*40-deps.filter(f=>f.severity==='high').length*15),status:deps.filter(f=>f.severity==='critical').length>0?'fail':deps.filter(f=>f.severity==='high').length>0?'warn':'pass',detail:deps.length>0?`${deps.length} vulnerable dependenc${deps.length!==1?'ies':'y'}`:'Dependencies look healthy'},
-    {label:'Code Quality',score:Math.max(0,100-code.filter(f=>f.severity==='critical').length*30-code.filter(f=>f.severity==='high').length*10),status:code.filter(f=>f.severity==='critical').length>0?'fail':code.filter(f=>f.severity==='high').length>0?'warn':'pass',detail:code.length>0?`${code.length} code issue${code.length!==1?'s':''} flagged`:'Code analysis passed'},
-    {label:'Infrastructure',score:Math.max(0,100-infra.length*20),status:infra.length>2?'fail':infra.length>0?'warn':'pass',detail:infra.length>0?`${infra.length} configuration issue${infra.length!==1?'s':''}`:'Infrastructure config looks good'},
-    {label:'Compliance',score:critical.length===0&&secrets.length===0?100:40,status:critical.length>0||secrets.length>0?'fail':'pass',detail:critical.length>0||secrets.length>0?'Compliance blocked by open critical issues':'Compliance checks passed'},
+    {label:'Security',score:secScore,status:critical.length>0?'fail':high.length>0?'warn':'pass',detail:critical.length>0?`${critical.length} critical issue${critical.length!==1?'s':''} blocking deployment`:high.length>0?`${high.length} high-severity issues need review`:`Risk score: ${actualRisk}/100`},
+    {label:'Secrets & Credentials',score:secretScore,status:secrets.length>0?'fail':'pass',detail:secrets.length>0?`${secrets.length} exposed secret${secrets.length!==1?'s':''} detected — immediate action required`:'No exposed credentials found'},
+    {label:'Dependencies',score:depScore,status:deps.filter(f=>f.severity==='critical').length>0?'fail':deps.filter(f=>f.severity==='high').length>0?'warn':'pass',detail:deps.length>0?`${deps.length} vulnerable dependenc${deps.length!==1?'ies':'y'} detected`:'Dependency audit passed'},
+    {label:'Code Quality',score:codeScore,status:code.filter(f=>f.severity==='critical').length>0?'fail':code.filter(f=>f.severity==='high').length>0?'warn':'pass',detail:code.length>0?`${code.length} code issue${code.length!==1?'s':''} flagged`:'Static analysis passed'},
+    {label:'Infrastructure',score:infraScore,status:infra.length>2?'fail':infra.length>0?'warn':'pass',detail:infra.length>0?`${infra.length} configuration issue${infra.length!==1?'s':''} found`:'Configuration looks healthy'},
+    {label:'Compliance',score:complianceScore,status:critical.length>0||secrets.length>0?'fail':'pass',detail:critical.length>0||secrets.length>0?'Compliance blocked by unresolved critical issues':'Compliance posture is acceptable'},
   ];
 
-  const overall=validations.length===0?0:Math.round(dimensions.reduce((s,d)=>s+d.score,0)/dimensions.length);
-  const status=validations.length===0?'pending':critical.length>0||secrets.length>0?'blocked':overall>=80?'approved':'blocked';
+  // Overall = weighted average anchored to actual risk score
+  const dimAvg=Math.round(dimensions.reduce((s,d)=>s+d.score,0)/dimensions.length);
+  // Blend 60% dimension average with 40% base readiness from actual scan
+  const overall=Math.round(dimAvg*0.6+baseReadiness*0.4);
+  const status=critical.length>0||secrets.length>0?'blocked':overall>=75?'approved':'blocked';
   return{overall,dimensions,status};
 }
 
