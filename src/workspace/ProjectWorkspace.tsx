@@ -474,6 +474,5 @@ return<div className="flex items-start gap-2.5">
     <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
     <p className="mt-0.5 truncate text-sm font-medium text-navy-900">{value}</p>
   </div>
-</div>
 </div>;
 }
