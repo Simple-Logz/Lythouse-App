@@ -731,16 +731,14 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
         </div>
       )}
     </div>
-    {selectedConnection&&(()=>{
-      const asset=ALL_ASSETS.find(a=>a.id===selectedConnection.source);
-      if(!asset)return null;
-      return<AssetDetailPanel
+    {selectedConnection&&ALL_ASSETS.find(a=>a.id===selectedConnection.source)&&(
+      <AssetDetailPanel
         connection={selectedConnection}
-        assetMeta={asset}
+        assetMeta={ALL_ASSETS.find(a=>a.id===selectedConnection.source)!}
         onClose={()=>setSelectedConnection(null)}
         onDisconnect={async(id)=>{await disconnect(id);setSelectedConnection(null);}}
         onRetest={(id)=>{setTestResults(prev=>({...prev,[id]:true}));}}
-      />;
-    })()}
+      />
+    )}
   );
 }
