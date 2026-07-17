@@ -222,7 +222,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
                               <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
                                 <FileCode size={14} className="text-gray-400 shrink-0"/>
                                 <code className="text-xs text-navy-800 flex-1">{f.file_path}{f.line?`:${f.line}`:''}</code>
-                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined)} className="text-xs text-brand-600 hover:underline font-medium">Open file</button>
+                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined)} className="text-xs text-brand-600 hover:underline font-medium">View file →</button>
                               </div>
                             )}
 
@@ -275,16 +275,34 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
                               </div>
                             )}
 
+                            {/* Step by step fix guidance */}
+                            {f.status!=='resolved'&&(
+                              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">How to fix this</p>
+                                {[
+                                  f.file_path?`1. Open ${f.file_path}${f.line?` at line ${f.line}`:''}`:null,
+                                  f.recommendation?`2. ${f.recommendation}`:null,
+                                  '3. Save the file and click "Mark as resolved" below',
+                                  '4. Run a new validation to confirm the issue is gone',
+                                ].filter(Boolean).map((step,i)=>(
+                                  <div key={i} className="flex items-start gap-2 text-xs text-gray-600">
+                                    <span className="shrink-0 flex h-4 w-4 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold text-[10px] mt-0.5">{i+1}</span>
+                                    <span>{(step as string).replace(/^\d+\.\s*/,'')}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
                             {/* Actions */}
                             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
+                              {f.file_path&&(
+                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined)} className="btn-secondary text-xs">
+                                  <FileCode size={13}/>Open file{f.line?` (line ${f.line})`:''}
+                                </button>
+                              )}
                               {f.status!=='resolved'&&(
                                 <button onClick={()=>updateStatus(f.id,'resolved')} disabled={updating===f.id} className="btn-primary text-xs">
                                   {updating===f.id?<RefreshCw size={13} className="animate-spin"/>:<Check size={13}/>}Mark as resolved
-                                </button>
-                              )}
-                              {f.file_path&&(
-                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined)} className="btn-secondary text-xs">
-                                  <FileCode size={13}/>View in editor
                                 </button>
                               )}
                               {f.status!=='ignored'&&f.status!=='resolved'&&(

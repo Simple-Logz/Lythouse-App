@@ -2,7 +2,7 @@ import{useEffect,useState,useRef}from'react';
 import{useRouter}from'../lib/router';
 import{supabase,type Project,type Validation,type ValidationStep,type Finding,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadge,RiskGauge,Breadcrumb,timeAgo,fmtDuration}from'../lib/ui';
-import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,BarChart3,Rocket,FolderOpen,PanelLeftClose,PanelLeftOpen}from'lucide-react';
+import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen}from'lucide-react';
 import AIAssistantTab from'./AIAssistantTab';
 import{FindingsTab}from'./FindingsTab';
 import{ReadinessTab}from'./ReadinessTab';
@@ -43,7 +43,6 @@ const[saving,setSaving]=useState(false);
 const[saved,setSaved]=useState(false);
 const[form,setForm]=useState({name:'',description:'',git_url:'',git_branch:'',language:'',framework:''});
 const[running,setRunning]=useState(false);
-const[sidebarOpen,setSidebarOpen]=useState(true);
 const[openFilePath,setOpenFilePath]=useState<string|null>(null);
 const[highlightLine,setHighlightLine]=useState<number|null>(null);
 const[runError,setRunError]=useState('');
@@ -184,88 +183,7 @@ const filteredFindings=sevFilter==='all'?findings:findings.filter(f=>f.severity=
 const hasToken=!!(project as any).github_token;
 const hasGitUrl=!!project.git_url;
 
-return<div className="flex gap-0 -mx-6 -mt-6 min-h-screen">
-{/* Left sidebar — file explorer + nav */}
-<div className={`flex-shrink-0 border-r border-gray-200 bg-white transition-all duration-200 flex flex-col ${sidebarOpen?'w-52':'w-10'}`}>
-  {/* Sidebar toggle */}
-  <div className="flex items-center justify-between px-2 py-3 border-b border-gray-100">
-    {sidebarOpen&&<span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Navigation</span>}
-    <button onClick={()=>setSidebarOpen(o=>!o)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ml-auto" title={sidebarOpen?'Collapse':'Expand'}>
-      {sidebarOpen?<PanelLeftClose size={14}/>:<PanelLeftOpen size={14}/>}
-    </button>
-  </div>
-
-  {sidebarOpen&&(
-    <div className="flex-1 overflow-y-auto py-2">
-      {/* Security group */}
-      <div className="px-2 mb-1">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1">Security</p>
-        {[
-          {id:'validations',label:'Validations',icon:ShieldCheck},
-          {id:'findings',label:'Findings',icon:ShieldAlert},
-          {id:'readiness',label:'Readiness',icon:Gauge},
-          {id:'dependencies',label:'Dependencies',icon:Package},
-        ].map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors mb-0.5 ${tab===t.id?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
-            <t.icon size={14} className={tab===t.id?'text-brand-600':'text-gray-400'}/>{t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Intelligence group */}
-      <div className="px-2 mb-1">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1 mt-2">Intelligence</p>
-        {[
-          {id:'topology',label:'Topology',icon:Network},
-          {id:'simulator',label:'Simulator',icon:FlaskConical},
-          {id:'ai-assistant',label:'AI Assistant',icon:Sparkles},
-        ].map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors mb-0.5 ${tab===t.id?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
-            <t.icon size={14} className={tab===t.id?'text-brand-600':'text-gray-400'}/>{t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Files link */}
-      <div className="px-2">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1 mt-2">Repository</p>
-        <button onClick={()=>setTab('files')} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors mb-0.5 ${tab==='files'?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
-          <FolderOpen size={14} className={tab==='files'?'text-brand-600':'text-gray-400'}/>Browse files
-        </button>
-      </div>
-
-      {/* Settings at bottom */}
-      <div className="px-2 mt-4 pt-3 border-t border-gray-100">
-        <button onClick={()=>setTab('settings')} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${tab==='settings'?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
-          <Cog size={14} className={tab==='settings'?'text-brand-600':'text-gray-400'}/>Settings
-        </button>
-      </div>
-    </div>
-  )}
-
-  {/* Collapsed state — icon only */}
-  {!sidebarOpen&&(
-    <div className="flex flex-col items-center gap-1 py-2">
-      {[
-        {id:'validations',icon:ShieldCheck},
-        {id:'findings',icon:ShieldAlert},
-        {id:'readiness',icon:Gauge},
-        {id:'dependencies',icon:Package},
-        {id:'topology',icon:Network},
-        {id:'simulator',icon:FlaskConical},
-        {id:'ai-assistant',icon:Sparkles},
-        {id:'settings',icon:Cog},
-      ].map(t=>(
-        <button key={t.id} onClick={()=>{setTab(t.id as Tab);setSidebarOpen(true);}} title={t.id} className={`p-2 rounded-lg transition-colors ${tab===t.id?'bg-brand-50 text-brand-600':'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
-          <t.icon size={15}/>
-        </button>
-      ))}
-    </div>
-  )}
-</div>
-
-{/* Main content */}
-<div className="flex-1 min-w-0 px-6 pt-6 pb-8 overflow-y-auto">
+return<div>
 <PageHeader title={project.name} description={project.description??'No description provided.'}
   breadcrumb={<Breadcrumb items={[{label:'Projects',to:'/projects'},{label:project.name}]}/>}
   actions={
@@ -440,7 +358,7 @@ return<div className="flex gap-0 -mx-6 -mt-6 min-h-screen">
 {tab==='findings'&&(
   <FindingsTab
     projectId={projectId}
-    onOpenFile={(path,line)=>console.log('open file',path,line)}
+    onOpenFile={(path,line)=>{setOpenFilePath(path);setHighlightLine(line??null);setTab('files');}}
     onRunValidation={runValidation}
   />
 )}
@@ -506,7 +424,6 @@ return<div className="flex gap-0 -mx-6 -mt-6 min-h-screen">
     </div>
   </div>
 )}
-</div>
 </div>;
 }
 
@@ -516,6 +433,5 @@ return<div className="flex items-start gap-2.5">
   <div className="min-w-0">
     <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
     <p className="mt-0.5 truncate text-sm font-medium text-navy-900">{value}</p>
-  </div>
-</div>;
+  </div>;
 }
