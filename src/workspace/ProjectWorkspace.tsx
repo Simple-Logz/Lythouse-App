@@ -12,7 +12,7 @@ import{DependenciesTab}from'./DependenciesTab';
 import{DriftTab}from'./DriftTab';
 import{FileExplorer}from'./FileExplorer';
 
-type Tab='validations'|'findings'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'settings';
+type Tab='validations'|'findings'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'files'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
 {id:'validations',label:'Validations',icon:ShieldCheck,group:'Security'},
 {id:'findings',label:'Findings',icon:ShieldAlert,group:'Security'},
@@ -186,54 +186,80 @@ const hasGitUrl=!!project.git_url;
 
 return<div className="flex gap-0 -mx-6 -mt-6 min-h-screen">
 {/* Left sidebar — file explorer + nav */}
-<div className={`flex-shrink-0 border-r border-gray-200 bg-gray-50/50 transition-all duration-200 flex flex-col ${sidebarOpen?'w-56':'w-10'}`}>
+<div className={`flex-shrink-0 border-r border-gray-200 bg-white transition-all duration-200 flex flex-col ${sidebarOpen?'w-52':'w-10'}`}>
   {/* Sidebar toggle */}
-  <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200">
-    {sidebarOpen&&<span className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1">Explorer</span>}
-    <button onClick={()=>setSidebarOpen(o=>!o)} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors ml-auto">
-      {sidebarOpen?<PanelLeftClose size={15}/>:<PanelLeftOpen size={15}/>}
+  <div className="flex items-center justify-between px-2 py-3 border-b border-gray-100">
+    {sidebarOpen&&<span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Navigation</span>}
+    <button onClick={()=>setSidebarOpen(o=>!o)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ml-auto" title={sidebarOpen?'Collapse':'Expand'}>
+      {sidebarOpen?<PanelLeftClose size={14}/>:<PanelLeftOpen size={14}/>}
     </button>
   </div>
 
-  {sidebarOpen&&project&&(
-    <div className="flex-1 overflow-y-auto">
-      {/* Section nav */}
-      <div className="px-2 py-2 border-b border-gray-100">
+  {sidebarOpen&&(
+    <div className="flex-1 overflow-y-auto py-2">
+      {/* Security group */}
+      <div className="px-2 mb-1">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1">Security</p>
         {[
           {id:'validations',label:'Validations',icon:ShieldCheck},
           {id:'findings',label:'Findings',icon:ShieldAlert},
           {id:'readiness',label:'Readiness',icon:Gauge},
           {id:'dependencies',label:'Dependencies',icon:Package},
         ].map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors mb-0.5 ${tab===t.id?'bg-brand-100 text-brand-700':'text-gray-600 hover:bg-gray-200'}`}>
-            <t.icon size={13}/>{t.label}
+          <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors mb-0.5 ${tab===t.id?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
+            <t.icon size={14} className={tab===t.id?'text-brand-600':'text-gray-400'}/>{t.label}
           </button>
         ))}
       </div>
-      <div className="px-2 py-2 border-b border-gray-100">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-2 mb-1">Intelligence</p>
+
+      {/* Intelligence group */}
+      <div className="px-2 mb-1">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1 mt-2">Intelligence</p>
         {[
           {id:'topology',label:'Topology',icon:Network},
           {id:'simulator',label:'Simulator',icon:FlaskConical},
           {id:'ai-assistant',label:'AI Assistant',icon:Sparkles},
         ].map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors mb-0.5 ${tab===t.id?'bg-brand-100 text-brand-700':'text-gray-600 hover:bg-gray-200'}`}>
-            <t.icon size={13}/>{t.label}
+          <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors mb-0.5 ${tab===t.id?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
+            <t.icon size={14} className={tab===t.id?'text-brand-600':'text-gray-400'}/>{t.label}
           </button>
         ))}
       </div>
 
-      {/* File explorer */}
-      <div className="px-2 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-2 mb-1">Repository Files</p>
-        <FileExplorer
-          projectId={projectId}
-          project={project}
-          openFilePath={openFilePath}
-          highlightLine={highlightLine}
-          onHighlightConsumed={()=>setHighlightLine(null)}
-        />
+      {/* Files link */}
+      <div className="px-2">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 px-2 py-1 mt-2">Repository</p>
+        <button onClick={()=>setTab('files')} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors mb-0.5 ${tab==='files'?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
+          <FolderOpen size={14} className={tab==='files'?'text-brand-600':'text-gray-400'}/>Browse files
+        </button>
       </div>
+
+      {/* Settings at bottom */}
+      <div className="px-2 mt-4 pt-3 border-t border-gray-100">
+        <button onClick={()=>setTab('settings')} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors ${tab==='settings'?'bg-brand-50 text-brand-700':'text-gray-600 hover:bg-gray-50 hover:text-navy-900'}`}>
+          <Cog size={14} className={tab==='settings'?'text-brand-600':'text-gray-400'}/>Settings
+        </button>
+      </div>
+    </div>
+  )}
+
+  {/* Collapsed state — icon only */}
+  {!sidebarOpen&&(
+    <div className="flex flex-col items-center gap-1 py-2">
+      {[
+        {id:'validations',icon:ShieldCheck},
+        {id:'findings',icon:ShieldAlert},
+        {id:'readiness',icon:Gauge},
+        {id:'dependencies',icon:Package},
+        {id:'topology',icon:Network},
+        {id:'simulator',icon:FlaskConical},
+        {id:'ai-assistant',icon:Sparkles},
+        {id:'settings',icon:Cog},
+      ].map(t=>(
+        <button key={t.id} onClick={()=>{setTab(t.id as Tab);setSidebarOpen(true);}} title={t.id} className={`p-2 rounded-lg transition-colors ${tab===t.id?'bg-brand-50 text-brand-600':'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
+          <t.icon size={15}/>
+        </button>
+      ))}
     </div>
   )}
 </div>
@@ -425,6 +451,23 @@ return<div className="flex gap-0 -mx-6 -mt-6 min-h-screen">
 {tab==='simulator'&&(<DryRunTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>)}
 {tab==='ai-assistant'&&(
 <AIAssistantTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>
+)}
+{tab==='files'&&project&&(
+<div>
+  <div className="mb-4 flex items-center gap-2">
+    <FolderOpen size={18} className="text-brand-600"/>
+    <h2 className="text-base font-semibold text-navy-900">Repository Files</h2>
+    <span className="chip bg-gray-100 text-gray-500 border border-gray-200 text-xs">{project.git_branch||'main'}</span>
+  </div>
+  <p className="text-sm text-gray-500 mb-4">Browsing <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{project.git_url}</span></p>
+  <FileExplorer
+    projectId={projectId}
+    project={project}
+    openFilePath={openFilePath}
+    highlightLine={highlightLine}
+    onHighlightConsumed={()=>setHighlightLine(null)}
+  />
+</div>
 )}
 
 {tab==='settings'&&(
