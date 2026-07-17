@@ -24,8 +24,8 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --brand: #6d28d9;
-  --brand-light: #ede9fe;
+  --brand: #2d8a2d;
+  --brand-light: #f0faf0;
 }
 
 .dark {
@@ -37,8 +37,8 @@
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
-  --brand: #a78bfa;
-  --brand-light: #1e1b4b;
+  --brand: #5bb85b;
+  --brand-light: #1a2e1a;
 }
 
 .dark body {
