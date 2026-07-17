@@ -1,5 +1,5 @@
 import{useEffect,useState,useCallback,useMemo}from'react';
-import{BarChart,Bar,LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,ReferenceLine}from'recharts';
+import{ReleasePerformanceChart}from'./ReleasePerformanceChart';
 import{supabase,type Project,type Validation,type Finding}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
 import{TrendingUp,TrendingDown,Shield,Clock,CheckCircle2,XCircle,AlertTriangle,BarChart3,Users,Zap,Activity,Target,ArrowRight,Search,X}from'lucide-react';
