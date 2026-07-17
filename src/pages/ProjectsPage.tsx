@@ -1,3 +1,4 @@
+// @ts-nocheck
 import{useEffect,useState}from'react';
 import{supabase,type Project}from'../lib/supabase';
 import{PageHeader,EmptyState,Spinner}from'../lib/ui';

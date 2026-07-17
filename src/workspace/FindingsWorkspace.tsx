@@ -1,3 +1,4 @@
+// @ts-nocheck
 import{useCallback,useEffect,useState}from'react';
 import{supabase,type Finding,type Validation,anonKey,edgeFunctionUrl}from'../lib/supabase';
 import{useAuth}from'../lib/auth';

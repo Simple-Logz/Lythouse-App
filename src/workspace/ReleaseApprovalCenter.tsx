@@ -2,7 +2,7 @@ import{useCallback,useEffect,useState}from'react';
 import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
 import{useAuth}from'../lib/auth';
 import{Spinner}from'../lib/ui';
-import{CheckCircle2,XCircle,Clock,Shield,Package,Users,AlertTriangle,Plus,ChevronDown,ChevronRight,Loader as Loader2,Check,X,FileText,Activity,Lock,Sparkles}from'lucide-react';
+import{Clock,Shield,Package,Users,Plus,ChevronDown,ChevronRight,Loader as Loader2,Check,X,FileText,Sparkles}from'lucide-react';
 
 type Approval={role:string;approver_name:string;approver_id:string;approved_at:string;comment:string;};
 type ReleaseApproval={id:string;project_id:string;workspace_id:string;validation_id:string|null;release_name:string;status:string;required_approvers:string[];approvals:Approval[];created_by:string|null;created_at:string;completed_at:string|null;};
@@ -134,8 +134,7 @@ export function ReleaseApprovalCenter({projectId,workspaceId,validationId,latest
       {approvals.map(release=>{
         const isOpen=expanded===release.id;
         const approvedRoles=new Set((release.approvals||[]).map((a:Approval)=>a.role));
-        const rejectedRoles=new Set((release.approvals||[]).filter((a:Approval)=>a.comment?.startsWith('REJECTED')).map((a:Approval)=>a.role));
-        const allApproved=release.required_approvers.every(r=>approvedRoles.has(r));
+                const allApproved=release.required_approvers.every(r=>approvedRoles.has(r));
         const isRejected=release.status==='rejected';
 
         return(

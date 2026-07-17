@@ -3,7 +3,7 @@ import{supabase,type Finding,type Validation,anonKey,edgeFunctionUrl}from'../lib
 import{Spinner}from'../lib/ui';
 import{Activity,Shield,CheckCircle2,AlertTriangle,XCircle,Clock,Zap,RefreshCw,Play,Sparkles,GitPullRequest,Users,BarChart3,Loader as Loader2,ChevronRight,MessageSquare,X}from'lucide-react';
 
-export function ReleaseWarRoom({projectId,workspaceId,project,onRunValidation,running}:{projectId:string;workspaceId:string;project:any;onRunValidation:()=>void;running:boolean;}){
+export function ReleaseWarRoom({projectId,project,onRunValidation,running}:{projectId:string;project:any;onRunValidation:()=>void;running:boolean;}){
   const[findings,setFindings]=useState<Finding[]>([]);
   const[validations,setValidations]=useState<Validation[]>([]);
   const[loading,setLoading]=useState(true);
@@ -13,7 +13,7 @@ export function ReleaseWarRoom({projectId,workspaceId,project,onRunValidation,ru
   const[chatHistory,setChatHistory]=useState<{role:'user'|'ai';text:string;time:string}[]>([]);
   const[chatLoading,setChatLoading]=useState(false);
   const chatEndRef=useRef<HTMLDivElement>(null);
-  const pollRef=useRef<NodeJS.Timeout|null>(null);
+  const pollRef=useRef<ReturnType<typeof setInterval>|null>(null);
 
   const load=useCallback(async()=>{
     setLoading(true);

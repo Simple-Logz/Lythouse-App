@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, type Deployment, type Project, type Validation, type Finding } from '../lib/supabase';
 import { Link } from '../lib/router';

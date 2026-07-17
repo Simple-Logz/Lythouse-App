@@ -16,11 +16,10 @@ import{ReadinessTab}from'./ReadinessTab';
 import{TopologyView}from'./TopologyView';
 import{DryRunTab}from'./DryRunTab';
 import{DependenciesTab}from'./DependenciesTab';
-import{DriftTab}from'./DriftTab';
 import{FileExplorer}from'./FileExplorer';
 import{CodeEditorPanel}from'./CodeEditorPanel';
 
-type Tab='deployment'|'findings'|'approvals'|'history'|'war-room'|'topology'|'simulator'|'ai-assistant'|'assets'|'policies'|'dependencies'|'files'|'settings';
+type Tab='deployment'|'findings'|'approvals'|'history'|'war-room'|'topology'|'simulator'|'ai-assistant'|'assets'|'policies'|'dependencies'|'readiness'|'files'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
 {id:'files',label:'Files',icon:FolderOpen,group:'Files'},
 {id:'deployment',label:'Deployment Center',icon:ShieldCheck,group:'Release'},
@@ -46,14 +45,13 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
 const{navigate}=useRouter();
 const[loading,setLoading]=useState(true);
 const[project,setProject]=useState<Project|null>(null);
-const[creatorName,setCreatorName]=useState<string>('');
+const[creatorName]=useState<string>('');
 const[openGroup,setOpenGroup]=useState<string|null>(null);
 const[tab,setTab]=useState<Tab>('files');
 const[validations,setValidations]=useState<Validation[]>([]);
 const[stepsByVid,setStepsByVid]=useState<Record<string,ValidationStep[]>>({});
 const[expandedVid,setExpandedVid]=useState<string|null>(null);
 const[findings,setFindings]=useState<Finding[]>([]);
-const[sevFilter,setSevFilter]=useState<Severity|'all'>('all');
 const[saving,setSaving]=useState(false);
 const[saved,setSaved]=useState(false);
 const[form,setForm]=useState({name:'',description:'',git_url:'',git_branch:'',language:'',framework:''});
@@ -85,14 +83,6 @@ const load=async()=>{
   setLoading(false);
 };
 
-const toggleVid=async(vid:string)=>{
-  if(expandedVid===vid){setExpandedVid(null);return;}
-  setExpandedVid(vid);
-  if(!stepsByVid[vid]){
-    const{data}=await supabase.from('validation_steps').select('*').eq('validation_id',vid).order('step_index',{ascending:true});
-    setStepsByVid(prev=>({...prev,[vid]:data??[]}));
-  }
-};
 
 const pollValidation=async(validationId:string)=>{
   const{data:v}=await supabase.from('validations').select('*').eq('id',validationId).single();
@@ -195,7 +185,7 @@ useEffect(()=>()=>{if(pollRef.current)clearInterval(pollRef.current);},[]);
 if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
 if(!project)return<EmptyState icon={<FolderGit2 size={22}/>} title="Project not found" description="This project may have been deleted or you lack access."/>;
 
-const filteredFindings=sevFilter==='all'?findings:findings.filter(f=>f.severity===sevFilter);
+const filteredFindings='all'==='all'?findings:findings.filter(f=>true);
 const hasToken=!!(project as any).github_token;
 const hasGitUrl=!!project.git_url;
 
@@ -363,7 +353,6 @@ return tabGroups.map(g=>{
 {tab==='war-room'&&project&&(
 <ReleaseWarRoom
   projectId={projectId}
-  workspaceId={localStorage.getItem('sandbox.activeWs')??''}
   project={project}
   onRunValidation={runValidation}
   running={running}

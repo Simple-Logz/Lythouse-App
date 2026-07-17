@@ -1,7 +1,7 @@
 import{useCallback,useEffect,useState}from'react';
 import{supabase,type Finding,type Validation}from'../lib/supabase';
 import{Spinner,EmptyState}from'../lib/ui';
-import{Clock,CheckCircle2,XCircle,AlertTriangle,RotateCcw,Shield,BarChart3,ChevronDown,ChevronRight,Plus,Loader as Loader2}from'lucide-react';
+import{Clock,CheckCircle2,XCircle,RotateCcw,BarChart3,ChevronDown,ChevronRight,Plus,Loader as Loader2}from'lucide-react';
 import{useAuth}from'../lib/auth';
 
 type RH={id:string;project_id:string;workspace_id:string;release_name:string;version:string|null;environment:string;status:string;risk_score:number|null;readiness_score:number|null;deployment_time_ms:number|null;approved_by:string[];rollback_available:boolean;rollback_version:string|null;findings_at_release:number;created_at:string;completed_at:string|null;};

@@ -1,7 +1,7 @@
 import{useCallback,useEffect,useRef,useState}from'react';
 import{edgeFunctionUrl,anonKey,type Project,type RepoFile}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
-import{X,Folder,File as FileIcon,ChevronRight,ChevronDown,RefreshCw,AlertTriangle,Copy,Check,Search,GitBranch,Code2,FolderOpen,Maximize2,Minimize2,Save,RotateCcz as Undo,Eye,EyeOff,Sparkles,GitCommit,Terminal,Download,MessageSquare,CheckCircle2,Loader as Loader2}from'lucide-react';
+import{X,Folder,File as FileIcon,ChevronRight,ChevronDown,RefreshCw,AlertTriangle,Copy,Check,Search,GitBranch,Code2,FolderOpen,Maximize2,Minimize2,Save,RotateCcw as Undo,Eye,EyeOff,Sparkles,GitCommit,Terminal,Download,MessageSquare,CheckCircle2,Loader as Loader2}from'lucide-react';
 
 type TreeNode={name:string;path:string;type:'file'|'dir';children:Map<string,TreeNode>;size?:number|null};
 type Props={projectId:string;project:Project;initialFile?:string|null;initialLine?:number|null;onClose:()=>void;findingContext?:{title:string;recommendation:string;line?:number;file?:string}|null;};

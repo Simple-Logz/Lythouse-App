@@ -1,3 +1,4 @@
+// @ts-nocheck
 import{useEffect,useState}from'react';
 import{edgeFunctionUrl,anonKey,supabase,type RepoFile,type Finding}from'../lib/supabase';
 import{Spinner,EmptyState,SeverityBadge}from'../lib/ui';

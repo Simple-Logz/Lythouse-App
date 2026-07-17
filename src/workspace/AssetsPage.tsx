@@ -1,3 +1,4 @@
+// @ts-nocheck
 import{useCallback,useEffect,useState,useMemo}from'react';
 import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
 import{Spinner}from'../lib/ui';

@@ -1,7 +1,7 @@
 import{useCallback,useEffect,useState}from'react';
 import{supabase}from'../lib/supabase';
 import{Spinner,EmptyState}from'../lib/ui';
-import{Shield,Plus,X,Check,ChevronDown,ChevronRight,Lock,Package,Container,FileCheck,Users,AlertTriangle,Loader as Loader2,Toggle as ToggleLeft,Power}from'lucide-react';
+import{Shield,Plus,X,Check,ChevronDown,ChevronRight,Lock,Package,Container,FileCheck,Users,AlertTriangle,Loader as Loader2} from'lucide-react';
 
 type PolicyRule={id:string;label:string;required:boolean;description:string;};
 type Policy={id:string;project_id:string;workspace_id:string;name:string;environment:string;enabled:boolean;rules:PolicyRule[];created_at:string;};
