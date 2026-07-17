@@ -21,7 +21,10 @@ export function AuthPage(){
     const res=mode==='signin'?await signIn(email,password):await signUp(email,password,fullName);
     setBusy(false);
     if(res.error){
-      setError(res.error==='Invalid login credentials'?'Incorrect email or password. Please try again.':res.error);
+      const msg=typeof res.error==='string'?res.error:(res.error as any)?.message??'Something went wrong. Please try again.';
+      setError(msg==='Invalid login credentials'?'Incorrect email or password. Please try again.':
+               msg.includes('already registered')?'An account with this email already exists. Try signing in instead.':
+               msg.includes('Password')||msg.includes('password')?'Password must be at least 6 characters.':msg);
     } else if(mode==='signup'){
       setDone(true);
     }
