@@ -15,6 +15,10 @@ export function ExecutiveDashboard(){
   const[projects,setProjects]=useState<Project[]>([]);
   const[validations,setValidations]=useState<Validation[]>([]);
   const[findings,setFindings]=useState<Finding[]>([]);
+  const[workspaces,setWorkspaces]=useState<{id:string;name:string}[]>([]);
+  const[creators,setCreators]=useState<{id:string;name:string}[]>([]);
+  const[wsFilter,setWsFilter]=useState<string>('all');
+  const[ownerFilter,setOwnerFilter]=useState<string>('all');
 
   const wsId=()=>localStorage.getItem('sandbox.activeWs');
 
@@ -22,12 +26,20 @@ export function ExecutiveDashboard(){
     setLoading(true);
     const wid=wsId();
     if(!wid){setLoading(false);return;}
-    const[pr,vl,fn]=await Promise.all([
+    const[pr,vl,fn,ws]=await Promise.all([
       supabase.from('projects').select('*').eq('workspace_id',wid),
       supabase.from('validations').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(100),
       supabase.from('findings').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}),
+      supabase.from('workspaces').select('id,name'),
     ]);
     setProjects(pr.data??[]);
+    setWorkspaces(ws.data??[]);
+    // Load creator profiles for all projects
+    const creatorIds=[...new Set((pr.data??[]).map((p:any)=>p.created_by).filter(Boolean))];
+    if(creatorIds.length>0){
+      const{data:profiles}=await supabase.from('profiles').select('id,full_name,email').in('id',creatorIds);
+      setCreators((profiles??[]).map((p:any)=>({id:p.id,name:p.full_name||p.email||'Unknown'})));
+    }
     setValidations(vl.data??[]);
     setFindings(fn.data??[]);
     setLoading(false);
@@ -68,12 +80,14 @@ export function ExecutiveDashboard(){
   const maxScans=Math.max(...trendData.map(d=>d.scans),1);
 
   // Team/project risk ranking
-  const projectRisks:TeamRisk[]=projects.map(p=>{
+  const projectRisks=projects.map(p=>{
     const pv=completed.filter(v=>v.project_id===p.id);
     const latest=pv[0];
     const pf=findings.filter(f=>f.project_id===p.id&&f.status==='open');
     return{
       project_name:p.name,project_id:p.id,
+      workspace_id:p.workspace_id,
+      created_by:p.created_by,
       risk_score:latest?.risk_score??0,
       critical:pf.filter(f=>f.severity==='critical').length,
       high:pf.filter(f=>f.severity==='high').length,
@@ -181,7 +195,7 @@ export function ExecutiveDashboard(){
             <button onClick={()=>setShowFilters(f=>!f)} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors '+(showFilters||riskFilter.size>0?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 text-gray-600 hover:bg-gray-50')}>
               <Users size={12}/>Filters{riskFilter.size>0?` (${riskFilter.size})`:''}
             </button>
-            {(riskFilter.size>0||projectSearch)&&<button onClick={()=>{setRiskFilter(new Set());setProjectSearch('');}} className="text-xs text-gray-400 hover:text-gray-600 underline">Clear all</button>}
+            {(riskFilter.size>0||projectSearch||wsFilter!=='all'||ownerFilter!=='all')&&<button onClick={()=>{setRiskFilter(new Set());setProjectSearch('');setWsFilter('all');setOwnerFilter('all');}} className="text-xs text-gray-400 hover:text-gray-600 underline">Clear all</button>}
           </div>
         </div>
         {showFilters&&(
@@ -216,6 +230,28 @@ export function ExecutiveDashboard(){
                 ))}
               </div>
             </div>
+            {workspaces.length>1&&<div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Workspace</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={()=>setWsFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>All Workspaces</button>
+                {workspaces.map(w=>(
+                  <button key={w.id} onClick={()=>setWsFilter(w.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter===w.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
+                    {wsFilter===w.id?'✓ ':''}{w.name}
+                  </button>
+                ))}
+              </div>
+            </div>}
+            {creators.length>1&&<div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Owner</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={()=>setOwnerFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>All Owners</button>
+                {creators.map(c=>(
+                  <button key={c.id} onClick={()=>setOwnerFilter(c.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter===c.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
+                    {ownerFilter===c.id?'✓ ':''}{c.name}
+                  </button>
+                ))}
+              </div>
+            </div>}
           </div>
         )}
         {projectRisks.length===0?(
@@ -239,6 +275,9 @@ export function ExecutiveDashboard(){
   if(riskFilter.has('scanned-today'))riskChecks.push(daysSince===0);
   if(riskFilter.has('stale'))riskChecks.push(daysSince>=7);
   return riskChecks.some(Boolean);
+  const matchWs=wsFilter==='all'||p.workspace_id===wsFilter;
+  const matchOwner=ownerFilter==='all'||p.created_by===ownerFilter;
+  return matchWs&&matchOwner;
 }).map((p,i)=>(
               <div key={p.project_id} className="flex items-center gap-4 py-3">
                 <span className="text-sm font-bold text-gray-400 w-5">{i+1}</span>
