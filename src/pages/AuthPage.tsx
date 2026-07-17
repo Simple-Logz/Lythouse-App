@@ -18,15 +18,26 @@ export function AuthPage(){
     e.preventDefault();
     setError(null);
     setBusy(true);
-    const res=mode==='signin'?await signIn(email,password):await signUp(email,password,fullName);
-    setBusy(false);
-    if(res.error){
-      const msg=typeof res.error==='string'?res.error:(res.error as any)?.message??'Something went wrong. Please try again.';
-      setError(msg==='Invalid login credentials'?'Incorrect email or password. Please try again.':
-               msg.includes('already registered')?'An account with this email already exists. Try signing in instead.':
-               msg.includes('Password')||msg.includes('password')?'Password must be at least 6 characters.':msg);
-    } else if(mode==='signup'){
-      setDone(true);
+    try{
+      const res=mode==='signin'?await signIn(email,password):await signUp(email,password,fullName);
+      setBusy(false);
+      if(res.error){
+        let msg='Something went wrong. Please try again.';
+        if(typeof res.error==='string') msg=res.error;
+        else if(typeof res.error==='object'&&res.error!==null){
+          msg=(res.error as any).message||(res.error as any).error_description||JSON.stringify(res.error);
+        }
+        if(msg.includes('Invalid login credentials')||msg.includes('invalid_credentials')) msg='Incorrect email or password. Please try again.';
+        else if(msg.includes('already registered')||msg.includes('already exists')) msg='An account with this email already exists. Try signing in instead.';
+        else if(msg.toLowerCase().includes('password')) msg='Password must be at least 6 characters.';
+        else if(msg==='{}'||msg.length<3) msg='Authentication error. Please try again.';
+        setError(msg);
+      } else if(mode==='signup'){
+        setDone(true);
+      }
+    }catch(err:any){
+      setBusy(false);
+      setError(err?.message||'Unexpected error. Please try again.');
     }
   }
 
