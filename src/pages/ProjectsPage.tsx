@@ -114,11 +114,6 @@ return<div>
 <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">New project</h2><button onClick={resetForm} className="btn-ghost p-1"><X size={16}/></button></div>
 {error&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{error}</div>}
 
-<label className="label">Workspace <span className="text-danger-600">*</span></label>
-<select className="input mb-3" value={selectedWs} onChange={e=>{setSelectedWs(e.target.value);localStorage.setItem('sandbox.activeWs',e.target.value);}}>
-  {workspaces.length===0&&<option value="">No workspaces — create one first</option>}
-  {workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
-</select>
 <label className="label">Name <span className="text-danger-600">*</span></label>
 <input className="input mb-3" value={name} onChange={e=>{setName(e.target.value);setError('');}} placeholder="My project"/>
 
@@ -131,7 +126,7 @@ return<div>
 <label className="label">Owner Email <span className="text-danger-600">*</span></label>
 <input className="input mb-3" type="email" value={ownerEmail} onChange={e=>{setOwnerEmail(e.target.value);setError('');}} placeholder="owner@example.com"/>
 
-<label className="label">GitHub Personal Access Token <span className="text-danger-600">*</span></label>
+<label className="label">GitHub Personal Access Token</label>
 <input className="input mb-3" type="password" value={githubToken} onChange={e=>setGithubToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx"/>
 
 <label className="label">Folder within branch <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -140,11 +135,23 @@ return<div>
 <label className="label">Git branch</label>
 <input className="input mb-4" value={gitBranch} onChange={e=>setGitBranch(e.target.value)} placeholder="main"/>
 
+<label className="label">Workspace <span className="text-danger-600">*</span></label>
+{workspaces.length===0?(
+  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 flex items-center justify-between">
+    <span>No workspaces yet.</span>
+    <a href="/workspaces" className="font-semibold underline text-amber-700 ml-2">Create one →</a>
+  </div>
+):(
+  <select className="input mb-4" value={selectedWs} onChange={e=>{setSelectedWs(e.target.value);localStorage.setItem('sandbox.activeWs',e.target.value);}}>
+    {workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
+  </select>
+)}
+
 <p className="text-xs text-gray-400 mb-4"><span className="text-danger-600">*</span> Required fields</p>
 
 <div className="flex justify-end gap-2">
   <button onClick={resetForm} className="btn-secondary">Cancel</button>
-  <button onClick={createProject} disabled={saving||!name.trim()} className="btn-primary">
+  <button onClick={createProject} disabled={saving||!name.trim()||!selectedWs} className="btn-primary">
     {saving?<Loader2 size={16} className="animate-spin"/>:<Plus size={16}/>} Create
   </button>
 </div>
