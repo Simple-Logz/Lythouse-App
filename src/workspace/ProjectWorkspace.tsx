@@ -267,7 +267,7 @@ return<div>
 />
 )}
 {tab==='readiness'&&(<ReadinessTab projectId={projectId}/>)}
-{tab==='topology'&&project&&(<TopologyView projectId={projectId} project={project} onOpenFile={(path)=>console.log('open',path)}/>)}
+{tab==='topology'&&project&&(<TopologyView projectId={projectId} project={project} onOpenFile={(path)=>{setOpenFilePath(path);setHighlightLine(null);setFindingContext(null);setEditorOpen(true);}}/>)}
 {tab==='dependencies'&&(<DependenciesTab projectId={projectId}/>)}
 {tab==='simulator'&&(<DryRunTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>)}
 {tab==='ai-assistant'&&(

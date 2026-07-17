@@ -139,7 +139,7 @@ export function TopologyView({ projectId, project, onOpenFile }: Props) {
             <ul className="space-y-1">
               {relatedFiles(sel).slice(0, 30).map((f) => (
                 <li key={f.path}>
-                  <button onClick={() => onOpenFile(f.path)} className="btn-ghost flex w-full items-center gap-1.5 px-2 py-1.5 text-left">
+                  <button onClick={() => onOpenFile(f.path)} className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left rounded-lg hover:bg-brand-50 hover:text-brand-700 transition-colors group">
                     <ChevronRight size={12} className="shrink-0 text-gray-400" />
                     <span className="truncate font-mono text-[11px] text-gray-700">{f.path}</span>
                   </button>
