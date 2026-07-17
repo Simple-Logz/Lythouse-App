@@ -25,6 +25,7 @@ import{LoadTestingPage}from'./pages/LoadTestingPage';
 import{ApiTestingPage}from'./pages/ApiTestingPage';
 import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
 import{useAuth}from'./lib/auth';
+import{OnboardingPage}from'./pages/OnboardingPage';
 import{Spinner}from'./lib/ui';
 import type{ReactNode}from'react';
 
@@ -47,6 +48,7 @@ else if(seg[0]==='incidents')c=<IncidentPage/>;
 else if(seg[0]==='integrations')c=<IntegrationsPage/>;
 else if(seg[0]==='settings')c=<SettingsPage/>;
 else if(seg[0]==='workspaces')c=<WorkspacesPage/>;
+else if(seg[0]==='onboarding')c=<OnboardingPage/>;
 else if(seg[0]==='load-testing')c=<LoadTestingPage/>;
 else if(seg[0]==='api-testing')c=<ApiTestingPage/>;
 else if(seg[0]==='chaos')c=<ChaosEngineeringPage/>;
@@ -63,6 +65,7 @@ return<AppShell>{c}</AppShell>;
 
 function AuthGate(){
 const{session,loading}=useAuth();
+const{path}=useRouter();
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">
@@ -72,6 +75,9 @@ if(loading)return(
   </div>
 );
 if(!session)return<AuthPage/>;
+// New users with no workspace go to onboarding
+const hasWs=!!localStorage.getItem('sandbox.activeWs');
+if(!hasWs&&path!=='/onboarding')return<OnboardingPage/>;
 return<Routes/>;
 }
 

@@ -53,7 +53,13 @@ if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/>
 const currentId=(plan?.plan_id as PlanId)??'free';
 
 return<div>
-<PageHeader title="Plans" description="Choose the plan that fits your team. Upgrade or downgrade anytime."/>
+<PageHeader title="Plans" description="Choose the plan that fits your team."/>
+<div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+  <Sparkles size={16} className="text-amber-600 shrink-0 mt-0.5"/>
+  <div className="text-sm text-amber-800">
+    <strong>Early access pricing coming soon.</strong> Stripe billing will be enabled at launch. For now, contact us to discuss enterprise pricing.
+  </div>
+</div>
 
 <div className="grid gap-6 lg:grid-cols-3">
 {ORDER.map(id=>{

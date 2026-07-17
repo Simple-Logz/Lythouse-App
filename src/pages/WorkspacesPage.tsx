@@ -47,6 +47,8 @@ const createWorkspace=async()=>{
   // Create a default free plan
   await supabase.from('workspace_plans').insert({workspace_id:data.id,plan_id:'free',status:'active'});
   setWorkspaces(prev=>[data,...prev]);
+    localStorage.setItem('sandbox.activeWs',data.id);
+    setActiveWs(data);
   setName('');setDesc('');setCreating(false);setSaving(false);
 };
 

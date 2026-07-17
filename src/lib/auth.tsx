@@ -21,28 +21,22 @@ function slugify(s: string) {
 }
 
 async function ensureWorkspace(userId: string): Promise<void> {
+  // Find user's most recent workspace and set it as active
   const { data: existing } = await supabase
     .from('workspaces')
     .select('id')
     .eq('owner_id', userId)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (existing) return;
-
-  const baseName = 'My Workspace';
-  let name = baseName;
-  let slug = slugify(name);
-  let attempts = 0;
-
-  while (attempts < 5) {
-    const { error } = await supabase.from('workspaces').insert({ name, slug, owner_id: userId });
-    if (!error) return;
-    if (error.code !== '23505') return;
-    attempts++;
-    name = `${baseName} ${attempts + 1}`;
-    slug = slugify(name);
+  if (existing) {
+    // Only set if not already set
+    if (!localStorage.getItem('sandbox.activeWs')) {
+      localStorage.setItem('sandbox.activeWs', existing.id);
+    }
   }
+  // If no workspace exists, onboarding will handle creation
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
