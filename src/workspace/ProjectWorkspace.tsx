@@ -21,6 +21,7 @@ const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
 {id:'topology',label:'Topology',icon:Network,group:'Intelligence'},
 {id:'simulator',label:'Simulator',icon:FlaskConical,group:'Intelligence'},
 {id:'ai-assistant',label:'AI Assistant',icon:Sparkles,group:'Intelligence'},
+{id:'files',label:'Files',icon:FolderOpen,group:'Repository'},
 {id:'settings',label:'Settings',icon:Cog,group:'Config'},
 ];
 const SEV_ORDER:Severity[]=['critical','high','medium','low'];
