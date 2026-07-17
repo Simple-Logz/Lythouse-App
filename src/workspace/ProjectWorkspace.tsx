@@ -295,8 +295,6 @@ return tabGroups.map(g=>{
 </div>
 </div>
 
-)}
-
 {tab==='approvals'&&project&&(
 <ReleaseApprovalCenter
   projectId={projectId}
