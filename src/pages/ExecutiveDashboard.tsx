@@ -1,13 +1,14 @@
 import{useEffect,useState,useCallback}from'react';
 import{supabase,type Project,type Validation,type Finding}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
-import{TrendingUp,TrendingDown,Shield,Clock,CheckCircle2,XCircle,AlertTriangle,BarChart3,Users,Zap,Activity,Target,ArrowRight}from'lucide-react';
+import{TrendingUp,TrendingDown,Shield,Clock,CheckCircle2,XCircle,AlertTriangle,BarChart3,Users,Zap,Activity,Target,ArrowRight,Search,X}from'lucide-react';
 import{Link}from'../lib/router';
 
 type TeamRisk={project_name:string;project_id:string;risk_score:number;critical:number;high:number;last_scan:string;};
 
 export function ExecutiveDashboard(){
   const[loading,setLoading]=useState(true);
+  const[projectSearch,setProjectSearch]=useState('');
   const[projects,setProjects]=useState<Project[]>([]);
   const[validations,setValidations]=useState<Validation[]>([]);
   const[findings,setFindings]=useState<Finding[]>([]);
@@ -166,12 +167,24 @@ export function ExecutiveDashboard(){
 
       {/* Projects by Risk */}
       <div className="card">
-        <h3 className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><AlertTriangle size={15} className="text-brand-600"/>Projects by Deployment Risk</h3>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2"><AlertTriangle size={15} className="text-brand-600"/>Projects by Deployment Risk</h3>
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+            <input
+              value={projectSearch}
+              onChange={e=>setProjectSearch(e.target.value)}
+              placeholder="Search projects…"
+              className="input pl-8 pr-8 py-1.5 text-sm w-48"
+            />
+            {projectSearch&&<button onClick={()=>setProjectSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
+          </div>
+        </div>
         {projectRisks.length===0?(
           <p className="text-sm text-gray-400 py-4 text-center">No projects yet</p>
         ):(
           <div className="divide-y divide-gray-100">
-            {projectRisks.map((p,i)=>(
+            {projectRisks.filter(p=>!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase())).map((p,i)=>(
               <div key={p.project_id} className="flex items-center gap-4 py-3">
                 <span className="text-sm font-bold text-gray-400 w-5">{i+1}</span>
                 <div className="flex-1 min-w-0">
