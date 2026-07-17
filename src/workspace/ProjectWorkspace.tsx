@@ -15,6 +15,7 @@ import{CodeEditorPanel}from'./CodeEditorPanel';
 
 type Tab='validations'|'findings'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'files'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
+{id:'files',label:'Files',icon:FolderOpen,group:'Repository'},
 {id:'validations',label:'Validations',icon:ShieldCheck,group:'Security'},
 {id:'findings',label:'Findings',icon:ShieldAlert,group:'Security'},
 {id:'readiness',label:'Readiness',icon:Gauge,group:'Security'},
@@ -22,7 +23,6 @@ const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
 {id:'topology',label:'Topology',icon:Network,group:'Intelligence'},
 {id:'simulator',label:'Simulator',icon:FlaskConical,group:'Intelligence'},
 {id:'ai-assistant',label:'AI Assistant',icon:Sparkles,group:'Intelligence'},
-{id:'files',label:'Files',icon:FolderOpen,group:'Repository'},
 {id:'settings',label:'Settings',icon:Cog,group:'Config'},
 ];
 const SEV_ORDER:Severity[]=['critical','high','medium','low'];
@@ -35,7 +35,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
 const{navigate}=useRouter();
 const[loading,setLoading]=useState(true);
 const[project,setProject]=useState<Project|null>(null);
-const[tab,setTab]=useState<Tab>('validations');
+const[tab,setTab]=useState<Tab>('files');
 const[validations,setValidations]=useState<Validation[]>([]);
 const[stepsByVid,setStepsByVid]=useState<Record<string,ValidationStep[]>>({});
 const[expandedVid,setExpandedVid]=useState<string|null>(null);
