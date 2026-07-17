@@ -90,8 +90,7 @@ return<div>
         <button onClick={()=>setActive(w)} className="btn-secondary text-xs">{isActive?<Check size={12}/>:null}{isActive?'Active':'Set active'}</button>
         <button onClick={()=>{
   localStorage.setItem('sandbox.activeWs', w.id);
-  setWorkspaces(prev=>prev.map(ws=>ws.id===w.id?ws:ws));
-  navigate('/projects');
+  navigate(`/workspaces/${w.id}`);
 }} className="btn-primary text-xs flex items-center gap-1">Open<ArrowRight size={12}/></button>
       </div>
     </div>

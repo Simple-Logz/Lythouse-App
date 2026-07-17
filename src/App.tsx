@@ -26,6 +26,7 @@ import{ApiTestingPage}from'./pages/ApiTestingPage';
 import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
 import{useAuth}from'./lib/auth';
 import{OnboardingPage}from'./pages/OnboardingPage';
+import{WorkspaceDetailPage}from'./pages/WorkspaceDetailPage';
 import{Spinner}from'./lib/ui';
 import type{ReactNode}from'react';
 
@@ -47,7 +48,7 @@ else if(seg[0]==='compliance')c=<CompliancePage/>;
 else if(seg[0]==='incidents')c=<IncidentPage/>;
 else if(seg[0]==='integrations')c=<IntegrationsPage/>;
 else if(seg[0]==='settings')c=<SettingsPage/>;
-else if(seg[0]==='workspaces')c=<WorkspacesPage/>;
+else if(seg[0]==='workspaces')c=seg[1]?<WorkspaceDetailPage workspaceId={seg[1]}/>:<WorkspacesPage/>;
 else if(seg[0]==='onboarding')c=<OnboardingPage/>;
 else if(seg[0]==='load-testing')c=<LoadTestingPage/>;
 else if(seg[0]==='api-testing')c=<ApiTestingPage/>;
