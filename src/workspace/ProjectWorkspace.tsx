@@ -295,6 +295,43 @@ return tabGroups.map(g=>{
 </div>
 </div>
 
+{tab==='files'&&project&&(
+<div>
+  <div className="mb-5 flex items-start justify-between">
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <FolderOpen size={18} className="text-brand-600"/>
+        <h2 className="text-base font-semibold text-navy-900">Repository Files</h2>
+        <span className="chip bg-gray-100 text-gray-500 border border-gray-200 text-xs">{project.git_branch||'main'}</span>
+      </div>
+      <p className="text-sm text-gray-500">Connected to <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{project.git_url}</span></p>
+    </div>
+    <button onClick={()=>setEditorOpen(true)} className="btn-primary flex items-center gap-2">
+      <Code2 size={15}/>Open Code Editor
+    </button>
+  </div>
+  <div className="card">
+    <FileExplorer
+      projectId={projectId}
+      project={project}
+      openFilePath={openFilePath}
+      highlightLine={highlightLine}
+      onHighlightConsumed={()=>setHighlightLine(null)}
+    />
+  </div>
+</div>
+)}
+
+{tab==='deployment'&&project&&(
+<DeploymentCenter
+  projectId={projectId}
+  project={project}
+  onRunValidation={runValidation}
+  onOpenFile={(path,line)=>{setOpenFilePath(path);setHighlightLine(line??null);setFindingContext(null);setEditorOpen(true);}}
+  running={running}
+/>
+)}
+
 {tab==='approvals'&&project&&(
 <ReleaseApprovalCenter
   projectId={projectId}
