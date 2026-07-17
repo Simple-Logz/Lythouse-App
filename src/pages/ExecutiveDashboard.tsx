@@ -230,7 +230,7 @@ export function ExecutiveDashboard(){
                 ))}
               </div>
             </div>
-            {workspaces.length>1&&<div>
+            <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Workspace</p>
               <div className="flex flex-wrap gap-2">
                 <button onClick={()=>setWsFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>All Workspaces</button>
@@ -241,7 +241,7 @@ export function ExecutiveDashboard(){
                 ))}
               </div>
             </div>}
-            {creators.length>1&&<div>
+            <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Owner</p>
               <div className="flex flex-wrap gap-2">
                 <button onClick={()=>setOwnerFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>All Owners</button>
@@ -251,7 +251,7 @@ export function ExecutiveDashboard(){
                   </button>
                 ))}
               </div>
-            </div>}
+            </div>
           </div>
         )}
         {projectRisks.length===0?(
