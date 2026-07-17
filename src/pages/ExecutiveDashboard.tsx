@@ -1,4 +1,5 @@
-import{useEffect,useState,useCallback}from'react';
+import{useEffect,useState,useCallback,useMemo}from'react';
+import{BarChart,Bar,LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,ReferenceLine}from'recharts';
 import{supabase,type Project,type Validation,type Finding}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
 import{TrendingUp,TrendingDown,Shield,Clock,CheckCircle2,XCircle,AlertTriangle,BarChart3,Users,Zap,Activity,Target,ArrowRight,Search,X}from'lucide-react';
@@ -123,31 +124,10 @@ export function ExecutiveDashboard(){
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        {/* Deployment Trend Chart */}
-        <div className="card">
-          <h3 className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><BarChart3 size={15} className="text-brand-600"/>Deployment Trends — Last 7 Days</h3>
-          {trendData.every(d=>d.scans===0)?(
-            <div className="flex items-center justify-center h-32 text-sm text-gray-400">No scan activity in the last 7 days</div>
-          ):(
-            <div className="flex items-end gap-2 h-32">
-              {trendData.map((d,i)=>(
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full flex flex-col justify-end gap-0.5" style={{height:96}}>
-                    {d.passed>0&&<div className="w-full rounded-t bg-green-400 transition-all" style={{height:`${(d.passed/maxScans)*80}px`,minHeight:d.passed>0?4:0}}/>}
-                    {d.failed>0&&<div className="w-full rounded-t bg-red-400 transition-all" style={{height:`${(d.failed/maxScans)*80}px`,minHeight:d.failed>0?4:0}}/>}
-                    {d.scans===0&&<div className="w-full rounded bg-gray-100" style={{height:4}}/>}
-                  </div>
-                  <span className="text-[10px] text-gray-500">{d.day}</span>
-                  {d.scans>0&&<span className="text-[10px] font-bold text-navy-900">{d.scans}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-green-400"/>Passed</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-400"/>Critical/Failed</span>
-          </div>
-        </div>
+        {/* Release Performance Trends */}
+      <div className="card">
+        <ReleasePerformanceChart validations={validations} projects={projects}/>
+      </div>
 
         {/* Findings breakdown */}
         <div className="card">
