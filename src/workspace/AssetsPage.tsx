@@ -427,70 +427,90 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
     setSaving(true);
     setTestError(prev=>({...prev,[assetId]:''}));
     setTestSuccess(prev=>({...prev,[assetId]:''}));
+
     const asset=ALL_ASSETS.find(a=>a.id===assetId);
     const config:Record<string,string>={};
-    asset?.fields?.forEach((f:any)=>{if(formData[f.key])config[f.key]=String(formData[f.key]).trim();});
+    asset?.fields?.forEach((f:any)=>{
+      const v=String(formData[f.key]||'').trim();
+      if(v)config[f.key]=v;
+    });
 
-    // Hard-block if any required field is empty
-    const missingFields=(asset?.fields||[]).filter((f:any)=>!formData[f.key]?.trim());
-    if(missingFields.length>0){
-      setTestError(prev=>({...prev,[assetId]:`Required fields missing: ${missingFields.map((f:any)=>f.label).join(', ')}`}));
+    // Step 1: Require all fields
+    const missing=(asset?.fields||[]).filter((f:any)=>!formData[f.key]?.trim());
+    if(missing.length>0){
+      setTestError(prev=>({...prev,[assetId]:`Please fill in: ${missing.map((f:any)=>f.label).join(', ')}`}));
       setSaving(false);return;
     }
 
-    // Client-side format validation — runs regardless of edge function
-    const err=validateCredentials(assetId,config);
-    if(err){setTestError(prev=>({...prev,[assetId]:err}));setSaving(false);return;}
+    // Step 2: Client-side format validation — no network needed
+    const fmtErr=validateCredentials(assetId,config);
+    if(fmtErr){
+      setTestError(prev=>({...prev,[assetId]:fmtErr}));
+      setSaving(false);return;
+    }
 
-    // Try edge function for real API verification
-    let verificationPassed=false;
-    let verificationMsg='';
+    // Step 3: MUST call edge function — no fallback, no exceptions
     try{
-      const res=await fetch('https://xrvugcytyfwyxytyqmom.supabase.co/functions/v1/test-connection',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE'},
-        body:JSON.stringify({source:assetId,config}),
-        signal:AbortSignal.timeout(10000),
-      });
-      if(res.ok){
-        const d=await res.json();
-        if(!d.success){setTestError(prev=>({...prev,[assetId]:d.message}));setSaving(false);return;}
-        verificationPassed=true;
-        verificationMsg=d.message+(d.details?' — '+d.details:'');
-      }else{
-        // Edge function returned error HTTP — still block
-        const d=await res.json().catch(()=>({message:`Server error ${res.status}`}));
-        setTestError(prev=>({...prev,[assetId]:d.message||`Verification failed (${res.status})`}));
+      const res=await fetch(
+        'https://xrvugcytyfwyxytyqmom.supabase.co/functions/v1/test-connection',
+        {method:'POST',
+         headers:{'Content-Type':'application/json',
+           'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE',
+           'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE'},
+         body:JSON.stringify({source:assetId,config}),
+         signal:AbortSignal.timeout(12000)}
+      );
+
+      if(!res.ok){
+        const d=await res.json().catch(()=>({message:'Server error '+res.status}));
+        setTestError(prev=>({...prev,[assetId]:d.message||'Verification failed — please check your credentials'}));
         setSaving(false);return;
       }
+
+      const d=await res.json();
+      if(!d.success){
+        setTestError(prev=>({...prev,[assetId]:d.message||'Invalid credentials — please check and try again'}));
+        setSaving(false);return;
+      }
+
+      // Step 4: Only save AFTER real API confirmed success
+      const successMsg=d.message+(d.details?' — '+d.details:'');
+      const existing=connections.find(c=>c.source===assetId);
+      const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,
+        status:'connected',config,last_synced_at:new Date().toISOString()};
+
+      let saved:Connection|null=null;
+      if(existing){
+        const{data}=await supabase.from('environment_connections')
+          .update(payload).eq('id',existing.id).select().single();
+        saved=data as Connection;
+        if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
+      }else{
+        const{data}=await supabase.from('environment_connections')
+          .insert(payload).select().single();
+        saved=data as Connection;
+        if(saved)setConnections(prev=>[saved!,...prev]);
+      }
+
+      if(saved&&asset){
+        setChangeEvents(prev=>[{
+          id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,
+          event:`${asset.label} connected — verified against real API`,
+          impact:asset.impact,severity:'low',time:new Date().toISOString()
+        },...prev]);
+      }
+
+      setTestSuccess(prev=>({...prev,[assetId]:successMsg}));
+      setTimeout(()=>{setConnecting(null);setFormData({});},2000);
+
     }catch(e:any){
-      // Edge function unreachable — HARD BLOCK, never allow fake connections
-      setTestError(prev=>({...prev,[assetId]:'⚠ Connection verification service is offline. Real connections cannot be established right now. To enable: run  npx supabase functions deploy test-connection --project-ref xrvugcytyfwyxytyqmom --no-verify-jwt  then try again.'}));
-      setSaving(false);return;
+      // Edge function unreachable — HARD STOP
+      if(e.name==='TimeoutError'||e.message?.includes('timeout')){
+        setTestError(prev=>({...prev,[assetId]:'Connection timed out. Please check your network and try again.'}));
+      }else{
+        setTestError(prev=>({...prev,[assetId]:'Verification service unreachable. Run: npx supabase functions deploy test-connection --project-ref xrvugcytyfwyxytyqmom --no-verify-jwt'}));
+      }
     }
-
-    if(!verificationPassed){setSaving(false);return;}
-
-    // Only reach here if real API verification passed
-    const existing=connections.find(c=>c.source===assetId);
-    const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()};
-    let saved:Connection|null=null;
-    if(existing){
-      const{data}=await supabase.from('environment_connections').update(payload).eq('id',existing.id).select().single();
-      saved=data as Connection;
-      if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
-    }else{
-      const{data}=await supabase.from('environment_connections').insert(payload).select().single();
-      saved=data as Connection;
-      if(saved)setConnections(prev=>[saved!,...prev]);
-    }
-    if(saved&&asset){
-      setChangeEvents(prev=>[{id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,
-        event:`${asset.label} connected — now monitoring ${(asset.watches||[]).slice(0,3).join(', ')}`,
-        impact:asset.impact,severity:'low',time:new Date().toISOString()},...prev]);
-    }
-    setTestSuccess(prev=>({...prev,[assetId]:verificationMsg}));
-    setTimeout(()=>{setConnecting(null);setFormData({});},2000);
     setSaving(false);
   };
 
