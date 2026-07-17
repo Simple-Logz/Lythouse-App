@@ -9,6 +9,7 @@ type TeamRisk={project_name:string;project_id:string;risk_score:number;critical:
 export function ExecutiveDashboard(){
   const[loading,setLoading]=useState(true);
   const[projectSearch,setProjectSearch]=useState('');
+  const[riskFilter,setRiskFilter]=useState<'all'|'high'|'medium'|'low'>('all');
   const[projects,setProjects]=useState<Project[]>([]);
   const[validations,setValidations]=useState<Validation[]>([]);
   const[findings,setFindings]=useState<Finding[]>([]);
@@ -169,22 +170,26 @@ export function ExecutiveDashboard(){
       <div className="card">
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2"><AlertTriangle size={15} className="text-brand-600"/>Projects by Deployment Risk</h3>
-          <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-            <input
-              value={projectSearch}
-              onChange={e=>setProjectSearch(e.target.value)}
-              placeholder="Search projects…"
-              className="input pl-8 pr-8 py-1.5 text-sm w-48"
-            />
-            {projectSearch&&<button onClick={()=>setProjectSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+              {(['all','high','medium','low'] as const).map(f=>(
+                <button key={f} onClick={()=>setRiskFilter(f)} className={'px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors '+(riskFilter===f?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
+                  {f==='all'?'All Risk':f==='high'?'🔴 High':f==='medium'?'🟡 Medium':'🟢 Low'}
+                </button>
+              ))}
+            </div>
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+              <input value={projectSearch} onChange={e=>setProjectSearch(e.target.value)} placeholder="Search projects…" className="input pl-8 pr-8 py-1.5 text-sm w-44"/>
+              {projectSearch&&<button onClick={()=>setProjectSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
+            </div>
           </div>
         </div>
         {projectRisks.length===0?(
           <p className="text-sm text-gray-400 py-4 text-center">No projects yet</p>
         ):(
           <div className="divide-y divide-gray-100">
-            {projectRisks.filter(p=>!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase())).map((p,i)=>(
+            {projectRisks.filter(p=>{const matchSearch=!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase());const matchRisk=riskFilter==='all'||(riskFilter==='high'&&p.risk_score>70)||(riskFilter==='medium'&&p.risk_score>40&&p.risk_score<=70)||(riskFilter==='low'&&p.risk_score<=40);return matchSearch&&matchRisk;}).map((p,i)=>(
               <div key={p.project_id} className="flex items-center gap-4 py-3">
                 <span className="text-sm font-bold text-gray-400 w-5">{i+1}</span>
                 <div className="flex-1 min-w-0">
