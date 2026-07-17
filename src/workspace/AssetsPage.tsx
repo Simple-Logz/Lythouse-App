@@ -157,27 +157,61 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
 
   useEffect(()=>{load();},[load]);
 
+  const[testError,setTestError]=useState<Record<string,string>>({});
+  const[testSuccess,setTestSuccess]=useState<Record<string,string>>({});
+
   const connect=async(assetId:string)=>{
     setSaving(true);
-    const existing=connections.find(c=>c.source===assetId);
+    setTestError(prev=>({...prev,[assetId]:''}));
+    setTestSuccess(prev=>({...prev,[assetId]:''}));
     const asset=ALL_ASSETS.find(a=>a.id===assetId);
     const config:Record<string,string>={};
-    asset?.fields?.forEach((f:any)=>{if(formData[f.key])config[f.key]=formData[f.key];});
-    const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()};
-    let saved:Connection|null=null;
-    if(existing){
-      const{data}=await supabase.from('environment_connections').update(payload).eq('id',existing.id).select().single();
-      saved=data as Connection;
-      if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
-    }else{
-      const{data}=await supabase.from('environment_connections').insert(payload).select().single();
-      saved=data as Connection;
-      if(saved)setConnections(prev=>[saved!,...prev]);
+    asset?.fields?.forEach((f:any)=>{if(formData[f.key])config[f.key]=String(formData[f.key]).trim();});
+
+    // Validate required fields first
+    const emptyRequired=(asset?.fields||[]).filter((f:any)=>!formData[f.key]?.trim());
+    if(emptyRequired.length>0){
+      setTestError(prev=>({...prev,[assetId]:`Required: ${emptyRequired.map((f:any)=>f.label).join(', ')}`}));
+      setSaving(false);return;
     }
-    if(saved&&asset){
-      setChangeEvents(prev=>[{id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,event:`${asset.label} connected — now monitoring ${asset.watches.slice(0,3).join(', ')}`,impact:asset.impact,severity:'low',time:new Date().toISOString()},...prev]);
+
+    // Test connection via edge function BEFORE saving
+    try{
+      const res=await fetch(`https://xrvugcytyfwyxytyqmom.supabase.co/functions/v1/test-connection`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE`,'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydnVnY3l0eWZ3eXh5dHlxbW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMzgxMzEsImV4cCI6MjA5OTgxNDEzMX0.0fD4oIamh8_hffbObVaIZp9nqKLDzr-bIzrmkUWtuyE'},
+        body:JSON.stringify({source:assetId,config}),
+      });
+      const result=await res.json();
+      if(!result.success){
+        setTestError(prev=>({...prev,[assetId]:result.message||'Connection failed'}));
+        setSaving(false);return;
+      }
+      setTestSuccess(prev=>({...prev,[assetId]:result.message+(result.details?' — '+result.details:'')}));
+
+      // Only save to Supabase after successful verification
+      const existing=connections.find(c=>c.source===assetId);
+      const payload={project_id:projectId,workspace_id:workspaceId,source:assetId,status:'connected',config,last_synced_at:new Date().toISOString()};
+      let saved:Connection|null=null;
+      if(existing){
+        const{data}=await supabase.from('environment_connections').update(payload).eq('id',existing.id).select().single();
+        saved=data as Connection;
+        if(saved)setConnections(prev=>prev.map(c=>c.id===existing.id?saved!:c));
+      }else{
+        const{data}=await supabase.from('environment_connections').insert(payload).select().single();
+        saved=data as Connection;
+        if(saved)setConnections(prev=>[saved!,...prev]);
+      }
+      if(saved&&asset){
+        setChangeEvents(prev=>[{id:saved!.id+'_evt',source:assetId,label:asset.label,icon:asset.icon,
+          event:`${asset.label} connected — now monitoring ${(asset.watches||[]).slice(0,3).join(', ')}`,
+          impact:asset.impact,severity:'low',time:new Date().toISOString()},...prev]);
+      }
+      setTimeout(()=>{setConnecting(null);setFormData({});},1500);
+    }catch(e:any){
+      setTestError(prev=>({...prev,[assetId]:`Network error: ${e.message}`}));
     }
-    setConnecting(null);setFormData({});setSaving(false);
+    setSaving(false);
   };
 
   const disconnect=async(id:string)=>{
@@ -405,18 +439,26 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                         </div>
                         {isConnecting&&(
                           <div className="border-t border-brand-100 px-3 pb-3 space-y-2">
-                            <p className="text-xs text-gray-500 pt-2">{asset.impact}</p>
+                            <p className="text-xs text-gray-500 pt-2 italic">{asset.impact}</p>
                             {(asset.fields||[]).map((field:any)=>(
                               <div key={field.key}>
-                                <label className="label text-xs">{field.label}</label>
-                                <input type={field.secret?'password':'text'} value={formData[field.key]||''} onChange={e=>setFormData(prev=>({...prev,[field.key]:e.target.value}))} placeholder={field.ph||''} className="input text-sm py-1.5"/>
+                                <label className="label text-xs">{field.label} <span className="text-red-500">*</span></label>
+                                <input type={field.secret?'password':'text'} value={formData[field.key]||''} onChange={e=>{setFormData(prev=>({...prev,[field.key]:e.target.value}));setTestError(prev=>({...prev,[asset.id]:''}));setTestSuccess(prev=>({...prev,[asset.id]:''}));}} placeholder={field.ph||''} className="input text-sm py-1.5"/>
                               </div>
                             ))}
+                            {testError[asset.id]&&<div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+                              <AlertTriangle size={13} className="text-red-500 shrink-0 mt-0.5"/>
+                              <p className="text-xs text-red-600 font-medium">{testError[asset.id]}</p>
+                            </div>}
+                            {testSuccess[asset.id]&&<div className="flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                              <CheckCircle2 size={13} className="text-green-600 shrink-0 mt-0.5"/>
+                              <p className="text-xs text-green-700 font-medium">{testSuccess[asset.id]}</p>
+                            </div>}
                             <div className="flex gap-2 pt-1">
-                              <button onClick={()=>connect(asset.id)} disabled={saving} className="btn-primary text-xs flex-1">
-                                {saving?<><Loader2 size={12} className="animate-spin"/>Connecting…</>:<><Check size={12}/>Save & Connect</>}
+                              <button onClick={()=>connect(asset.id)} disabled={saving||!!testSuccess[asset.id]} className="btn-primary text-xs flex-1">
+                                {saving?<><Loader2 size={12} className="animate-spin"/>Verifying connection…</>:testSuccess[asset.id]?<><Check size={12}/>Connected!</>:<><Zap size={12}/>Test & Connect</>}
                               </button>
-                              <button onClick={()=>{setConnecting(null);setFormData({});}} className="btn-secondary text-xs"><X size={12}/></button>
+                              <button onClick={()=>{setConnecting(null);setFormData({});setTestError(prev=>({...prev,[asset.id]:''}));setTestSuccess(prev=>({...prev,[asset.id]:''}));}} className="btn-secondary text-xs"><X size={12}/></button>
                             </div>
                           </div>
                         )}
