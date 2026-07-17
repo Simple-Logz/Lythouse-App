@@ -263,7 +263,7 @@ export function WorkspaceDetailPage({workspaceId}:{workspaceId:string}){
             <p className="text-xs text-gray-500 mb-3">Deleting this workspace permanently removes all projects, validations, and findings. This cannot be undone.</p>
             <button onClick={async()=>{
               if(!confirm(`Delete workspace "${workspace.name}"? This will permanently delete all projects and data inside it.`))return;
-              const confirmed=prompt('Type the workspace name to confirm:');
+              const confirmed=prompt(`Type the workspace name to confirm deletion:\n\n→ ${workspace.name}`);
               if(confirmed!==workspace.name){alert('Name did not match. Workspace not deleted.');return;}
               await supabase.from('workspaces').delete().eq('id',workspaceId);
               localStorage.removeItem('sandbox.activeWs');
