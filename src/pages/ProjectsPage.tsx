@@ -17,7 +17,6 @@ const[repoFolder,setRepoFolder]=useState('');
 const[gitProvider,setGitProvider]=useState('github');
 const[repoVisibility,setRepoVisibility]=useState<'public'|'private'>('public');
 const[githubToken,setGithubToken]=useState('');
-const[ownerEmail,setOwnerEmail]=useState('');
 const[saving,setSaving]=useState(false);
 const[error,setError]=useState('');
 const[workspaces,setWorkspaces]=useState<{id:string;name:string}[]>([]);
@@ -52,9 +51,7 @@ const createProject=async()=>{
 
   // Validate required fields
   if(!gitUrl.trim()){setError('Git URL is required.');return;}
-  if(!ownerEmail.trim()){setError('Owner email is required.');return;}
   const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if(!emailRe.test(ownerEmail.trim())){setError('Please enter a valid email address.');return;}
 
   // Check for duplicate project name within this workspace
   const duplicate=projects.find(p=>p.name.trim().toLowerCase()===name.trim().toLowerCase());
@@ -69,7 +66,7 @@ const createProject=async()=>{
     git_branch:gitBranch.trim()||'main',
     repo_folder:repoFolder.trim()||'',
     github_token:githubToken.trim()||null,
-    language:ownerEmail.trim(),
+    language:null,
     status:'active',
   }).select().single();
   if(error){
@@ -148,8 +145,7 @@ return<div>
   'https://your-repo-url.com/org/repo'
 }/>
 
-<label className="label">Owner Email <span className="text-danger-600">*</span></label>
-<input className="input mb-3" type="email" value={ownerEmail} onChange={e=>{setOwnerEmail(e.target.value);setError('');}} placeholder="owner@example.com"/>
+
 
 <label className="label">Repository visibility</label>
 <div className="grid grid-cols-2 gap-2 mb-3">
