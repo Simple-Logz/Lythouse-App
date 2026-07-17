@@ -355,6 +355,13 @@ return tabGroups.map(g=>{
   workspaceId={localStorage.getItem('sandbox.activeWs')??''}
 />
 )}
+{tab==='readiness'&&(<ReadinessTab projectId={projectId}/>)}
+{tab==='dependencies'&&(<DependenciesTab projectId={projectId}/>)}
+{tab==='topology'&&project&&(<TopologyView projectId={projectId} project={project} onOpenFile={(path)=>{setOpenFilePath(path);setHighlightLine(null);setFindingContext(null);setEditorOpen(true);}}/>)}
+{tab==='simulator'&&(<DryRunTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>)}
+{tab==='ai-assistant'&&(
+<AIAssistantTab projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>
+)}
 {tab==='settings'&&(
   <div className="card max-w-2xl">
     <div className="mb-4 flex items-center justify-between">
