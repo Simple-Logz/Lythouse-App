@@ -169,7 +169,6 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Time range */}
           <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
             {(['7d','30d','3m','6m','1y'] as TimeRange[]).map(r=>(
               <button key={r} onClick={()=>setRange(r)} className={'px-2.5 py-1 rounded-md text-xs font-medium transition-colors '+(range===r?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
@@ -177,13 +176,11 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
               </button>
             ))}
           </div>
-          {/* Grouping */}
           <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
             {(['day','week','month'] as Grouping[]).map(g=>(
               <button key={g} onClick={()=>setGrouping(g)} className={'px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors '+(grouping===g?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>{g}</button>
             ))}
           </div>
-          {/* Chart type */}
           <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
             {(['bar','line'] as ChartType[]).map(t=>(
               <button key={t} onClick={()=>setChartType(t)} className={'px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors '+(chartType===t?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>{t}</button>
@@ -193,12 +190,12 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <select value={projectFilter} onChange={e=>setProjectFilter(e.target.value)} className="input text-xs py-1.5 h-auto">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <select value={projectFilter} onChange={e=>setProjectFilter(e.target.value)} className="input text-xs py-1.5 h-auto flex-1" style={{minWidth:120,maxWidth:200}}>
           <option value="all">All Projects</option>
           {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button onClick={exportCSV} className="btn-secondary text-xs flex items-center gap-1.5"><Download size={12}/>Export CSV</button>
+        <button onClick={exportCSV} className="btn-secondary text-xs flex items-center gap-1.5 shrink-0"><Download size={12}/>Export CSV</button>
       </div>
 
       {/* Chart */}
@@ -207,11 +204,11 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
           No deployment data for this period
         </div>
       ):(
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={260}>
           {chartType==='bar'?(
-            <BarChart data={chartData} margin={{top:5,right:10,left:0,bottom:5}} onClick={d=>d?.activePayload&&setSelectedPoint(d.activePayload[0]?.payload)}>
+            <BarChart data={chartData} margin={{top:5,right:30,left:0,bottom:5}} barCategoryGap="30%" onClick={d=>d?.activePayload&&setSelectedPoint(d.activePayload[0]?.payload)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
-              <XAxis dataKey="label" tick={{fontSize:11,fill:'#9ca3af'}} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="label" tick={{fontSize:10,fill:'#9ca3af'}} axisLine={false} tickLine={false} interval="preserveStartEnd" padding={{left:10,right:10}}/>
               <YAxis tick={{fontSize:11,fill:'#9ca3af'}} axisLine={false} tickLine={false} allowDecimals={false}/>
               <Tooltip content={<CustomTooltip/>}/>
               <Legend iconSize={10} iconType="circle" wrapperStyle={{fontSize:11}}/>
@@ -221,9 +218,9 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
               <Bar dataKey="rolledBack" name="Rolled Back" fill="#a855f7" stackId="a" radius={[3,3,0,0]}/>
             </BarChart>
           ):(
-            <LineChart data={chartData} margin={{top:5,right:10,left:0,bottom:5}} onClick={d=>d?.activePayload&&setSelectedPoint(d.activePayload[0]?.payload)}>
+            <LineChart data={chartData} margin={{top:5,right:30,left:0,bottom:5}} onClick={d=>d?.activePayload&&setSelectedPoint(d.activePayload[0]?.payload)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false}/>
-              <XAxis dataKey="label" tick={{fontSize:11,fill:'#9ca3af'}} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="label" tick={{fontSize:10,fill:'#9ca3af'}} axisLine={false} tickLine={false} interval="preserveStartEnd" padding={{left:10,right:10}}/>
               <YAxis tick={{fontSize:11,fill:'#9ca3af'}} axisLine={false} tickLine={false} allowDecimals={false}/>
               <Tooltip content={<CustomTooltip/>}/>
               <Legend iconSize={10} iconType="circle" wrapperStyle={{fontSize:11}}/>

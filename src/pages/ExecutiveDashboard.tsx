@@ -125,7 +125,7 @@ export function ExecutiveDashboard(){
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Release Performance Trends */}
-      <div className="card">
+      <div className="card overflow-hidden" style={{paddingRight:8}}>
         <ReleasePerformanceChart validations={validations} projects={projects}/>
       </div>
 
