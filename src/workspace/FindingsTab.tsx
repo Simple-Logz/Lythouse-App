@@ -3,7 +3,7 @@ import{supabase,type Finding,type FindingStatus,anonKey,edgeFunctionUrl}from'../
 import{Spinner,EmptyState,SeverityBadge,FindingStatusBadge}from'../lib/ui';
 import{ShieldAlert,Check,EyeOff,FileCode,AlertTriangle,ChevronRight,ChevronDown,RefreshCw,ShieldCheck,Wrench,Lock,Package,Code2,X,Play,Sparkles,Copy,CheckCircle2,TrendingDown,Loader as Loader2}from'lucide-react';
 
-type Props={projectId:string;onOpenFile:(path:string,line?:number)=>void;onRunValidation?:()=>void;};
+type Props={projectId:string;onOpenFile:(path:string,line?:number,ctx?:{title:string;recommendation:string;line?:number;file?:string}|null)=>void;onRunValidation?:()=>void;};
 type StatusFilter='all'|FindingStatus;
 type SevFilter='all'|'critical'|'high'|'medium'|'low';
 
@@ -222,7 +222,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
                               <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
                                 <FileCode size={14} className="text-gray-400 shrink-0"/>
                                 <code className="text-xs text-navy-800 flex-1">{f.file_path}{f.line?`:${f.line}`:''}</code>
-                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined)} className="text-xs text-brand-600 hover:underline font-medium">View file →</button>
+                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined,{title:f.title,recommendation:f.recommendation||'',line:f.line??undefined,file:f.file_path??undefined})} className="text-xs text-brand-600 hover:underline font-medium">View file →</button>
                               </div>
                             )}
 
@@ -296,7 +296,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
                             {/* Actions */}
                             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
                               {f.file_path&&(
-                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined)} className="btn-secondary text-xs">
+                                <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined,{title:f.title,recommendation:f.recommendation||'',line:f.line??undefined,file:f.file_path??undefined})} className="btn-secondary text-xs">
                                   <FileCode size={13}/>Open file{f.line?` (line ${f.line})`:''}
                                 </button>
                               )}

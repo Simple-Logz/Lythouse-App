@@ -2,7 +2,7 @@ import{useEffect,useState,useRef}from'react';
 import{useRouter}from'../lib/router';
 import{supabase,type Project,type Validation,type ValidationStep,type Finding,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadge,RiskGauge,Breadcrumb,timeAgo,fmtDuration}from'../lib/ui';
-import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen}from'lucide-react';
+import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen,Code2}from'lucide-react';
 import AIAssistantTab from'./AIAssistantTab';
 import{FindingsTab}from'./FindingsTab';
 import{ReadinessTab}from'./ReadinessTab';
@@ -11,6 +11,7 @@ import{DryRunTab}from'./DryRunTab';
 import{DependenciesTab}from'./DependenciesTab';
 import{DriftTab}from'./DriftTab';
 import{FileExplorer}from'./FileExplorer';
+import{CodeEditorPanel}from'./CodeEditorPanel';
 
 type Tab='validations'|'findings'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'files'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
@@ -46,6 +47,8 @@ const[form,setForm]=useState({name:'',description:'',git_url:'',git_branch:'',la
 const[running,setRunning]=useState(false);
 const[openFilePath,setOpenFilePath]=useState<string|null>(null);
 const[highlightLine,setHighlightLine]=useState<number|null>(null);
+const[editorOpen,setEditorOpen]=useState(false);
+const[findingContext,setFindingContext]=useState<{title:string;recommendation:string;line?:number;file?:string}|null>(null);
 const[runError,setRunError]=useState('');
 const[activeRunId,setActiveRunId]=useState<string|null>(null);
 const pollRef=useRef<ReturnType<typeof setInterval>|null>(null);
@@ -359,7 +362,7 @@ return<div>
 {tab==='findings'&&(
   <FindingsTab
     projectId={projectId}
-    onOpenFile={(path,line)=>{setOpenFilePath(path);setHighlightLine(line??null);setTab('files');}}
+    onOpenFile={(path,line,ctx)=>{setOpenFilePath(path);setHighlightLine(line??null);setFindingContext(ctx??null);setEditorOpen(true);}}
     onRunValidation={runValidation}
   />
 )}
@@ -373,19 +376,30 @@ return<div>
 )}
 {tab==='files'&&project&&(
 <div>
-  <div className="mb-4 flex items-center gap-2">
-    <FolderOpen size={18} className="text-brand-600"/>
-    <h2 className="text-base font-semibold text-navy-900">Repository Files</h2>
-    <span className="chip bg-gray-100 text-gray-500 border border-gray-200 text-xs">{project.git_branch||'main'}</span>
+  <div className="mb-6 flex items-start justify-between">
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <FolderOpen size={18} className="text-brand-600"/>
+        <h2 className="text-base font-semibold text-navy-900">Repository Files</h2>
+        <span className="chip bg-gray-100 text-gray-500 border border-gray-200 text-xs">{project.git_branch||'main'}</span>
+      </div>
+      <p className="text-sm text-gray-500">Connected to <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{project.git_url}</span></p>
+    </div>
+    <button onClick={()=>setEditorOpen(true)} className="btn-primary flex items-center gap-2">
+      <Code2 size={15}/>Open Code Editor
+    </button>
   </div>
-  <p className="text-sm text-gray-500 mb-4">Browsing <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{project.git_url}</span></p>
-  <FileExplorer
-    projectId={projectId}
-    project={project}
-    openFilePath={openFilePath}
-    highlightLine={highlightLine}
-    onHighlightConsumed={()=>setHighlightLine(null)}
-  />
+
+  {/* File grid preview */}
+  <div className="card">
+    <FileExplorer
+      projectId={projectId}
+      project={project}
+      openFilePath={openFilePath}
+      highlightLine={highlightLine}
+      onHighlightConsumed={()=>setHighlightLine(null)}
+    />
+  </div>
 </div>
 )}
 
@@ -425,6 +439,16 @@ return<div>
     </div>
   </div>
 )}
+{editorOpen&&project&&(
+<CodeEditorPanel
+  projectId={projectId}
+  project={project}
+  initialFile={openFilePath}
+  initialLine={highlightLine}
+  findingContext={findingContext}
+  onClose={()=>{setEditorOpen(false);setFindingContext(null);}}
+/>
+)}
 </div>;
 }
 
@@ -435,5 +459,15 @@ return<div className="flex items-start gap-2.5">
     <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
     <p className="mt-0.5 truncate text-sm font-medium text-navy-900">{value}</p>
   </div>
+{editorOpen&&project&&(
+<CodeEditorPanel
+  projectId={projectId}
+  project={project}
+  initialFile={openFilePath}
+  initialLine={highlightLine}
+  findingContext={findingContext}
+  onClose={()=>{setEditorOpen(false);setFindingContext(null);}}
+/>
+)}
 </div>;
 }
