@@ -2,12 +2,15 @@ import{useEffect,useState,useRef}from'react';
 import{useRouter}from'../lib/router';
 import{supabase,type Project,type Validation,type ValidationStep,type Finding,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,FindingStatusBadge,RiskGauge,Breadcrumb,timeAgo,fmtDuration}from'../lib/ui';
-import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen,Code2,Activity,BarChart3}from'lucide-react';
+import{FolderGit2,GitFork,GitBranch,Code,Boxes,ShieldCheck,ShieldAlert,ChevronDown,ChevronRight,Save,Check,Loader as Loader2,FileSearch,Settings as Cog,Sparkles,Play,AlertTriangle,RefreshCw,Network,Package,FlaskConical,Gauge,GitMerge,FolderOpen,Code2,Activity,BarChart3,Users}from'lucide-react';
 import AIAssistantTab from'./AIAssistantTab';
 import{DeploymentCenter}from'./DeploymentCenter';
 import{ReleaseApprovalCenter}from'./ReleaseApprovalCenter';
 import{ReleaseWarRoom}from'./ReleaseWarRoom';
 import{ReleaseHistoryTab}from'./ReleaseHistoryTab';
+import{FindingsWorkspace}from'./FindingsWorkspace';
+import{AssetsPage}from'./AssetsPage';
+import{PoliciesPage}from'./PoliciesPage';
 import{FindingsTab}from'./FindingsTab';
 import{ReadinessTab}from'./ReadinessTab';
 import{TopologyView}from'./TopologyView';
@@ -17,18 +20,20 @@ import{DriftTab}from'./DriftTab';
 import{FileExplorer}from'./FileExplorer';
 import{CodeEditorPanel}from'./CodeEditorPanel';
 
-type Tab='deployment'|'approvals'|'war-room'|'history'|'readiness'|'topology'|'dependencies'|'simulator'|'ai-assistant'|'files'|'settings';
+type Tab='deployment'|'findings'|'approvals'|'history'|'war-room'|'topology'|'simulator'|'ai-assistant'|'assets'|'policies'|'dependencies'|'files'|'settings';
 const TABS:{id:Tab;label:string;icon:typeof ShieldCheck;group:string}[]=[
-{id:'files',label:'Files',icon:FolderOpen,group:'Repository'},
+{id:'files',label:'Files',icon:FolderOpen,group:'Files'},
 {id:'deployment',label:'Deployment Center',icon:ShieldCheck,group:'Release'},
-{id:'approvals',label:'Approvals',icon:ShieldAlert,group:'Release'},
+{id:'findings',label:'Findings',icon:ShieldAlert,group:'Release'},
+{id:'approvals',label:'Approvals',icon:Users,group:'Release'},
 {id:'war-room',label:'War Room',icon:Activity,group:'Release'},
 {id:'history',label:'Release History',icon:BarChart3,group:'Release'},
-{id:'readiness',label:'Readiness',icon:Gauge,group:'Release'},
-{id:'dependencies',label:'Dependencies',icon:Package,group:'Security'},
 {id:'topology',label:'Topology',icon:Network,group:'Intelligence'},
 {id:'simulator',label:'Simulator',icon:FlaskConical,group:'Intelligence'},
 {id:'ai-assistant',label:'AI Assistant',icon:Sparkles,group:'Intelligence'},
+{id:'assets',label:'Repositories',icon:FolderGit2,group:'Environment'},
+{id:'policies',label:'Policies',icon:Gauge,group:'Governance'},
+{id:'dependencies',label:'Dependencies',icon:Package,group:'Governance'},
 {id:'settings',label:'Settings',icon:Cog,group:'Config'},
 ];
 const SEV_ORDER:Severity[]=['critical','high','medium','low'];
@@ -259,10 +264,11 @@ return<div>
 <div className="flex items-end gap-0 flex-wrap">
 {(()=>{
 const tabGroups=[
-  {id:'repo',label:'Files',tabs:TABS.filter(t=>t.group==='Repository')},
+  {id:'files',label:'Files',tabs:TABS.filter(t=>t.group==='Files')},
   {id:'release',label:'Release',tabs:TABS.filter(t=>t.group==='Release')},
-  {id:'security',label:'Security',tabs:TABS.filter(t=>t.group==='Security')},
   {id:'intelligence',label:'Intelligence',tabs:TABS.filter(t=>t.group==='Intelligence')},
+  {id:'environment',label:'Environment',tabs:TABS.filter(t=>t.group==='Environment')},
+  {id:'governance',label:'Governance',tabs:TABS.filter(t=>t.group==='Governance')},
   {id:'config',label:'Settings',tabs:TABS.filter(t=>t.group==='Config')},
 ].filter(g=>g.tabs.length>0);
 return tabGroups.map(g=>{
@@ -332,6 +338,20 @@ return tabGroups.map(g=>{
 />
 )}
 
+{tab==='findings'&&project&&(
+<FindingsWorkspace
+  projectId={projectId}
+  onRunValidation={runValidation}
+  running={running}
+  onOpenFile={(path,line)=>{setOpenFilePath(path);setHighlightLine(line??null);setFindingContext(null);setEditorOpen(true);}}
+/>
+)}
+{tab==='assets'&&project&&(
+<AssetsPage projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>
+)}
+{tab==='policies'&&(
+<PoliciesPage projectId={projectId} workspaceId={localStorage.getItem('sandbox.activeWs')??''}/>
+)}
 {tab==='approvals'&&project&&(
 <ReleaseApprovalCenter
   projectId={projectId}
