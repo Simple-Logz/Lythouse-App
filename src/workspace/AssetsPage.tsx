@@ -342,6 +342,29 @@ function validateCredentials(source:string,config:Record<string,string>):string|
   }
 }
 
+
+// ─── Per-asset value propositions shown on connected cards ───────────────────
+const ASSET_VALUE:Record<string,string[]>={
+  netlify:['Every deploy validated before it goes live','Failed builds surface as deployment blockers','Env variable changes trigger security revalidation','Build time and error logs visible in LytHouse'],
+  github:['Every push triggers automatic validation scan','Exposed secrets detected before merge','PR readiness checked against deployment policies','Branch protection violations flagged immediately'],
+  'github-actions':['Failed pipelines block deployment approval','Workflow run history feeds release readiness','Deployment steps tracked in release history','Secret usage in workflows monitored'],
+  gitlab:['MR validation against deployment policies','Pipeline failures surface as deployment blockers','Container registry images scanned before deploy','Security scan results imported as findings'],
+  aws:['IAM policy changes revalidate security posture','Public S3 buckets create critical deployment blockers','Security group changes update network risk score','CloudTrail anomalies surface as high-severity findings'],
+  azure:['Azure AD policy changes trigger revalidation','Key Vault certificate expiry surfaces as blocker','AKS deployment events update topology view','DevOps pipeline gates enforced in LytHouse'],
+  gcp:['GCP IAM changes revalidate compliance posture','Cloud Run deployments tracked in release history','GKE events feed deployment topology','Audit logs surface suspicious activity as findings'],
+  kubernetes:['Every deployment event updates topology view','Unhealthy pods block deployment approval','Secret changes trigger immediate revalidation','RBAC changes revalidate security posture'],
+  vercel:['Every Vercel deployment auto-validated','Preview deployments checked before promotion','Env variable changes trigger security scan','Deployment failures surface as blockers'],
+  slack:['Deployment alerts sent to your team instantly','Finding notifications require no dashboard check','Approval requests sent directly to Slack','War room updates during active releases'],
+  jira:['Findings automatically create Jira issues','Sprint blockers visible in approval workflow','Remediation progress synced back to LytHouse','Release readiness linked to ticket status'],
+  datadog:['Active monitors feed deployment risk score','SLO breaches block deployment during incidents','APM anomalies surface as deployment risks','Infrastructure metrics inform readiness score'],
+  snyk:['Snyk findings become deployment blockers in LytHouse','Dependency vulnerabilities auto-prioritised','Container scan results feed security posture','License compliance tracked as governance policy'],
+  pagerduty:['Open incidents prevent deployment approval','On-call schedule visible in war room','Incident severity feeds deployment risk score','Resolved incidents auto-close related findings'],
+  terraform:['Infrastructure drift detected and reported','Terraform apply events update topology','Plan diffs surface as deployment risk','State changes trigger readiness recalculation'],
+  vault:['Secret rotation events tracked in validation','Unauthorized access creates security finding','Token expiry surfaces as deployment blocker','Policy changes revalidate compliance posture'],
+  servicenow:['Change requests integrated into approval workflow','CMDB updates feed topology view','Incidents tracked as deployment risks','SLA compliance visible in governance dashboard'],
+  sonarqube:['Quality gates enforced as deployment requirements','Code coverage changes tracked over time','Security hotspots become deployment blockers','Technical debt trends visible in readiness'],
+};
+
 type Connection={id:string;project_id:string;workspace_id:string;source:string;status:string;config:Record<string,string>;last_synced_at:string|null;created_at:string;};
 type ChangeEvent={id:string;source:string;label:string;icon:string;event:string;impact:string;severity:'high'|'medium'|'low';time:string;};
 
@@ -550,10 +573,13 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
               </div>
             </div>
           )}
-          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-green-600"/>Connected Systems ({connected.length})
-            {connected.length===0&&<span className="text-xs text-gray-400 font-normal">— add your first connection below</span>}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2">
+              <CheckCircle2 size={14} className="text-green-600"/>Connected Systems ({connected.length})
+              {connected.length===0&&<span className="text-xs text-gray-400 font-normal">— add your first connection below</span>}
+            </h3>
+            {connected.length>0&&<button onClick={load} className="btn-secondary text-xs flex items-center gap-1.5"><RefreshCw size={12}/>Refresh all</button>}
+          </div>
 
           {connected.length===0?(
             <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
@@ -588,20 +614,25 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                         </div>
                         <p className="text-xs text-gray-500 mb-2">{asset.category}</p>
                         {tested!==undefined&&<p className={`text-xs font-medium mb-2 ${tested?'text-green-600':'text-red-500'}`}>{tested?'✓ Connection healthy':'✗ Could not connect — check credentials'}</p>}
-                        {/* What we're watching */}
-                        <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1.5">Watching</p>
-                          <div className="flex flex-wrap gap-1">
-                            {asset.watches.map((w:string)=>(
-                              <span key={w} className="flex items-center gap-1 text-[11px] text-gray-600 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"/>
-                                {w}
-                              </span>
+                        {/* Value proposition */}
+                        <div className="mt-2 space-y-2">
+                          <div className="rounded-lg bg-brand-50 border border-brand-100 px-3 py-2.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1">What this does for you</p>
+                            <p className="text-xs text-gray-700 leading-relaxed">{asset.impact}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {(ASSET_VALUE[conn.source]||[]).map((v:string,i:number)=>(
+                              <div key={i} className="flex items-start gap-1.5 text-[11px] text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2 py-1.5">
+                                <span className="text-green-500 shrink-0 mt-0.5">✓</span>
+                                <span>{v}</span>
+                              </div>
                             ))}
                           </div>
-                          <p className="text-[11px] text-brand-600 font-medium mt-2 flex items-center gap-1"><Zap size={10}/>{asset.impact}</p>
+                          <div className="flex items-center justify-between text-[10px] text-gray-400">
+                            {conn.last_synced_at&&<span className="flex items-center gap-1"><Clock size={9}/>Synced {new Date(conn.last_synced_at).toLocaleString()}</span>}
+                            <span className="flex items-center gap-1 text-brand-500 font-medium"><ChevronRight size={10}/>Click to view live data</span>
+                          </div>
                         </div>
-                        {conn.last_synced_at&&<p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1"><Clock size={9}/>Last synced {new Date(conn.last_synced_at).toLocaleString()}</p>}
                       </div>
                     </div>
                   </div>
