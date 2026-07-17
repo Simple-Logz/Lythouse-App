@@ -224,23 +224,31 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
   };
 
   const[downloading,setDownloading]=useState(false);
+  const[downloadProgress,setDownloadProgress]=useState(0);
   const downloadRepo=async()=>{
-    setDownloading(true);
+    setDownloading(true);setDownloadProgress(0);
     try{
-      // Dynamically load JSZip
       const {default:JSZip}=await import('jszip');
       const zip=new JSZip();
       const d=await call({operation:'list',projectId});
       const allFiles:RepoFile[]=(d.files??[]).filter((f:RepoFile)=>f.type==='file');
+      const total=allFiles.length;
       let done=0;
-      for(const f of allFiles){
-        try{
-          const fd=await call({operation:'read',projectId,path:f.path});
-          zip.file(f.path,fd.content||'');
-        }catch{zip.file(f.path,'// Could not read file');}
-        done++;
+      // Fetch all files in parallel batches of 10
+      const BATCH=10;
+      for(let i=0;i<allFiles.length;i+=BATCH){
+        const batch=allFiles.slice(i,i+BATCH);
+        const results=await Promise.allSettled(
+          batch.map(f=>call({operation:'read',projectId,path:f.path}).then(fd=>({path:f.path,content:fd.content||''})))
+        );
+        results.forEach((r,j)=>{
+          const path=batch[j].path;
+          zip.file(path,r.status==='fulfilled'?r.value.content:'// Could not read file');
+        });
+        done+=batch.length;
+        setDownloadProgress(Math.round((done/total)*100));
       }
-      const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+      const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:3}});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
@@ -248,7 +256,7 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
       a.click();
       URL.revokeObjectURL(url);
     }catch(e:any){alert('Download failed: '+e.message);}
-    setDownloading(false);
+    setDownloading(false);setDownloadProgress(0);
   };
 
   useEffect(()=>{loadTree();},[loadTree]);
@@ -304,8 +312,8 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
               {openComments.length>0&&<span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center">{openComments.length}</span>}
             </button>
             <div className="w-px h-4 bg-gray-700 mx-1"/>
-            <button onClick={downloadRepo} disabled={downloading} title="Download entire repository" className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors disabled:opacity-50">
-              {downloading?<Loader2 size={13} className="animate-spin"/>:<Download size={13}/>}
+            <button onClick={downloadRepo} disabled={downloading} title="Download repository as zip" className="flex items-center gap-1 p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors disabled:opacity-50">
+              {downloading?<><Loader2 size={13} className="animate-spin"/><span className="text-[10px]">{downloadProgress}%</span></>:<Download size={13}/>}
             </button>
             <button onClick={async()=>{if(editedContent){await navigator.clipboard.writeText(editedContent);setCopied(true);setTimeout(()=>setCopied(false),2000);}}} title="Copy all" className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-white/10 transition-colors">
               {copied?<Check size={13} className="text-green-400"/>:<Copy size={13}/>}
