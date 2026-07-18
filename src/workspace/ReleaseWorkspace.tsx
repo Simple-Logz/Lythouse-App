@@ -347,45 +347,39 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 {latest&&<span className="text-gray-400">Last checked {timeAgo(latest.created_at)}</span>}
               </div>
 
-              {/* ── HERO: AI Release Decision ────────────────────────────── */}
-              <div className={`card border ${dBg}`}>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Decision</p>
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              {/* ── HERO: AI Release Decision (compact) ──────────────────── */}
+              <div className={`card border ${dBg} !p-4`}>
+                <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
                   {/* Left: recommendation + confidence */}
-                  <div>
-                    <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">Recommendation</div>
-                    <div className={`text-3xl font-bold ${dTone}`}>{decision.text}</div>
-                    <div className="mt-3 flex items-end gap-2">
-                      {readiness!==null&&<span className={`text-4xl font-bold ${dTone}`}>{readiness}%</span>}
-                      <span className="text-xs text-gray-500 mb-1.5">confidence</span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-1 flex items-center gap-1.5"><Sparkles size={11}/>AI Release Decision</p>
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <span className={`text-xl font-bold ${dTone}`}>{decision.text}</span>
+                      {readiness!==null&&<span className="text-sm text-gray-500"><span className={`font-bold ${dTone}`}>{readiness}%</span> confidence</span>}
                     </div>
-                    {topReason&&<p className="text-sm text-gray-600 mt-2 leading-relaxed">{topReason}</p>}
+                    {topReason&&<p className="text-xs text-gray-600 mt-1 leading-relaxed line-clamp-2">{topReason}</p>}
                   </div>
-                  {/* Right: status checklist */}
-                  <div className="lg:border-l lg:border-gray-200 lg:pl-6">
-                    <div className="text-xs uppercase tracking-wide text-gray-400 mb-2">Current Status</div>
-                    <ul className="space-y-1.5">
-                      {checklist.map(c=>(
-                        <li key={c.label} className="flex items-center gap-2 text-sm">
-                          {c.ok?<CheckCircle2 size={15} className="text-green-500 shrink-0"/>:<AlertTriangle size={15} className="text-amber-500 shrink-0"/>}
-                          <span className={c.ok?'text-navy-800':'text-gray-500'}>{c.label}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {pendingLabel&&<div className="mt-3 text-xs"><span className="text-gray-400 uppercase tracking-wide">Pending</span> <span className="font-medium text-amber-700">{pendingLabel}</span></div>}
+                  {/* Right: compact status checklist */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {checklist.map(c=>(
+                      <span key={c.label} className="inline-flex items-center gap-1 text-xs">
+                        {c.ok?<CheckCircle2 size={13} className="text-green-500 shrink-0"/>:<AlertTriangle size={13} className="text-amber-500 shrink-0"/>}
+                        <span className={c.ok?'text-navy-700':'text-gray-400'}>{c.label}</span>
+                      </span>
+                    ))}
                   </div>
                 </div>
 
-                {/* Giant Next Action */}
-                <div className="mt-5 pt-5 border-t border-gray-200/70 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Next Action</div>
-                    <div className="text-lg font-bold text-navy-900">{nextAction.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Estimated time <span className="font-semibold text-navy-800">{nextAction.time}</span></div>
+                {/* Next Action */}
+                <div className="mt-3 pt-3 border-t border-gray-200/70 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <span className="text-[11px] uppercase tracking-wide text-gray-400 mr-2">Next</span>
+                    <span className="font-semibold text-navy-900">{nextAction.title}</span>
+                    <span className="text-xs text-gray-500 ml-2">· {nextAction.time}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={getAdvisor} className="btn-secondary text-sm"><Sparkles size={13}/>Ask AI</button>
-                    <button onClick={nextAction.go} className="btn-primary text-sm"><ArrowRight size={14}/>{nextAction.cta}</button>
+                    <button onClick={getAdvisor} className="btn-ghost text-xs"><Sparkles size={12}/>Ask AI</button>
+                    <button onClick={nextAction.go} className="btn-primary text-xs"><ArrowRight size={13}/>{nextAction.cta}</button>
                   </div>
                 </div>
               </div>
