@@ -87,19 +87,19 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
     if(running)return;
     setRunning(true);setStage('validation');
     try{
-      const{data:v}=await supabase.from('validations').insert({
-        project_id:projectId,workspace_id:wsId,status:'running',
-        git_url:project.git_url,git_branch:project.git_branch||'main',
+      const{data:v,error:insErr}=await supabase.from('validations').insert({
+        project_id:projectId,workspace_id:wsId,status:'running',trigger:'manual',
       }).select().single();
-      if(v){
-        setValidations(prev=>[v,...prev]);
-        const res=await fetch(`${edgeFunctionUrl}/process-validation`,{
+      if(insErr||!v){console.error('Validation insert failed:',insErr);alert('Could not start validation: '+(insErr?.message||'unknown error'));setRunning(false);return;}
+      setValidations(prev=>[v,...prev]);
+      try{
+        await fetch(`${edgeFunctionUrl}/process-validation`,{
           method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${anonKey}`,'apikey':anonKey},
           body:JSON.stringify({validationId:v.id,projectId,gitUrl:project.git_url,branch:project.git_branch||'main',githubToken:project.github_token||null}),
         });
-        await load();
-      }
-    }catch{}
+      }catch(fnErr){console.error('process-validation call failed:',fnErr);}
+      await load();
+    }catch(e){console.error('runValidation error:',e);}
     setRunning(false);
   };
 
