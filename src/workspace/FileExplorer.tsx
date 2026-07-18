@@ -71,9 +71,9 @@ export function FileExplorer({ projectId, openFilePath, highlightLine, onHighlig
   }, [openFilePath]);
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
       {/* File tree */}
-      <div className="card lg:col-span-1 flex flex-col" style={{ minHeight: 520, maxHeight: '80vh' }}>
+      <div className="card lg:col-span-1 flex flex-col" style={{ minHeight: 640, maxHeight: '86vh' }}>
         <div className="flex items-center justify-between mb-3">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Files</span>
           <div className="flex items-center gap-1">
@@ -100,7 +100,7 @@ export function FileExplorer({ projectId, openFilePath, highlightLine, onHighlig
         {selected ? (
           <FileViewer projectId={projectId} path={selected} highlightLine={highlightLine} onHighlightConsumed={onHighlightConsumed} onDelete={setDeletePath} onSaved={fetchFiles} />
         ) : (
-          <div className="card flex h-full min-h-[520px] items-center justify-center">
+          <div className="card flex h-full min-h-[640px] items-center justify-center">
             <EmptyState icon={<FileIcon size={22} />} title="Select a file" description="Choose a file from the tree to view or edit its contents." />
           </div>
         )}
