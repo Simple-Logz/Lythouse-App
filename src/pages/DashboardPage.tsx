@@ -188,14 +188,14 @@ Context:
                     <div className="h-4 bg-gray-100 animate-pulse rounded w-32"/>
                   </div>
                 ):(
-                  <h1 className={`text-3xl font-black tracking-tight ${dc.color}`}>
+                  <h1 className={`text-3xl font-semibold tracking-tight ${dc.color}`}>
                     {aiRec?.decision||(!noData?isBlocked?'DO NOT DEPLOY':'DEPLOY NOW':'GET STARTED')}
                   </h1>
                 )}
                 {aiRec&&(
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm font-bold text-gray-600">Confidence</span>
-                    <span className={`text-xl font-black ${aiRec.confidence>=80?'text-green-600':aiRec.confidence>=60?'text-amber-600':'text-red-600'}`}>{aiRec.confidence}%</span>
+                    <span className={`text-xl font-semibold ${aiRec.confidence>=80?'text-green-600':aiRec.confidence>=60?'text-amber-600':'text-red-600'}`}>{aiRec.confidence}%</span>
                     <div className="flex-1 h-1.5 rounded-full bg-gray-200 overflow-hidden max-w-24">
                       <div className={`h-1.5 rounded-full transition-all ${aiRec.confidence>=80?'bg-green-500':aiRec.confidence>=60?'bg-amber-500':'bg-red-500'}`} style={{width:`${aiRec.confidence}%`}}/>
                     </div>
@@ -377,7 +377,7 @@ Context:
               ))}
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-[10px] text-gray-400">Overall risk</span>
-                <span className={`text-sm font-black ${riskScore!==null&&riskScore<40?'text-green-600':riskScore!==null&&riskScore<70?'text-amber-600':'text-red-600'}`}>
+                <span className={`text-sm font-semibold ${riskScore!==null&&riskScore<40?'text-green-600':riskScore!==null&&riskScore<70?'text-amber-600':'text-red-600'}`}>
                   {riskScore!==null?`${riskScore}/100`:'—'}
                 </span>
               </div>
@@ -471,7 +471,7 @@ Context:
           {label:'Systems',value:connectedSystems.length,color:connectedSystems.length>0?'text-brand-600':'text-gray-400',link:latestProject?`/projects/${latestProject.id}`:'/projects'},
         ].map(m=>(
           <Link key={m.label} to={m.link} className="card py-3 text-center hover:shadow-md transition-all hover:border-brand-200 border border-transparent">
-            <div className={`text-2xl font-black ${m.color}`}>{m.value}</div>
+            <div className={`text-2xl font-semibold ${m.color}`}>{m.value}</div>
             <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">{m.label}</div>
           </Link>
         ))}

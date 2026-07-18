@@ -101,7 +101,7 @@ Give me:
               <span className="relative flex h-3 w-3"><span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${blockers.length>0?'bg-red-400':readiness>=75?'bg-green-400':'bg-amber-400'}`}/><span className={`relative inline-flex rounded-full h-3 w-3 ${blockers.length>0?'bg-red-500':readiness>=75?'bg-green-500':'bg-amber-500'}`}/></span>
               <span className="text-xs font-bold uppercase tracking-widest">LIVE</span>
             </div>
-            <h2 className="text-xl font-black">{project?.name} — Release War Room</h2>
+            <h2 className="text-xl font-semibold">{project?.name} — Release War Room</h2>
           </div>
           <div className="flex items-center gap-2 text-xs opacity-70">
             <RefreshCw size={11}/>Auto-refreshing every 30s
@@ -118,7 +118,7 @@ Give me:
           {label:'Validations Run',value:validations.length,color:'text-brand-600',bg:'bg-brand-50',border:'border-brand-200'},
         ].map(s=>(
           <div key={s.label} className={`card border-2 ${s.border} ${s.bg} py-3`}>
-            <div className={`text-3xl font-black tabular-nums ${s.color}`}>{s.value}</div>
+            <div className={`text-3xl font-semibold tabular-nums ${s.color}`}>{s.value}</div>
             <div className="text-xs font-medium text-gray-600 mt-1">{s.label}</div>
           </div>
         ))}

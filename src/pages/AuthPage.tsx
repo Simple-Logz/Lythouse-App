@@ -67,7 +67,7 @@ export function AuthPage(){
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700">
               <CheckCircle2 size={12}/> Pre-deployment intelligence platform
             </div>
-            <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-navy-900">
+            <h1 className="text-4xl font-bold leading-tight tracking-tight text-navy-900">
               Ship with confidence.<br/>
               <span className="text-brand-600">Every deployment.</span>
             </h1>

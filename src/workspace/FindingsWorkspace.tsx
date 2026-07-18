@@ -100,7 +100,7 @@ export function FindingsWorkspace({projectId,onRunValidation,running,onOpenFile}
           {label:'Resolved',value:resolved.length,color:'text-green-600',bg:'bg-green-50',border:'border-green-200',onClick:()=>{setSevFilter('all');setStatusFilter('resolved');}},
         ].map(s=>(
           <button key={s.label} onClick={s.onClick} className={`card border ${s.border} ${s.bg} hover:shadow-md transition-all text-left`}>
-            <div className={`text-3xl font-black tabular-nums ${s.color}`}>{s.value}</div>
+            <div className={`text-3xl font-semibold tabular-nums ${s.color}`}>{s.value}</div>
             <div className="text-xs font-medium text-gray-600 mt-1">{s.label}</div>
           </button>
         ))}

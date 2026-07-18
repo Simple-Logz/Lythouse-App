@@ -66,7 +66,7 @@
   color: var(--text-primary);
 }
 .dark .input::placeholder { color: var(--text-muted); }
-.dark .input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(167,139,250,0.15); }
+.dark .input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(98,133,101,0.20); }
 
 /* Labels */
 .dark .label { color: var(--text-secondary); }

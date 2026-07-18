@@ -78,7 +78,7 @@ export function ReleaseHistoryTab({projectId,workspaceId}:{projectId:string;work
             {label:'Rollbacks',value:rollbackCount,color:rollbackCount>0?'text-red-600':'text-green-600'},
           ].map(s=>(
             <div key={s.label} className="card py-3 text-center">
-              <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
+              <div className={`text-2xl font-semibold ${s.color}`}>{s.value}</div>
               <div className="text-xs text-gray-500 mt-1">{s.label}</div>
             </div>
           ))}
@@ -135,7 +135,7 @@ export function ReleaseHistoryTab({projectId,workspaceId}:{projectId:string;work
                   </div>
                   {h.readiness_score!==null&&(
                     <div className="text-right shrink-0">
-                      <div className={`text-lg font-black ${h.readiness_score>=75?'text-green-600':h.readiness_score>=50?'text-amber-600':'text-red-600'}`}>{h.readiness_score}%</div>
+                      <div className={`text-lg font-semibold ${h.readiness_score>=75?'text-green-600':h.readiness_score>=50?'text-amber-600':'text-red-600'}`}>{h.readiness_score}%</div>
                       <div className="text-[10px] text-gray-400">readiness</div>
                     </div>
                   )}

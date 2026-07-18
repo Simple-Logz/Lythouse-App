@@ -371,7 +371,7 @@ export function DeploymentCenter({projectId,project,onRunValidation,onOpenFile,r
               <div className="flex items-center gap-4">
                 <div className="text-4xl">{sc.icon}</div>
                 <div>
-                  <h2 className={`text-2xl font-black ${sc.color}`}>{sc.label}</h2>
+                  <h2 className={`text-2xl font-semibold ${sc.color}`}>{sc.label}</h2>
                   <p className="text-sm text-gray-600 mt-1">
                     {status==='blocked'?`${blockers.length} deployment blocker${blockers.length!==1?'s':''} must be resolved before this release can proceed.`:
                      status==='approved'?'All checks passed. This release is cleared for deployment.':
@@ -387,7 +387,7 @@ export function DeploymentCenter({projectId,project,onRunValidation,onOpenFile,r
                 </div>
               </div>
               <div className="text-center shrink-0">
-                <div className={`text-5xl font-black ${overall>=80?'text-green-600':overall>=50?'text-amber-600':'text-red-600'}`}>{overall}%</div>
+                <div className={`text-5xl font-semibold ${overall>=80?'text-green-600':overall>=50?'text-amber-600':'text-red-600'}`}>{overall}%</div>
                 <div className="text-xs text-gray-500 font-medium mt-1">Release Readiness</div>
               </div>
             </div>
@@ -415,7 +415,7 @@ export function DeploymentCenter({projectId,project,onRunValidation,onOpenFile,r
                   <div key={d.label} className={`rounded-xl border px-3 py-3 ${d.status==='fail'?'border-red-200 bg-red-50':d.status==='warn'?'border-amber-200 bg-amber-50':'border-green-200 bg-green-50'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-semibold text-gray-700">{d.label}</span>
-                      <span className={`text-lg font-black ${d.status==='fail'?'text-red-600':d.status==='warn'?'text-amber-600':'text-green-600'}`}>{d.score}%</span>
+                      <span className={`text-lg font-semibold ${d.status==='fail'?'text-red-600':d.status==='warn'?'text-amber-600':'text-green-600'}`}>{d.score}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-black/10 mb-2">
                       <div className={`h-1.5 rounded-full transition-all ${d.status==='fail'?'bg-red-500':d.status==='warn'?'bg-amber-500':'bg-green-500'}`} style={{width:`${d.score}%`}}/>
@@ -437,7 +437,7 @@ export function DeploymentCenter({projectId,project,onRunValidation,onOpenFile,r
                 {label:'Resolved',value:resolved.length,color:'text-green-600',bg:'bg-green-50',border:'border-green-200',onClick:()=>{setView('workitems');setFilter('resolved');}},
               ].map(s=>(
                 <button key={s.label} onClick={s.onClick} className={`card border ${s.border} ${s.bg} hover:shadow-md transition-all text-left`}>
-                  <div className={`text-3xl font-black tabular-nums ${s.color}`}>{s.value}</div>
+                  <div className={`text-3xl font-semibold tabular-nums ${s.color}`}>{s.value}</div>
                   <div className="text-xs font-medium text-gray-600 mt-1">{s.label}</div>
                   <div className="text-xs text-gray-400 mt-0.5">Click to view →</div>
                 </button>

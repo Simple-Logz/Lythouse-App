@@ -41,14 +41,14 @@ function NetlifyData({data}:{data:any}){
     {data.user&&<div className="flex items-center gap-3 rounded-xl bg-teal-50 border border-teal-200 px-4 py-3">
       {data.user.avatar&&<img src={data.user.avatar} className="w-9 h-9 rounded-full border border-teal-200"/>}
       <div><p className="text-sm font-semibold text-navy-900">{data.user.name}</p><p className="text-xs text-gray-500">{data.user.email}</p></div>
-      <div className="ml-auto text-right"><p className="text-2xl font-black text-teal-600">{data.totalSites}</p><p className="text-xs text-gray-500">total sites</p></div>
+      <div className="ml-auto text-right"><p className="text-2xl font-semibold text-teal-600">{data.totalSites}</p><p className="text-xs text-gray-500">total sites</p></div>
     </div>}
     <div className="grid grid-cols-3 gap-2">
       {[{l:'Ready',v:data.summary?.healthy,c:'text-green-600',bg:'bg-green-50',b:'border-green-200'},
         {l:'Building',v:data.summary?.building,c:'text-blue-600',bg:'bg-blue-50',b:'border-blue-200'},
         {l:'Failed',v:data.summary?.failed,c:'text-red-600',bg:'bg-red-50',b:'border-red-200'}].map(s=>(
         <div key={s.l} className={`rounded-xl border ${s.b} ${s.bg} px-3 py-3 text-center`}>
-          <div className={`text-2xl font-black ${s.c}`}>{s.v||0}</div>
+          <div className={`text-2xl font-semibold ${s.c}`}>{s.v||0}</div>
           <div className="text-xs text-gray-500">{s.l}</div>
         </div>
       ))}
@@ -158,7 +158,7 @@ function VercelData({data}:{data:any}){
     {data.user&&<div className="flex items-center gap-3 rounded-xl bg-black text-white px-4 py-3">
       <span className="text-2xl">▲</span>
       <div><p className="text-sm font-semibold">{data.user.name}</p><p className="text-xs text-gray-400">{data.user.email}</p></div>
-      <div className="ml-auto text-right"><p className="text-2xl font-black">{data.totalProjects}</p><p className="text-xs text-gray-400">projects</p></div>
+      <div className="ml-auto text-right"><p className="text-2xl font-semibold">{data.totalProjects}</p><p className="text-xs text-gray-400">projects</p></div>
     </div>}
     {data.recentDeploys?.length>0&&<div>
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Deployments</p>

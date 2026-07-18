@@ -343,7 +343,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                   <div className={`rounded-2xl border-2 px-5 py-4 ${isBlocked?'border-red-300 bg-red-50':readiness!==null&&readiness>=80?'border-green-300 bg-green-50':'border-amber-200 bg-amber-50'}`}>
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className={`text-xl font-black ${isBlocked?'text-red-700':readiness!==null&&readiness>=80?'text-green-700':'text-amber-700'}`}>
+                        <p className={`text-xl font-semibold ${isBlocked?'text-red-700':readiness!==null&&readiness>=80?'text-green-700':'text-amber-700'}`}>
                           {running?'Scanning repository…':isBlocked?`${critical.length} Deployment Blocker${critical.length!==1?'s':''}`:readiness!==null&&readiness>=80?'All checks passed':'Review before deploying'}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
@@ -352,7 +352,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                           `${high.length} high-severity issue${high.length!==1?'s':''} need review before deployment.`}
                         </p>
                       </div>
-                      {readiness!==null&&<div className="text-center shrink-0"><div className={`text-4xl font-black ${readiness>=80?'text-green-600':readiness>=60?'text-amber-600':'text-red-600'}`}>{readiness}%</div><div className="text-xs text-gray-500">readiness</div></div>}
+                      {readiness!==null&&<div className="text-center shrink-0"><div className={`text-4xl font-semibold ${readiness>=80?'text-green-600':readiness>=60?'text-amber-600':'text-red-600'}`}>{readiness}%</div><div className="text-xs text-gray-500">readiness</div></div>}
                     </div>
                     {(isBlocked||high.length>0)&&(
                       <div className="mt-3 pt-3 border-t border-black/10 flex gap-2">
@@ -384,7 +384,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                         <div key={d.label} className={`rounded-xl border px-3 py-3 ${d.status==='fail'?'border-red-200 bg-red-50':d.status==='warn'?'border-amber-200 bg-amber-50':'border-green-200 bg-green-50'}`}>
                           <div className="flex justify-between items-center mb-1.5">
                             <span className="text-xs font-semibold text-gray-700">{d.label}</span>
-                            <span className={`text-lg font-black ${d.status==='fail'?'text-red-600':d.status==='warn'?'text-amber-600':'text-green-600'}`}>{d.score}%</span>
+                            <span className={`text-lg font-semibold ${d.status==='fail'?'text-red-600':d.status==='warn'?'text-amber-600':'text-green-600'}`}>{d.score}%</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-black/10"><div className={`h-1.5 rounded-full ${d.status==='fail'?'bg-red-500':d.status==='warn'?'bg-amber-500':'bg-green-500'}`} style={{width:`${d.score}%`}}/></div>
                         </div>

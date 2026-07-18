@@ -6,7 +6,7 @@ import { ChartBar as BarChart3, GitCommitHorizontal, Timer, CirclePercent as Per
 type DRow=EnvironmentDrift&{project_name?:string;}
 
 const SEVERITY_COLORS:Record<string,string>={
-critical:'#ef4444',high:'#f59e0b',medium:'#3b82f6',low:'#9ca3af',none:'#16a34a',
+critical:'#2d5731',high:'#6a7437',medium:'#4c6d4f',low:'#9ca3af',none:'#3d5740',
 };
 const SEVERITIES=['critical','high','medium','low','none']as const;
 

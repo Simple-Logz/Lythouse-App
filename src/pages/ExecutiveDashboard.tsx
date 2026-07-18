@@ -116,7 +116,7 @@ export function ExecutiveDashboard(){
               </div>
               {kpi.trend==='up'?<TrendingUp size={16} className="text-green-500"/>:kpi.trend==='down'?<TrendingDown size={16} className="text-red-400"/>:<Activity size={16} className="text-gray-400"/>}
             </div>
-            <div className={`text-3xl font-black tabular-nums ${kpi.color}`}>{kpi.value}</div>
+            <div className={`text-3xl font-semibold tabular-nums ${kpi.color}`}>{kpi.value}</div>
             <div className="text-xs font-semibold text-gray-700 mt-1">{kpi.label}</div>
             <div className="text-xs text-gray-500 mt-0.5">{kpi.sub}</div>
           </div>
@@ -273,7 +273,7 @@ export function ExecutiveDashboard(){
                   <div className="w-24 h-2 rounded-full bg-gray-100 overflow-hidden">
                     <div className={`h-2 rounded-full transition-all ${p.risk_score>70?'bg-red-500':p.risk_score>40?'bg-amber-500':'bg-green-500'}`} style={{width:`${p.risk_score}%`}}/>
                   </div>
-                  <span className={`text-sm font-black w-12 text-right ${p.risk_score>70?'text-red-600':p.risk_score>40?'text-amber-600':'text-green-600'}`}>{p.risk_score}/100</span>
+                  <span className={`text-sm font-semibold w-12 text-right ${p.risk_score>70?'text-red-600':p.risk_score>40?'text-amber-600':'text-green-600'}`}>{p.risk_score}/100</span>
                   <Link to={`/projects/${p.project_id}`} className="btn-ghost text-xs p-1.5"><ArrowRight size={14}/></Link>
                 </div>
               </div>

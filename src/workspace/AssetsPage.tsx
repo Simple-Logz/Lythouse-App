@@ -548,7 +548,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
       <div className="rounded-2xl border-2 border-brand-200 bg-gradient-to-r from-brand-50 to-white px-6 py-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-black text-navy-900 flex items-center gap-2"><Activity size={20} className="text-brand-600"/>Continuous Validation Hub</h2>
+            <h2 className="text-xl font-semibold text-navy-900 flex items-center gap-2"><Activity size={20} className="text-brand-600"/>Continuous Validation Hub</h2>
             <p className="text-sm text-gray-600 mt-1 max-w-2xl leading-relaxed">Connect your engineering, cloud, infrastructure and CI/CD platforms so LytHouse <strong>continuously monitors changes</strong>, detects configuration drift, automatically revalidates deployments, and keeps Release Readiness up to date — without anyone clicking a button.</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -571,7 +571,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                 <s.icon size={13} className={s.color}/>
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{s.label}</span>
               </div>
-              <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
+              <div className={`text-lg font-semibold ${s.color}`}>{s.value}</div>
               <div className="text-[10px] text-gray-400 mt-0.5">{s.sub}</div>
             </div>
           ))}
