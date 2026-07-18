@@ -451,26 +451,19 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                     </div>
                   </div>
 
-                  {/* ── Repository Files — supporting tool, collapsed ────── */}
-                  <div className="card">
-                    <button onClick={()=>setFilesDrawerOpen(o=>!o)} className="flex w-full items-center justify-between text-left">
+                  {/* ── Repository Files — supporting tool ───────────────── */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <FolderOpen size={16} className="text-gray-400"/>
                         <div>
                           <h3 className="text-sm font-semibold text-navy-900">Repository Files</h3>
-                          <p className="text-xs text-gray-500">Optional — browse or edit the underlying files.</p>
+                          <p className="text-xs text-gray-500">Browse or edit the underlying files.</p>
                         </div>
                       </div>
-                      {filesDrawerOpen?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
-                    </button>
-                    {filesDrawerOpen&&(
-                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                        <div className="flex justify-end">
-                          <button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button>
-                        </div>
-                        <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>
-                      </div>
-                    )}
+                      <button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button>
+                    </div>
+                    <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>
                   </div>
                 </>
               )}
