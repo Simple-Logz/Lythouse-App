@@ -6,11 +6,11 @@
 // like `bg-amber-500`, `text-blue-600`, `bg-purple-600`, etc. all resolve to
 // green shades automatically.
 
-// Primary / brand: soft, muted sage green (was a vivid grass green).
+// Primary / brand: fresh, lively green — bright but not neon.
 const sage = {
-  50: '#f4f8f4', 100: '#e6efe6', 200: '#ccdccd', 300: '#a9c2aa',
-  400: '#82a384', 500: '#628565', 600: '#4c6d4f', 700: '#3d5740',
-  800: '#334736', 900: '#2b3b2d', 950: '#161f17',
+  50: '#f0fbf4', 100: '#d7f4e0', 200: '#aee8c3', 300: '#78d69f',
+  400: '#43c078', 500: '#22a659', 600: '#159048', 700: '#14743d',
+  800: '#155c34', 900: '#134a2c', 950: '#062815',
 };
 
 // Neutral text/UI (replaces the blue-ish "navy"): a dark green-tinted gray so
@@ -21,20 +21,20 @@ const greenGray = {
   800: '#313a33', 900: '#28312a', 950: '#181e19',
 };
 
-// Warning tone: a warm olive-green (still green, just a touch warmer) so
-// "review / caution" states read slightly different without leaving the family.
+// Warning tone: a brighter lime-leaning green so "review / caution" states
+// read slightly warmer without leaving the family.
 const olive = {
-  50: '#f6f7ee', 100: '#eaefd8', 200: '#d6ddb4', 300: '#bcc687',
-  400: '#a2ad62', 500: '#879247', 600: '#6a7437', 700: '#51592e',
-  800: '#434829', 900: '#3a3e26', 950: '#1e2011',
+  50: '#f6fbe8', 100: '#eaf5c8', 200: '#d6ec95', 300: '#bfdd5f',
+  400: '#a7c936', 500: '#8bad24', 600: '#6e8b1c', 700: '#54691c',
+  800: '#45541c', 900: '#3b471b', 950: '#1e2709',
 };
 
-// Alert / error tone: a deep forest green so "failed / danger" still reads as
-// heavier and more serious — differentiated by depth, not by hue.
+// Alert / error tone: a slightly deeper, teal-leaning green so "failed /
+// danger" still reads as heavier — differentiated by depth, not by hue.
 const forest = {
-  50: '#eef4ee', 100: '#d6e5d7', 200: '#b0ccb2', 300: '#82ac85',
-  400: '#578b5b', 500: '#3c6e40', 600: '#2d5731', 700: '#264628',
-  800: '#213a23', 900: '#1c301e', 950: '#0e1a10',
+  50: '#ecfbf1', 100: '#cff4dd', 200: '#a2e8c1', 300: '#68d3a0',
+  400: '#38ba81', 500: '#1c9e68', 600: '#137e54', 700: '#136545',
+  800: '#135039', 900: '#114230', 950: '#04251a',
 };
 
 export default {
