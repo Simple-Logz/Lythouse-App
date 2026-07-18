@@ -435,17 +435,20 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
 
                   {/* ── AI FINDINGS — what actually matters ─────────────── */}
                   <div>
-                    <h3 className="text-base font-semibold text-navy-900 mb-2">AI Findings</h3>
+                    <h3 className="text-base font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><ShieldAlert size={15} className="text-brand-600"/>AI Findings</h3>
                     <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                       {[
-                        {label:'Deployment Blockers',value:blockers,color:'text-red-600',go:()=>setStage('remediation')},
-                        {label:'Needs Attention',value:needsAttention,color:'text-amber-600',go:()=>setStage('validation')},
-                        {label:'Recommendations',value:recommendations,color:'text-brand-600',go:()=>setStage('validation')},
-                        {label:'Healthy / Resolved',value:healthy,color:'text-green-600',go:()=>setStage('validation')},
+                        {label:'Deployment Blockers',value:blockers,icon:XCircle,color:'text-red-600',ring:blockers>0?'border-red-300 bg-red-50 ring-1 ring-red-200':'border-gray-200 bg-white',go:()=>setStage('remediation')},
+                        {label:'Needs Attention',value:needsAttention,icon:AlertTriangle,color:'text-amber-600',ring:needsAttention>0?'border-amber-300 bg-amber-50':'border-gray-200 bg-white',go:()=>setStage('validation')},
+                        {label:'Recommendations',value:recommendations,icon:Sparkles,color:'text-brand-600',ring:'border-gray-200 bg-white',go:()=>setStage('validation')},
+                        {label:'Healthy / Resolved',value:healthy,icon:CheckCircle2,color:'text-green-600',ring:'border-green-200 bg-green-50',go:()=>setStage('validation')},
                       ].map(t=>(
-                        <button key={t.label} onClick={t.go} className="card text-left hover:shadow-md transition-shadow py-4">
-                          <div className={`text-3xl font-bold ${t.color}`}>{t.value}</div>
-                          <div className="text-xs text-gray-500 mt-1">{t.label}</div>
+                        <button key={t.label} onClick={t.go} className={`rounded-2xl border p-4 text-left hover:shadow-md transition-all active:scale-[0.99] ${t.ring}`}>
+                          <div className="flex items-center justify-between">
+                            <span className={`text-4xl font-bold ${t.color}`}>{t.value}</span>
+                            <t.icon size={22} className={`${t.color} opacity-80`}/>
+                          </div>
+                          <div className="text-sm font-medium text-navy-800 mt-2">{t.label}</div>
                         </button>
                       ))}
                     </div>
