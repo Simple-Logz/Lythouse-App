@@ -630,7 +630,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
       </div>
 
       {/* ── RIGHT PANEL — Persistent Intelligence ────────────────────────── */}
-      {sidebarOpen&&(
+      {sidebarOpen&&stage!=='changes'&&(
         <div className="w-72 shrink-0 border-l border-gray-100 bg-gray-50/30 flex flex-col overflow-y-auto">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5"><Sparkles size={11}/>AI Release Advisor</span>
@@ -713,7 +713,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         </div>
       )}
 
-      {!sidebarOpen&&(
+      {!sidebarOpen&&stage!=='changes'&&(
         <button onClick={()=>setSidebarOpen(true)} className="fixed right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1 bg-white border border-gray-200 rounded-xl px-2 py-3 shadow-lg hover:bg-gray-50 transition-colors">
           <Sparkles size={14} className="text-purple-500"/>
           <span className="text-[10px] text-gray-500 vertical-lr" style={{writingMode:'vertical-lr'}}>AI Advisor</span>
