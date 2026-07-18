@@ -1,6 +1,6 @@
 // @ts-nocheck
 import{useEffect,useState}from'react';
-import{supabase,type Project}from'../lib/supabase';
+import{supabase,edgeFunctionUrl,anonKey,type Project}from'../lib/supabase';
 import{PageHeader,EmptyState,Spinner}from'../lib/ui';
 import{useRouter,Link}from'../lib/router';
 import { FolderGit2, Plus, X, GitFork as Github, Loader as Loader2 } from 'lucide-react';
@@ -32,24 +32,59 @@ const[ghUser,setGhUser]=useState<any>(null);
 const[repos,setRepos]=useState<any[]>([]);
 const[repoSearch,setRepoSearch]=useState('');
 const[importingId,setImportingId]=useState<number|string>('');
+const[showToken,setShowToken]=useState(false);
+const GH_CLIENT_ID=(import.meta as any).env?.VITE_GITHUB_CLIENT_ID as string|undefined;
 
 const wsId=()=>selectedWs||localStorage.getItem('sandbox.activeWs')||'';
 
-const connectGithub=async()=>{
-  if(!ghToken.trim()){setGhError('Please paste a GitHub token first.');return;}
+// Kick off the GitHub OAuth login redirect
+const loginWithGithub=()=>{
+  if(!GH_CLIENT_ID){setImporting(true);setShowToken(true);setGhError('GitHub login isn’t configured yet — paste a token below, or ask an admin to set up the OAuth app.');return;}
+  const redirect=window.location.origin+window.location.pathname;
+  sessionStorage.setItem('gh_oauth_redirect',redirect);
+  const scope=encodeURIComponent('repo read:org');
+  window.location.href=`https://github.com/login/oauth/authorize?client_id=${GH_CLIENT_ID}&scope=${scope}&redirect_uri=${encodeURIComponent(redirect)}`;
+};
+
+// Fetch the user + repos for a given access token (OAuth or PAT)
+const connectWithToken=async(tok:string)=>{
   setGhConnecting(true);setGhError('');
   try{
-    const h={Authorization:'Bearer '+ghToken.trim(),Accept:'application/vnd.github+json'};
+    const h={Authorization:'Bearer '+tok.trim(),Accept:'application/vnd.github+json'};
     const ur=await fetch('https://api.github.com/user',{headers:h});
-    if(!ur.ok)throw new Error(ur.status===401?'That token is invalid or expired.':'GitHub returned '+ur.status);
+    if(!ur.ok)throw new Error(ur.status===401?'That login/token is invalid or expired.':'GitHub returned '+ur.status);
     const user=await ur.json();
     const rr=await fetch('https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',{headers:h});
     if(!rr.ok)throw new Error('Connected, but could not load your repositories.');
     const list=await rr.json();
-    setGhUser(user);setRepos(Array.isArray(list)?list:[]);
+    setGhToken(tok);setGhUser(user);setRepos(Array.isArray(list)?list:[]);
   }catch(e:any){setGhError(e?.message||'Failed to connect to GitHub.');}
   finally{setGhConnecting(false);}
 };
+
+const connectGithub=()=>{
+  if(!ghToken.trim()){setGhError('Please paste a GitHub token first.');return;}
+  connectWithToken(ghToken);
+};
+
+// After the OAuth redirect back, exchange ?code= for a token
+useEffect(()=>{
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('code');
+  const redirect=sessionStorage.getItem('gh_oauth_redirect');
+  if(!code||!redirect)return;
+  sessionStorage.removeItem('gh_oauth_redirect');
+  window.history.replaceState({},'',window.location.pathname);
+  setImporting(true);setGhConnecting(true);setGhError('');
+  (async()=>{
+    try{
+      const r=await fetch(edgeFunctionUrl+'/github-oauth',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+anonKey,apikey:anonKey},body:JSON.stringify({code,redirect_uri:redirect})});
+      const d=await r.json();
+      if(!r.ok||!d.access_token)throw new Error(d.error||'GitHub login failed.');
+      await connectWithToken(d.access_token);
+    }catch(e:any){setGhError(e?.message||'GitHub login failed.');setGhConnecting(false);}
+  })();
+},[]);
 
 const importRepo=async(repo:any)=>{
   const wid=wsId();
@@ -72,7 +107,7 @@ const importRepo=async(repo:any)=>{
   navigate(`/projects/${data.id}`);
 };
 
-const resetImport=()=>{setImporting(false);setGhToken('');setGhError('');setGhUser(null);setRepos([]);setRepoSearch('');setImportingId('');};
+const resetImport=()=>{setImporting(false);setGhToken('');setGhError('');setGhUser(null);setRepos([]);setRepoSearch('');setImportingId('');setShowToken(false);};
 
 const load=async()=>{
   setLoading(true);
@@ -169,13 +204,26 @@ return<div>
 
 {!ghUser?(
   <>
-    <label className="label">GitHub Personal Access Token</label>
-    <input className="input mb-1" type="password" value={ghToken} onChange={e=>{setGhToken(e.target.value);setGhError('');}} placeholder="ghp_xxxxxxxxxxxx" onKeyDown={e=>{if(e.key==='Enter')connectGithub();}}/>
-    <p className="text-xs text-gray-400 mb-4">Use a token with <span className="font-medium">repo</span> (or fine-grained Contents) access. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Lythouse" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create one on GitHub →</a></p>
-    <div className="flex justify-end gap-2">
-      <button onClick={resetImport} className="btn-secondary">Cancel</button>
-      <button onClick={connectGithub} disabled={ghConnecting||!ghToken.trim()} className="btn-primary">{ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Connect GitHub</button>
-    </div>
+    <button onClick={loginWithGithub} disabled={ghConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1f2328] px-4 py-3 text-sm font-semibold text-white hover:bg-[#32383f] transition-colors disabled:opacity-60">
+      {ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Continue with GitHub
+    </button>
+    <p className="text-xs text-gray-400 mt-2 text-center">You'll sign in on GitHub, then pick a repository to import.</p>
+
+    <div className="my-4 flex items-center gap-3"><div className="h-px flex-1 bg-gray-200"/><span className="text-xs text-gray-400">or</span><div className="h-px flex-1 bg-gray-200"/></div>
+
+    {!showToken?(
+      <button onClick={()=>setShowToken(true)} className="w-full text-center text-xs text-gray-500 hover:text-gray-700 underline">Advanced: use a personal access token instead</button>
+    ):(
+      <>
+        <label className="label">GitHub Personal Access Token</label>
+        <input className="input mb-1" type="password" value={ghToken} onChange={e=>{setGhToken(e.target.value);setGhError('');}} placeholder="ghp_xxxxxxxxxxxx" onKeyDown={e=>{if(e.key==='Enter')connectGithub();}}/>
+        <p className="text-xs text-gray-400 mb-3">Token needs <span className="font-medium">repo</span> access. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Lythouse" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create one →</a></p>
+        <div className="flex justify-end gap-2">
+          <button onClick={resetImport} className="btn-secondary">Cancel</button>
+          <button onClick={connectGithub} disabled={ghConnecting||!ghToken.trim()} className="btn-primary">{ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Connect</button>
+        </div>
+      </>
+    )}
   </>
 ):(
   <>
