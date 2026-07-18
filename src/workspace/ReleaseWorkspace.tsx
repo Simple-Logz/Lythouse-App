@@ -23,13 +23,13 @@ function timeAgo(iso:string):string{
 
 type Stage='changes'|'validation'|'remediation'|'approvals'|'deployment'|'verification';
 
-const STAGES:{id:Stage;label:string;icon:typeof Shield}[]=[
-  {id:'changes',label:'Changes',icon:GitBranch},
-  {id:'validation',label:'Validation',icon:Shield},
-  {id:'remediation',label:'Remediation',icon:Zap},
-  {id:'approvals',label:'Approvals',icon:Users},
-  {id:'deployment',label:'Deployment',icon:Play},
-  {id:'verification',label:'Verification',icon:CheckCircle2},
+const STAGES:{id:Stage;label:string;sub:string;icon:typeof Shield}[]=[
+  {id:'changes',label:'Understand',sub:'What changed',icon:GitBranch},
+  {id:'validation',label:'Assess',sub:'Is it safe?',icon:Shield},
+  {id:'remediation',label:'Resolve',sub:'Fix blockers',icon:Zap},
+  {id:'approvals',label:'Approve',sub:'Sign-off',icon:Users},
+  {id:'deployment',label:'Deploy',sub:'Ship it',icon:Play},
+  {id:'verification',label:'Monitor',sub:'Verify live',icon:CheckCircle2},
 ];
 
 function toBiz(sev:string){
@@ -58,6 +58,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   const[sidebarOpen,setSidebarOpen]=useState(true);
   const[editorOpen,setEditorOpen]=useState(false);
   const[editorPath,setEditorPath]=useState('');
+  const[filesDrawerOpen,setFilesDrawerOpen]=useState(false);
   const[updatingFinding,setUpdatingFinding]=useState<string|null>(null);
   const chatEndRef=useRef<HTMLDivElement>(null);
   const wsId=localStorage.getItem('sandbox.activeWs')||'';
@@ -214,8 +215,11 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${st==='done'?'bg-green-500 text-white':stage===s.id?'bg-brand-600 text-white':'bg-gray-200 text-gray-500'}`}>
                 {st==='done'?<Check size={11}/>:i+1}
               </div>
-              {s.label}
-              {st==='active'&&stage!==s.id&&<span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>}
+              <span className="min-w-0 flex-1">
+                <span className="block leading-tight">{s.label}</span>
+                <span className="block text-[10px] font-normal text-gray-400 leading-tight">{s.sub}</span>
+              </span>
+              {st==='active'&&stage!==s.id&&<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>}
             </button>
           );
         })}
@@ -269,59 +273,146 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         {/* Stage content */}
         <div className="px-6 py-5">
 
-          {/* CHANGES */}
-          {stage==='changes'&&(
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-base font-semibold text-navy-900 mb-1">What Changed</h2>
-                <p className="text-sm text-gray-500">Everything that changed since the last successful release, including code, infrastructure, dependencies, and secrets.</p>
+          {/* UNDERSTAND — AI Release Review */}
+          {stage==='changes'&&(()=>{
+            // ── Decision inputs (all from real data) ──────────────────────
+            const blockers=critical.length;
+            const needsAttention=high.length;
+            const recommendations=open.filter(f=>f.severity==='medium'||f.severity==='low').length;
+            const healthy=resolved.length;
+            const verdict=validations.length===0?{text:'NOT ASSESSED',tone:'gray'}
+              :isBlocked?{text:'DO NOT DEPLOY',tone:'red'}
+              :needsAttention>0?{text:'REVIEW REQUIRED',tone:'amber'}
+              :readiness!==null&&readiness>=80?{text:'READY TO DEPLOY',tone:'green'}
+              :{text:'REVIEW REQUIRED',tone:'amber'};
+            const toneCls={red:'text-red-600',amber:'text-amber-600',green:'text-green-600',gray:'text-gray-400'}[verdict.tone];
+            const toneBg={red:'bg-red-50 border-red-200',amber:'bg-amber-50 border-amber-200',green:'bg-green-50 border-green-200',gray:'bg-gray-50 border-gray-200'}[verdict.tone];
+            const topReason=critical[0]?.title||high[0]?.title||latest?.summary||null;
+            const estFixMin=blockers*8+needsAttention*4+recommendations*2;
+            const nextStep=validations.length===0?{label:'Run Validation',go:()=>{runValidation();setStage('validation');}}
+              :blockers>0?{label:'Resolve blockers',go:()=>setStage('remediation')}
+              :needsAttention>0?{label:'Review findings',go:()=>setStage('validation')}
+              :{label:'Request approval',go:()=>setStage('approvals')};
+            // ── Change areas (from real finding categories) ───────────────
+            const AREAS=[
+              {key:'Code',icon:Code2,match:/code|logic|quality|lint|test|style/i},
+              {key:'Infrastructure',icon:Server,match:/infra|terraform|k8s|kubernet|network|cloud|config/i},
+              {key:'Dependencies',icon:Package,match:/depend|package|librar|cve|vuln/i},
+              {key:'Containers',icon:Layers,match:/container|docker|image/i},
+              {key:'Secrets',icon:Lock,match:/secret|credential|password|token|env/i},
+            ].map(a=>({...a,count:open.filter(f=>a.match.test(f.category||'')).length}));
+            const overallRisk=isBlocked?{t:'HIGH',c:'text-red-600'}:needsAttention>0?{t:'MEDIUM',c:'text-amber-600'}:{t:'LOW',c:'text-green-600'};
+
+            return(
+            <div className="space-y-5">
+
+              {/* ── HERO: AI Release Assessment ──────────────────────────── */}
+              <div className={`card border ${toneBg}`}>
+                <div className="flex items-start justify-between gap-6 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Assessment</p>
+                    <div className="flex items-end gap-4">
+                      {readiness!==null&&<div className="shrink-0"><div className={`text-5xl font-bold ${toneCls}`}>{readiness}%</div><div className="text-xs text-gray-500 mt-0.5">confidence</div></div>}
+                      <div className="min-w-0">
+                        <div className={`text-2xl font-bold ${toneCls}`}>{verdict.text}</div>
+                        {topReason&&<p className="text-sm text-gray-600 mt-1 leading-relaxed">{topReason}</p>}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-sm">
+                      <span className="text-gray-600"><span className={`font-bold ${blockers>0?'text-red-600':'text-green-600'}`}>{blockers}</span> blocker{blockers===1?'':'s'}</span>
+                      {estFixMin>0&&<span className="text-gray-600">Est. fix <span className="font-bold text-navy-900">~{estFixMin} min</span></span>}
+                      <span className="text-gray-600">Next: <span className="font-semibold text-brand-700">{nextStep.label}</span></span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <button onClick={nextStep.go} className="btn-primary"><Shield size={14}/>{nextStep.label}</button>
+                    <button onClick={getAdvisor} className="btn-secondary text-xs"><Sparkles size={12}/>Ask the AI advisor</button>
+                  </div>
+                </div>
               </div>
 
               {validations.length===0?(
-                <div className="card text-center py-12">
-                  <GitBranch size={32} className="mx-auto text-gray-200 mb-3"/>
-                  <p className="text-sm font-medium text-gray-600 mb-1">No validation history</p>
-                  <p className="text-xs text-gray-400 mb-4">Run a validation to detect what changed in this repository.</p>
-                  <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary"><Shield size={14}/>Run Validation</button>
-                </div>
-              ):(
-                <div className="space-y-4">
-                  {/* Summary from latest scan */}
-                  {latest?.summary&&(
-                    <div className="card border-brand-200 bg-brand-50">
-                      <p className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-1 flex items-center gap-1.5"><Sparkles size={11}/>AI Change Summary</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{latest.summary}</p>
-                    </div>
-                  )}
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      {label:'Files Scanned',value:latest?.total_findings!==undefined?`${latest.total_findings} issues found`:'—',icon:FileCode,color:'text-brand-600'},
-                      {label:'Validation Status',value:latest?.status||'Never scanned',icon:Shield,color:latest?.status==='completed'?'text-green-600':'text-amber-600'},
-                      {label:'Risk Score',value:riskScore!==null?`${riskScore}/100`:'—',icon:BarChart3,color:riskScore!==null&&riskScore<40?'text-green-600':riskScore!==null&&riskScore<70?'text-amber-600':'text-red-600'},
-                    ].map(s=>(
-                      <div key={s.label} className="card text-center py-4">
-                        <s.icon size={20} className={`mx-auto mb-2 ${s.color}`}/>
-                        <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+                /* ── First run: show the AI assessment pipeline ─────────── */
+                <div className="card">
+                  <h3 className="text-base font-semibold text-navy-900 mb-1">Run your first AI Release Review</h3>
+                  <p className="text-sm text-gray-500 mb-4">Lythouse analyzes your release end-to-end and tells you whether it's safe to deploy.</p>
+                  <div className="flex flex-wrap items-center gap-2 mb-5">
+                    {['Analyze Repository','Analyze Infrastructure','Analyze Dependencies','Analyze Secrets','Analyze Deployment Config','Generate Release Assessment'].map((step,i,arr)=>(
+                      <div key={step} className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-navy-700">
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">{i+1}</span>{step}
+                        </span>
+                        {i<arr.length-1&&<ArrowRight size={13} className="text-gray-300"/>}
                       </div>
                     ))}
                   </div>
-
-                  {/* File browser — expanded, full width */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-base font-semibold text-navy-900">Repository Files</h3>
-                        <p className="text-xs text-gray-500">Browse and edit any file in this repository.</p>
-                      </div>
-                      <button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button>
-                    </div>
-                    <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>
-                  </div>
+                  <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary"><Shield size={14}/>Start Validation</button>
                 </div>
+              ):(
+                <>
+                  {/* ── AI FINDINGS — what actually matters ─────────────── */}
+                  <div>
+                    <h3 className="text-base font-semibold text-navy-900 mb-2">AI Findings</h3>
+                    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                      {[
+                        {label:'Deployment Blockers',value:blockers,color:'text-red-600',go:()=>setStage('remediation')},
+                        {label:'Needs Attention',value:needsAttention,color:'text-amber-600',go:()=>setStage('validation')},
+                        {label:'Recommendations',value:recommendations,color:'text-brand-600',go:()=>setStage('validation')},
+                        {label:'Healthy / Resolved',value:healthy,color:'text-green-600',go:()=>setStage('validation')},
+                      ].map(t=>(
+                        <button key={t.label} onClick={t.go} className="card text-left hover:shadow-md transition-shadow py-4">
+                          <div className={`text-3xl font-bold ${t.color}`}>{t.value}</div>
+                          <div className="text-xs text-gray-500 mt-1">{t.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── WHAT CHANGED — by area, not folders ──────────────── */}
+                  <div>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <h3 className="text-base font-semibold text-navy-900">What Changed Since Last Release</h3>
+                      <span className="text-xs text-gray-500">Overall change risk <span className={`font-bold ${overallRisk.c}`}>{overallRisk.t}</span></span>
+                    </div>
+                    {latest?.summary&&<p className="text-sm text-gray-600 mb-3 leading-relaxed">{latest.summary}</p>}
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                      {AREAS.map(a=>(
+                        <div key={a.key} className="card py-4">
+                          <a.icon size={18} className="text-brand-600 mb-2"/>
+                          <div className="text-lg font-bold text-navy-900">{a.count}</div>
+                          <div className="text-xs text-gray-500">{a.key}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2">Counts reflect findings the AI flagged in each area. Commit-level change details connect once a Git provider is linked.</p>
+                  </div>
+
+                  {/* ── Repository Files — supporting tool, collapsed ────── */}
+                  <div className="card">
+                    <button onClick={()=>setFilesDrawerOpen(o=>!o)} className="flex w-full items-center justify-between text-left">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen size={16} className="text-gray-400"/>
+                        <div>
+                          <h3 className="text-sm font-semibold text-navy-900">Repository Files</h3>
+                          <p className="text-xs text-gray-500">Optional — browse or edit the underlying files.</p>
+                        </div>
+                      </div>
+                      {filesDrawerOpen?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
+                    </button>
+                    {filesDrawerOpen&&(
+                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                        <div className="flex justify-end">
+                          <button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button>
+                        </div>
+                        <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* VALIDATION */}
           {stage==='validation'&&(

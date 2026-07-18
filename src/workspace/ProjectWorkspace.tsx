@@ -38,7 +38,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
         <span className="text-sm font-semibold text-navy-900">{project.name}</span>
         <div className="ml-auto flex items-center gap-1">
           {[
-            {id:'workspace',label:'Release Workspace'},
+            {id:'workspace',label:'AI Release Review'},
             {id:'topology',label:'Topology',icon:Network},
             {id:'assets',label:'Environment'},
             {id:'policies',label:'Policies'},
