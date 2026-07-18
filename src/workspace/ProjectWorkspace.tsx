@@ -3,16 +3,17 @@ import{useCallback,useEffect,useState}from'react';
 import{supabase,anonKey,edgeFunctionUrl,type Project}from'../lib/supabase';
 import{Spinner}from'../lib/ui';
 import{Link}from'../lib/router';
-import{ChevronRight,Settings,ArrowLeft}from'lucide-react';
+import{ChevronRight,Settings,ArrowLeft,Network}from'lucide-react';
 import{ReleaseWorkspace}from'./ReleaseWorkspace';
 import{AssetsPage}from'./AssetsPage';
 import{PoliciesPage}from'./PoliciesPage';
+import{TopologyView}from'./TopologyView';
 import{CodeEditorPanel}from'./CodeEditorPanel';
 
 export function ProjectWorkspace({projectId}:{projectId:string}){
   const[project,setProject]=useState<Project|null>(null);
   const[loading,setLoading]=useState(true);
-  const[view,setView]=useState<'workspace'|'assets'|'policies'|'settings'>('workspace');
+  const[view,setView]=useState<'workspace'|'topology'|'assets'|'policies'|'settings'>('workspace');
   const wsId=localStorage.getItem('sandbox.activeWs')||'';
 
   const load=useCallback(async()=>{
@@ -38,6 +39,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
         <div className="ml-auto flex items-center gap-1">
           {[
             {id:'workspace',label:'Release Workspace'},
+            {id:'topology',label:'Topology',icon:Network},
             {id:'assets',label:'Environment'},
             {id:'policies',label:'Policies'},
             {id:'settings',label:'Settings',icon:Settings},
@@ -52,6 +54,15 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {view==='workspace'&&<ReleaseWorkspace projectId={projectId} project={project}/>}
+        {view==='topology'&&(
+          <div className="p-6 overflow-y-auto h-full">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold text-navy-900">Application Topology</h2>
+              <p className="text-sm text-gray-500">A diagram of what your app looks like — services, data stores, and how they connect — inferred from the repository.</p>
+            </div>
+            <TopologyView projectId={projectId} project={project} onOpenFile={()=>setView('workspace')}/>
+          </div>
+        )}
         {view==='assets'&&<div className="p-6 overflow-y-auto h-full"><AssetsPage projectId={projectId} workspaceId={wsId}/></div>}
         {view==='policies'&&<div className="p-6 overflow-y-auto h-full"><PoliciesPage projectId={projectId} workspaceId={wsId}/></div>}
         {view==='settings'&&(
