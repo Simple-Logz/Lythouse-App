@@ -27,7 +27,7 @@ const s=m[status]??m.open;return<span className={'chip '+s.cls}>{s.label}</span>
 export function RiskGauge({score,size=130}:{score:number|null;size?:number}){
 if(score===null)return<div className="flex flex-col items-center justify-center" style={{width:size,height:size}}><span className="text-xs font-medium uppercase tracking-wide text-gray-400">No score</span></div>;
 const c=Math.max(0,Math.min(100,score)),st=Math.max(4,size*0.05),r=size/2-st-4,cir=2*Math.PI*r,o=cir-(c/100)*cir;
-const col=c>=75?'#2d5731':c>=50?'#6a7437':c>=25?'#4c6d4f':'#3d5740';
+const col=c>=75?'#322c66':c>=50?'#6252b3':c>=25?'#4f45ab':'#423a8c';
 const lbl=c>=75?'Critical':c>=50?'Elevated':c>=25?'Moderate':'Low';
 const fs=Math.max(11,size*0.22);
 return<div className="relative flex shrink-0 items-center justify-center" style={{width:size,height:size}}>

@@ -1,40 +1,40 @@
 /** @type {import('tailwindcss').Config} */
 
-// ── Mild-green design system ──────────────────────────────────────────────
-// The whole app is unified to one calm sage-green family. Instead of editing
-// dozens of pages, we remap every accent color token here so existing classes
-// like `bg-amber-500`, `text-blue-600`, `bg-purple-600`, etc. all resolve to
-// green shades automatically.
+// ── Deep-indigo design system ─────────────────────────────────────────────
+// The whole app is unified to one indigo / blue-violet family (inspired by the
+// deep indigo wall). Instead of editing dozens of pages, we remap every accent
+// color token here so existing classes like `bg-amber-500`, `text-blue-600`,
+// `bg-purple-600`, etc. all resolve to indigo shades automatically.
 
-// Primary / brand: fresh, lively green — bright but not neon.
-const sage = {
-  50: '#f0fbf4', 100: '#d7f4e0', 200: '#aee8c3', 300: '#78d69f',
-  400: '#43c078', 500: '#22a659', 600: '#159048', 700: '#14743d',
-  800: '#155c34', 900: '#134a2c', 950: '#062815',
+// Primary / brand: rich, vivid indigo (~the wall tone at 700).
+const indigo = {
+  50: '#f1f1fb', 100: '#e4e3f8', 200: '#cbc9f1', 300: '#a8a4e6',
+  400: '#837dd6', 500: '#635ac4', 600: '#4f45ab', 700: '#423a8c',
+  800: '#383172', 900: '#2f2a5d', 950: '#1d1a38',
 };
 
-// Neutral text/UI (replaces the blue-ish "navy"): a dark green-tinted gray so
-// headings and body copy stay calm and readable, not blue.
-const greenGray = {
-  50: '#f5f7f5', 100: '#e8ebe8', 200: '#d0d6d1', 300: '#aab4ab',
-  400: '#7d8b7f', 500: '#5c6b5e', 600: '#48544a', 700: '#3b453d',
-  800: '#313a33', 900: '#28312a', 950: '#181e19',
+// Neutral text/UI (replaces "navy"): a dark indigo-tinted gray so headings and
+// body copy stay in-family but remain calm and readable.
+const indigoGray = {
+  50: '#f5f5f8', 100: '#e9e8ef', 200: '#d1d0dd', 300: '#adaac1',
+  400: '#817d9e', 500: '#605c7a', 600: '#4b4762', 700: '#3d3a50',
+  800: '#333145', 900: '#2b2a3a', 950: '#181725',
 };
 
-// Warning tone: a brighter lime-leaning green so "review / caution" states
-// read slightly warmer without leaving the family.
-const olive = {
-  50: '#f6fbe8', 100: '#eaf5c8', 200: '#d6ec95', 300: '#bfdd5f',
-  400: '#a7c936', 500: '#8bad24', 600: '#6e8b1c', 700: '#54691c',
-  800: '#45541c', 900: '#3b471b', 950: '#1e2709',
+// Warning tone: a lighter, brighter periwinkle-violet so "review / caution"
+// states read a touch warmer without leaving the family.
+const periwinkle = {
+  50: '#f3f2fc', 100: '#e6e4f9', 200: '#d0ccf3', 300: '#b1a9ea',
+  400: '#9184de', 500: '#7768cf', 600: '#6252b3', 700: '#514391',
+  800: '#443a75', 900: '#3a3360', 950: '#221d3a',
 };
 
-// Alert / error tone: a slightly deeper, teal-leaning green so "failed /
-// danger" still reads as heavier — differentiated by depth, not by hue.
-const forest = {
-  50: '#ecfbf1', 100: '#cff4dd', 200: '#a2e8c1', 300: '#68d3a0',
-  400: '#38ba81', 500: '#1c9e68', 600: '#137e54', 700: '#136545',
-  800: '#135039', 900: '#114230', 950: '#04251a',
+// Alert / error tone: a deeper, darker indigo so "failed / danger" still reads
+// as heavier and more serious — differentiated by depth, not by hue.
+const deepIndigo = {
+  50: '#edecf5', 100: '#d5d3e9', 200: '#aeabd2', 300: '#837eb8',
+  400: '#5b549c', 500: '#3f387f', 600: '#322c66', 700: '#2a2553',
+  800: '#241f45', 900: '#1f1b3a', 950: '#100e20',
 };
 
 export default {
@@ -42,35 +42,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary green
-        brand: sage,
-        green: sage,
-        emerald: sage,
-        lime: sage,
-        teal: sage,
+        // Primary indigo
+        brand: indigo,
+        indigo: indigo,
+        violet: indigo,
+        purple: indigo,
+        blue: indigo,
+        sky: indigo,
+        cyan: indigo,
+        fuchsia: indigo,
+        pink: indigo,
+        // Former green tokens now also read as indigo
+        green: indigo,
+        emerald: indigo,
+        lime: indigo,
+        teal: indigo,
 
         // Neutral text/surfaces (formerly blue-navy)
-        navy: greenGray,
+        navy: indigoGray,
 
-        // Everything decorative / "info" → same calm green
-        blue: sage,
-        sky: sage,
-        cyan: sage,
-        indigo: sage,
-        violet: sage,
-        purple: sage,
-        fuchsia: sage,
-        pink: sage,
+        // Warnings → lighter periwinkle-violet
+        amber: periwinkle,
+        yellow: periwinkle,
+        orange: periwinkle,
 
-        // Warnings → warm olive-green
-        amber: olive,
-        yellow: olive,
-        orange: olive,
-
-        // Errors / danger → deep forest-green
-        red: forest,
-        rose: forest,
-        danger: forest,
+        // Errors / danger → deep indigo
+        red: deepIndigo,
+        rose: deepIndigo,
+        danger: deepIndigo,
       },
       fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
       animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'scale-in': 'scaleIn 0.2s ease-out' },

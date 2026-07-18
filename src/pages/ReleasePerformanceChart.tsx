@@ -213,9 +213,9 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
               <YAxis tick={{fontSize:11,fill:'#9ca3af'}} axisLine={false} tickLine={false} allowDecimals={false}/>
               <Tooltip content={<CustomTooltip/>}/>
               <Legend iconSize={10} iconType="circle" wrapperStyle={{fontSize:11}}/>
-              <Bar dataKey="passed" name="Passed" fill="#4c6d4f" stackId="a" radius={[0,0,0,0]}/>
-              <Bar dataKey="blocked" name="Blocked" fill="#6a7437" stackId="a"/>
-              <Bar dataKey="failed" name="Failed" fill="#2d5731" stackId="a"/>
+              <Bar dataKey="passed" name="Passed" fill="#4f45ab" stackId="a" radius={[0,0,0,0]}/>
+              <Bar dataKey="blocked" name="Blocked" fill="#6252b3" stackId="a"/>
+              <Bar dataKey="failed" name="Failed" fill="#322c66" stackId="a"/>
               <Bar dataKey="rolledBack" name="Rolled Back" fill="#a855f7" stackId="a" radius={[3,3,0,0]}/>
             </BarChart>
           ):(
@@ -225,9 +225,9 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
               <YAxis tick={{fontSize:11,fill:'#9ca3af'}} axisLine={false} tickLine={false} allowDecimals={false}/>
               <Tooltip content={<CustomTooltip/>}/>
               <Legend iconSize={10} iconType="circle" wrapperStyle={{fontSize:11}}/>
-              <Line dataKey="passed" name="Passed" stroke="#4c6d4f" strokeWidth={2} dot={{r:3}} activeDot={{r:5}}/>
-              <Line dataKey="blocked" name="Blocked" stroke="#6a7437" strokeWidth={2} dot={{r:3}}/>
-              <Line dataKey="failed" name="Failed" stroke="#2d5731" strokeWidth={2} dot={{r:3}}/>
+              <Line dataKey="passed" name="Passed" stroke="#4f45ab" strokeWidth={2} dot={{r:3}} activeDot={{r:5}}/>
+              <Line dataKey="blocked" name="Blocked" stroke="#6252b3" strokeWidth={2} dot={{r:3}}/>
+              <Line dataKey="failed" name="Failed" stroke="#322c66" strokeWidth={2} dot={{r:3}}/>
               <Line dataKey="successRate" name="Success Rate %" stroke="#6366f1" strokeWidth={2} dot={{r:3}} strokeDasharray="4 2"/>
             </LineChart>
           )}

@@ -526,7 +526,7 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
         </div>
 
         {/* Status bar */}
-        <div className="flex items-center gap-3 px-4 py-1 bg-[#2d8a2d] text-white text-[11px] shrink-0">
+        <div className="flex items-center gap-3 px-4 py-1 bg-[#423a8c] text-white text-[11px] shrink-0">
           <GitBranch size={11}/><span>{project.git_branch||'main'}</span>
           {selected&&<><span className="text-green-300 opacity-60">·</span><span className="text-green-100 opacity-90">{selected}</span></>}
           <span className="text-green-300 opacity-60">·</span>

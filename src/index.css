@@ -24,8 +24,8 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --brand: #2d8a2d;
-  --brand-light: #f0faf0;
+  --brand: #423a8c;
+  --brand-light: #f1f1fb;
 }
 
 .dark {
@@ -37,8 +37,8 @@
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
-  --brand: #5bb85b;
-  --brand-light: #1a2e1a;
+  --brand: #837dd6;
+  --brand-light: #1d1a38;
 }
 
 .dark body {
@@ -66,7 +66,7 @@
   color: var(--text-primary);
 }
 .dark .input::placeholder { color: var(--text-muted); }
-.dark .input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(98,133,101,0.20); }
+.dark .input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(131,125,214,0.22); }
 
 /* Labels */
 .dark .label { color: var(--text-secondary); }
