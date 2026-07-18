@@ -23,7 +23,56 @@ const[error,setError]=useState('');
 const[workspaces,setWorkspaces]=useState<{id:string;name:string}[]>([]);
 const[selectedWs,setSelectedWs]=useState(localStorage.getItem('sandbox.activeWs')||'');
 
+// ── GitHub import ──────────────────────────────────────────────
+const[importing,setImporting]=useState(false);
+const[ghToken,setGhToken]=useState('');
+const[ghConnecting,setGhConnecting]=useState(false);
+const[ghError,setGhError]=useState('');
+const[ghUser,setGhUser]=useState<any>(null);
+const[repos,setRepos]=useState<any[]>([]);
+const[repoSearch,setRepoSearch]=useState('');
+const[importingId,setImportingId]=useState<number|string>('');
+
 const wsId=()=>selectedWs||localStorage.getItem('sandbox.activeWs')||'';
+
+const connectGithub=async()=>{
+  if(!ghToken.trim()){setGhError('Please paste a GitHub token first.');return;}
+  setGhConnecting(true);setGhError('');
+  try{
+    const h={Authorization:'Bearer '+ghToken.trim(),Accept:'application/vnd.github+json'};
+    const ur=await fetch('https://api.github.com/user',{headers:h});
+    if(!ur.ok)throw new Error(ur.status===401?'That token is invalid or expired.':'GitHub returned '+ur.status);
+    const user=await ur.json();
+    const rr=await fetch('https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member',{headers:h});
+    if(!rr.ok)throw new Error('Connected, but could not load your repositories.');
+    const list=await rr.json();
+    setGhUser(user);setRepos(Array.isArray(list)?list:[]);
+  }catch(e:any){setGhError(e?.message||'Failed to connect to GitHub.');}
+  finally{setGhConnecting(false);}
+};
+
+const importRepo=async(repo:any)=>{
+  const wid=wsId();
+  if(!wid){setGhError('Select a workspace first (create one under Workspaces).');return;}
+  if(projects.find(p=>p.name.trim().toLowerCase()===String(repo.name).toLowerCase())){setGhError(`A project named "${repo.name}" already exists in this workspace.`);return;}
+  setImportingId(repo.id);setGhError('');
+  const{data,error}=await supabase.from('projects').insert({
+    workspace_id:wid,
+    name:repo.name,
+    description:repo.description||null,
+    git_url:repo.clone_url||repo.html_url,
+    git_branch:repo.default_branch||'main',
+    repo_folder:'',
+    github_token:repo.private?ghToken.trim():null,
+    language:repo.language||null,
+    status:'active',
+  }).select().single();
+  if(error){setGhError(error.message);setImportingId('');return;}
+  setProjects(prev=>[data,...prev]);
+  navigate(`/projects/${data.id}`);
+};
+
+const resetImport=()=>{setImporting(false);setGhToken('');setGhError('');setGhUser(null);setRepos([]);setRepoSearch('');setImportingId('');};
 
 const load=async()=>{
   setLoading(true);
@@ -86,7 +135,10 @@ if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/>
 
 return<div>
 <PageHeader title="Projects" description="Manage your validation projects." actions={
+<div className="flex items-center gap-2">
+<button onClick={()=>setImporting(true)} className="btn-secondary"><Github size={16}/> Import from GitHub</button>
 <button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button>
+</div>
 }/>
 
 {projects.length===0
@@ -107,6 +159,55 @@ return<div>
 </Link>
 ))}
 </div>}
+
+{importing&&(
+<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={resetImport}>
+<div className="w-full max-w-lg animate-scale-in rounded-xl bg-white p-5 shadow-xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
+<div className="mb-1 flex items-center justify-between"><h2 className="text-lg font-semibold flex items-center gap-2"><Github size={18}/>Import from GitHub</h2><button onClick={resetImport} className="btn-ghost p-1"><X size={16}/></button></div>
+<p className="text-sm text-gray-500 mb-4">Connect your GitHub account and import a repository as a project — no manual setup.</p>
+{ghError&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{ghError}</div>}
+
+{!ghUser?(
+  <>
+    <label className="label">GitHub Personal Access Token</label>
+    <input className="input mb-1" type="password" value={ghToken} onChange={e=>{setGhToken(e.target.value);setGhError('');}} placeholder="ghp_xxxxxxxxxxxx" onKeyDown={e=>{if(e.key==='Enter')connectGithub();}}/>
+    <p className="text-xs text-gray-400 mb-4">Use a token with <span className="font-medium">repo</span> (or fine-grained Contents) access. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Lythouse" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create one on GitHub →</a></p>
+    <div className="flex justify-end gap-2">
+      <button onClick={resetImport} className="btn-secondary">Cancel</button>
+      <button onClick={connectGithub} disabled={ghConnecting||!ghToken.trim()} className="btn-primary">{ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Connect GitHub</button>
+    </div>
+  </>
+):(
+  <>
+    <div className="mb-3 flex items-center justify-between rounded-lg bg-brand-50 border border-brand-200 px-3 py-2">
+      <span className="text-sm text-brand-700 flex items-center gap-2">{ghUser.avatar_url&&<img src={ghUser.avatar_url} alt="" className="w-5 h-5 rounded-full"/>}Connected as <span className="font-semibold">@{ghUser.login}</span></span>
+      <button onClick={()=>{setGhUser(null);setRepos([]);setRepoSearch('');}} className="text-xs text-gray-500 hover:text-gray-700 underline">Switch</button>
+    </div>
+    <input className="input mb-3" value={repoSearch} onChange={e=>setRepoSearch(e.target.value)} placeholder="Search your repositories…"/>
+    <div className="space-y-1.5 max-h-[46vh] overflow-y-auto -mx-1 px-1">
+      {repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).map(r=>(
+        <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-navy-900 truncate">{r.name}</span>
+              <span className={`chip text-[10px] ${r.private?'bg-amber-50 text-amber-700 border border-amber-200':'bg-gray-100 text-gray-500 border border-gray-200'}`}>{r.private?'private':'public'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+              <span className="truncate">{r.full_name}</span>
+              {r.language&&<span className="shrink-0">· {r.language}</span>}
+            </div>
+          </div>
+          <button onClick={()=>importRepo(r)} disabled={!!importingId} className="btn-primary text-xs shrink-0">{importingId===r.id?<Loader2 size={13} className="animate-spin"/>:<Plus size={13}/>} Import</button>
+        </div>
+      ))}
+      {repos.length===0&&<p className="text-sm text-gray-400 py-6 text-center">No repositories found for this account.</p>}
+      {repos.length>0&&repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).length===0&&<p className="text-sm text-gray-400 py-6 text-center">No repositories match "{repoSearch}".</p>}
+    </div>
+  </>
+)}
+</div>
+</div>
+)}
 
 {creating&&(
 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={resetForm}>
