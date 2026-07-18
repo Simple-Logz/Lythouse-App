@@ -24,12 +24,12 @@ function timeAgo(iso:string):string{
 type Stage='changes'|'validation'|'remediation'|'approvals'|'deployment'|'verification';
 
 const STAGES:{id:Stage;label:string;sub:string;icon:typeof Shield}[]=[
-  {id:'changes',label:'Understand',sub:'What changed',icon:GitBranch},
-  {id:'validation',label:'Assess',sub:'Is it safe?',icon:Shield},
-  {id:'remediation',label:'Resolve',sub:'Fix blockers',icon:Zap},
-  {id:'approvals',label:'Approve',sub:'Sign-off',icon:Users},
-  {id:'deployment',label:'Deploy',sub:'Ship it',icon:Play},
-  {id:'verification',label:'Monitor',sub:'Verify live',icon:CheckCircle2},
+  {id:'changes',label:'Discovery',sub:'What changed',icon:GitBranch},
+  {id:'validation',label:'Validation',sub:'Is it safe?',icon:Shield},
+  {id:'remediation',label:'Remediation',sub:'Fix blockers',icon:Zap},
+  {id:'approvals',label:'Governance',sub:'Sign-off',icon:Users},
+  {id:'deployment',label:'Deployment',sub:'Ship it',icon:Play},
+  {id:'verification',label:'Observability',sub:'Verify live',icon:CheckCircle2},
 ];
 
 function toBiz(sev:string){
@@ -294,39 +294,98 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               :needsAttention>0?{label:'Review findings',go:()=>setStage('validation')}
               :{label:'Request approval',go:()=>setStage('approvals')};
             // ── Change areas (from real finding categories) ───────────────
+            const areaRisk=(fs)=>fs.some(f=>f.severity==='critical'||f.severity==='high')?{t:'HIGH RISK',c:'text-red-600',bg:'bg-red-50 border-red-200'}
+              :fs.some(f=>f.severity==='medium')?{t:'MEDIUM',c:'text-amber-600',bg:'bg-amber-50 border-amber-200'}
+              :fs.length>0?{t:'LOW RISK',c:'text-brand-700',bg:'bg-brand-50 border-brand-200'}
+              :{t:'SAFE',c:'text-green-600',bg:'bg-green-50 border-green-200'};
             const AREAS=[
               {key:'Code',icon:Code2,match:/code|logic|quality|lint|test|style/i},
               {key:'Infrastructure',icon:Server,match:/infra|terraform|k8s|kubernet|network|cloud|config/i},
               {key:'Dependencies',icon:Package,match:/depend|package|librar|cve|vuln/i},
               {key:'Containers',icon:Layers,match:/container|docker|image/i},
               {key:'Secrets',icon:Lock,match:/secret|credential|password|token|env/i},
-            ].map(a=>({...a,count:open.filter(f=>a.match.test(f.category||'')).length}));
+            ].map(a=>{const fs=open.filter(f=>a.match.test(f.category||''));return{...a,count:fs.length,risk:areaRisk(fs)};});
             const overallRisk=isBlocked?{t:'HIGH',c:'text-red-600'}:needsAttention>0?{t:'MEDIUM',c:'text-amber-600'}:{t:'LOW',c:'text-green-600'};
+            const secretsArea=AREAS.find(a=>a.key==='Secrets'); const infraArea=AREAS.find(a=>a.key==='Infrastructure');
+            // ── Decision: recommendation + status checklist ───────────────
+            const anyApproved=approvals.some(a=>a.status==='approved');
+            const cleanReady=validations.length>0&&!isBlocked&&needsAttention===0&&readiness!==null&&readiness>=80;
+            const decision=validations.length===0?{text:'NOT ASSESSED',tone:'gray'}
+              :isBlocked?{text:'DO NOT DEPLOY',tone:'red'}
+              :needsAttention>0?{text:'REVIEW REQUIRED',tone:'amber'}
+              :cleanReady&&anyApproved?{text:'APPROVED',tone:'green'}
+              :cleanReady?{text:'READY FOR APPROVAL',tone:'green'}
+              :{text:'REVIEW REQUIRED',tone:'amber'};
+            const dTone={red:'text-red-600',amber:'text-amber-600',green:'text-green-600',gray:'text-gray-400'}[decision.tone];
+            const dBg={red:'bg-red-50 border-red-200',amber:'bg-amber-50 border-amber-200',green:'bg-green-50 border-green-200',gray:'bg-gray-50 border-gray-200'}[decision.tone];
+            const checklist=[
+              {label:'Validation Passed',ok:validations.length>0&&latest?.status==='completed'&&!isBlocked},
+              {label:'Infrastructure Healthy',ok:infraArea?.count===0},
+              {label:'No Deployment Blockers',ok:blockers===0},
+              {label:'Secrets Verified',ok:secretsArea?.count===0},
+            ];
+            const pendingLabel=validations.length===0?'Run AI Release Review':blockers>0?'Blocker resolution':needsAttention>0?'Findings review':!anyApproved?'Security approval':null;
+            // ── Giant next action ─────────────────────────────────────────
+            const nextAction=validations.length===0?{title:'Run AI Release Review',time:'~2 min',cta:'Start Validation',go:()=>{runValidation();setStage('validation');}}
+              :blockers>0?{title:`Resolve ${critical[0]?.title||'deployment blocker'}`,time:`~${estFixMin||6} min`,cta:'Generate AI Fix',go:()=>setStage('remediation')}
+              :needsAttention>0?{title:'Review flagged findings',time:`~${estFixMin||4} min`,cta:'Review Findings',go:()=>setStage('validation')}
+              :!anyApproved?{title:'Request Security Approval',time:'~4 min',cta:'Request Approval',go:()=>{if(approvals.length===0)createRelease();setStage('approvals');}}
+              :{title:'Deploy to Production',time:'~3 min',cta:'Deploy',go:()=>setStage('deployment')};
+            const watching=connected.map(c=>c.name||c.type).filter(Boolean).slice(0,3);
 
             return(
             <div className="space-y-5">
 
-              {/* ── HERO: AI Release Assessment ──────────────────────────── */}
-              <div className={`card border ${toneBg}`}>
-                <div className="flex items-start justify-between gap-6 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Assessment</p>
-                    <div className="flex items-end gap-4">
-                      {readiness!==null&&<div className="shrink-0"><div className={`text-5xl font-bold ${toneCls}`}>{readiness}%</div><div className="text-xs text-gray-500 mt-0.5">confidence</div></div>}
-                      <div className="min-w-0">
-                        <div className={`text-2xl font-bold ${toneCls}`}>{verdict.text}</div>
-                        {topReason&&<p className="text-sm text-gray-600 mt-1 leading-relaxed">{topReason}</p>}
-                      </div>
+              {/* ── Live status strip ────────────────────────────────────── */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                {running?(
+                  <span className="inline-flex items-center gap-1.5 font-medium text-brand-700"><Loader2 size={12} className="animate-spin"/>Validation running… recalculating readiness</span>
+                ):(
+                  <span className="inline-flex items-center gap-1.5 font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>Continuously monitoring</span>
+                )}
+                {watching.length>0&&<span className="text-gray-500">Watching {watching.join(' · ')}</span>}
+                {latest&&<span className="text-gray-400">Last checked {timeAgo(latest.created_at)}</span>}
+              </div>
+
+              {/* ── HERO: AI Release Decision ────────────────────────────── */}
+              <div className={`card border ${dBg}`}>
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Decision</p>
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  {/* Left: recommendation + confidence */}
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400 mb-1">Recommendation</div>
+                    <div className={`text-3xl font-bold ${dTone}`}>{decision.text}</div>
+                    <div className="mt-3 flex items-end gap-2">
+                      {readiness!==null&&<span className={`text-4xl font-bold ${dTone}`}>{readiness}%</span>}
+                      <span className="text-xs text-gray-500 mb-1.5">confidence</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-sm">
-                      <span className="text-gray-600"><span className={`font-bold ${blockers>0?'text-red-600':'text-green-600'}`}>{blockers}</span> blocker{blockers===1?'':'s'}</span>
-                      {estFixMin>0&&<span className="text-gray-600">Est. fix <span className="font-bold text-navy-900">~{estFixMin} min</span></span>}
-                      <span className="text-gray-600">Next: <span className="font-semibold text-brand-700">{nextStep.label}</span></span>
-                    </div>
+                    {topReason&&<p className="text-sm text-gray-600 mt-2 leading-relaxed">{topReason}</p>}
                   </div>
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <button onClick={nextStep.go} className="btn-primary"><Shield size={14}/>{nextStep.label}</button>
-                    <button onClick={getAdvisor} className="btn-secondary text-xs"><Sparkles size={12}/>Ask the AI advisor</button>
+                  {/* Right: status checklist */}
+                  <div className="lg:border-l lg:border-gray-200 lg:pl-6">
+                    <div className="text-xs uppercase tracking-wide text-gray-400 mb-2">Current Status</div>
+                    <ul className="space-y-1.5">
+                      {checklist.map(c=>(
+                        <li key={c.label} className="flex items-center gap-2 text-sm">
+                          {c.ok?<CheckCircle2 size={15} className="text-green-500 shrink-0"/>:<AlertTriangle size={15} className="text-amber-500 shrink-0"/>}
+                          <span className={c.ok?'text-navy-800':'text-gray-500'}>{c.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {pendingLabel&&<div className="mt-3 text-xs"><span className="text-gray-400 uppercase tracking-wide">Pending</span> <span className="font-medium text-amber-700">{pendingLabel}</span></div>}
+                  </div>
+                </div>
+
+                {/* Giant Next Action */}
+                <div className="mt-5 pt-5 border-t border-gray-200/70 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400 mb-0.5">Next Action</div>
+                    <div className="text-lg font-bold text-navy-900">{nextAction.title}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Estimated time <span className="font-semibold text-navy-800">{nextAction.time}</span></div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={getAdvisor} className="btn-secondary text-sm"><Sparkles size={13}/>Ask AI</button>
+                    <button onClick={nextAction.go} className="btn-primary text-sm"><ArrowRight size={14}/>{nextAction.cta}</button>
                   </div>
                 </div>
               </div>
@@ -350,6 +409,36 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 </div>
               ):(
                 <>
+                  {/* ── CHANGE INTELLIGENCE ──────────────────────────────── */}
+                  <div>
+                    <h3 className="text-base font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><Sparkles size={14} className="text-brand-600"/>Change Intelligence</h3>
+                    <div className="card">
+                      <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+                        <div><div className="text-xs uppercase tracking-wide text-gray-400">Risk</div><div className={`text-2xl font-bold ${overallRisk.c}`}>{overallRisk.t}</div></div>
+                        {readiness!==null&&<div><div className="text-xs uppercase tracking-wide text-gray-400">Confidence</div><div className="text-2xl font-bold text-navy-900">{readiness}%</div></div>}
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          <li className="flex items-center gap-1.5"><Check size={13} className="text-green-500"/>{latest?.total_findings??0} findings analyzed</li>
+                          <li className="flex items-center gap-1.5"><Check size={13} className="text-green-500"/>{infraArea?.count||0} infrastructure item{infraArea?.count===1?'':'s'} flagged</li>
+                          <li className="flex items-center gap-1.5">{secretsArea?.count?<AlertTriangle size={13} className="text-amber-500"/>:<Check size={13} className="text-green-500"/>}{secretsArea?.count?`${secretsArea.count} secret issue${secretsArea.count===1?'':'s'} detected`:'No risky secrets detected'}</li>
+                        </ul>
+                      </div>
+                      {/* Area cards with a good/bad verdict each */}
+                      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mt-4">
+                        {AREAS.map(a=>(
+                          <div key={a.key} className={`rounded-xl border p-3 ${a.risk.bg}`}>
+                            <div className="flex items-center justify-between">
+                              <a.icon size={16} className="text-navy-500"/>
+                              <span className="text-lg font-bold text-navy-900">{a.count}</span>
+                            </div>
+                            <div className="text-xs font-medium text-navy-800 mt-1.5">{a.key}</div>
+                            <div className={`text-[11px] font-bold ${a.risk.c}`}>{a.risk.t}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-3">Per-area verdicts come from the findings the AI flagged. Commit- and package-level change detail connects once a Git provider is linked.</p>
+                    </div>
+                  </div>
+
                   {/* ── AI FINDINGS — what actually matters ─────────────── */}
                   <div>
                     <h3 className="text-base font-semibold text-navy-900 mb-2">AI Findings</h3>
@@ -366,25 +455,6 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                         </button>
                       ))}
                     </div>
-                  </div>
-
-                  {/* ── WHAT CHANGED — by area, not folders ──────────────── */}
-                  <div>
-                    <div className="flex items-baseline justify-between mb-2">
-                      <h3 className="text-base font-semibold text-navy-900">What Changed Since Last Release</h3>
-                      <span className="text-xs text-gray-500">Overall change risk <span className={`font-bold ${overallRisk.c}`}>{overallRisk.t}</span></span>
-                    </div>
-                    {latest?.summary&&<p className="text-sm text-gray-600 mb-3 leading-relaxed">{latest.summary}</p>}
-                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                      {AREAS.map(a=>(
-                        <div key={a.key} className="card py-4">
-                          <a.icon size={18} className="text-brand-600 mb-2"/>
-                          <div className="text-lg font-bold text-navy-900">{a.count}</div>
-                          <div className="text-xs text-gray-500">{a.key}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-2">Counts reflect findings the AI flagged in each area. Commit-level change details connect once a Git provider is linked.</p>
                   </div>
 
                   {/* ── Repository Files — supporting tool, collapsed ────── */}
