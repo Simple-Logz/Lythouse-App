@@ -13,6 +13,7 @@ import{
 }from'lucide-react';
 import{CodeEditorPanel}from'./CodeEditorPanel';
 import{FileExplorer}from'./FileExplorer';
+import{TopologyView}from'./TopologyView';
 
 function timeAgo(iso:string):string{
   const ms=Date.now()-new Date(iso).getTime();
@@ -284,31 +285,42 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                   <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary"><Shield size={14}/>Run Validation</button>
                 </div>
               ):(
-                <div className="space-y-3">
-                  {/* Summary from latest scan */}
-                  {latest?.summary&&(
-                    <div className="card border-brand-200 bg-brand-50">
-                      <p className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-1 flex items-center gap-1.5"><Sparkles size={11}/>AI Change Summary</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{latest.summary}</p>
-                    </div>
-                  )}
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      {label:'Files Scanned',value:latest?.total_findings!==undefined?`${latest.total_findings} issues found`:'—',icon:FileCode,color:'text-brand-600'},
-                      {label:'Validation Status',value:latest?.status||'Never scanned',icon:Shield,color:latest?.status==='completed'?'text-green-600':'text-amber-600'},
-                      {label:'Risk Score',value:riskScore!==null?`${riskScore}/100`:'—',icon:BarChart3,color:riskScore!==null&&riskScore<40?'text-green-600':riskScore!==null&&riskScore<70?'text-amber-600':'text-red-600'},
-                    ].map(s=>(
-                      <div key={s.label} className="card text-center py-4">
-                        <s.icon size={20} className={`mx-auto mb-2 ${s.color}`}/>
-                        <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+                <div className="space-y-4">
+                  {/* Top row — summary/metrics on the left, topology top-right */}
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="space-y-3">
+                      {/* Summary from latest scan */}
+                      {latest?.summary&&(
+                        <div className="card border-brand-200 bg-brand-50">
+                          <p className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-1 flex items-center gap-1.5"><Sparkles size={11}/>AI Change Summary</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{latest.summary}</p>
+                        </div>
+                      )}
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                          {label:'Files Scanned',value:latest?.total_findings!==undefined?`${latest.total_findings} issues found`:'—',icon:FileCode,color:'text-brand-600'},
+                          {label:'Validation Status',value:latest?.status||'Never scanned',icon:Shield,color:latest?.status==='completed'?'text-green-600':'text-amber-600'},
+                          {label:'Risk Score',value:riskScore!==null?`${riskScore}/100`:'—',icon:BarChart3,color:riskScore!==null&&riskScore<40?'text-green-600':riskScore!==null&&riskScore<70?'text-amber-600':'text-red-600'},
+                        ].map(s=>(
+                          <div key={s.label} className="card text-center py-4">
+                            <s.icon size={20} className={`mx-auto mb-2 ${s.color}`}/>
+                            <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                    {/* Topology — top right */}
+                    <TopologyView projectId={projectId} project={project} compact onOpenFile={(p)=>{setEditorPath(p);setEditorOpen(true);}}/>
                   </div>
-                  {/* File browser */}
-                  <div className="card">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-navy-900">Repository Files</h3>
+
+                  {/* File browser — expanded, full width */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-base font-semibold text-navy-900">Repository Files</h3>
+                        <p className="text-xs text-gray-500">Browse and edit any file in this repository.</p>
+                      </div>
                       <button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button>
                     </div>
                     <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>

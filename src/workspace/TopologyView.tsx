@@ -4,7 +4,7 @@ import { Spinner, EmptyState } from '../lib/ui';
 import { Network, FileCode, Database, Cloud, Server, Box, Globe, Layers, Shield, Zap, ChevronRight, TriangleAlert as AlertTriangle } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-type Props = { projectId: string; project: Project; onOpenFile: (path: string) => void };
+type Props = { projectId: string; project: Project; onOpenFile: (path: string) => void; compact?: boolean };
 
 type TopoNode = {
   id: string;
@@ -57,7 +57,7 @@ function detectStack(files: RepoFile[]): string[] {
   return stack;
 }
 
-export function TopologyView({ projectId, project, onOpenFile }: Props) {
+export function TopologyView({ projectId, project, onOpenFile, compact = false }: Props) {
   const [files, setFiles] = useState<RepoFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,77 +85,113 @@ export function TopologyView({ projectId, project, onOpenFile }: Props) {
   if (error) return <EmptyState icon={<AlertTriangle size={28} />} title="Unable to load topology" description={error} action={<button className="btn-ghost" onClick={fetchFiles}>Retry</button>} />;
   if (!files.length) return <EmptyState icon={<Network size={28} />} title="No files to analyze" description="Once this repository has files, an inferred topology diagram will appear here." />;
 
-  return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
-      <div className="card p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-navy-900">Inferred Topology</h3>
-            <p className="text-xs text-gray-500">Auto-generated from the repository file structure of <span className="font-medium text-gray-700">{project.name}</span>.</p>
-          </div>
-          {stack.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {stack.map((s) => <span key={s} className="chip bg-gray-100 text-gray-600 border border-gray-200">{s}</span>)}
-            </div>
-          )}
+  const header = (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700"><Network size={16} /></span>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-navy-900">Inferred Topology</h3>
+          <p className="truncate text-xs text-gray-500">Auto-generated from <span className="font-medium text-gray-700">{project.name}</span>.</p>
         </div>
-        <svg width="850" height="580" className="w-full" style={{ maxHeight: 580 }}>
-          {EDGES.map(([a, b]) => {
-            const pa = NODES.find((n) => n.id === a)!; const pb = NODES.find((n) => n.id === b)!;
-            const x1 = pa.x + NODE_W / 2, y1 = pa.y + NODE_H;
-            const x2 = pb.x + NODE_W / 2, y2 = pb.y;
-            return <line key={a + '-' + b} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="5 4" />;
-          })}
-          {NODES.map((n) => {
-            const active = n.id === selected;
-            const count = relatedFiles(n).length;
-            return (
-              <foreignObject key={n.id} x={n.x} y={n.y} width={NODE_W} height={NODE_H}>
-                <button
-                  onClick={() => setSelected(active ? null : n.id)}
-                  className={`flex h-full w-full items-center gap-2 rounded-xl border px-3 text-left transition ${active ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'}`}
-                >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-600'}`}>{n.icon}</span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-xs font-semibold text-navy-900">{n.label}</span>
-                    <span className="block text-[10px] text-gray-500">{count} file{count === 1 ? '' : 's'}</span>
-                  </span>
-                </button>
-              </foreignObject>
-            );
-          })}
-        </svg>
       </div>
+      {stack.length > 0 && (
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {stack.map((s) => <span key={s} className="chip bg-gray-100 text-gray-600 border border-gray-200">{s}</span>)}
+        </div>
+      )}
+    </div>
+  );
 
+  const diagram = (
+    <svg viewBox="0 0 850 580" className="w-full" style={{ maxHeight: compact ? 360 : 580 }}>
+      {EDGES.map(([a, b]) => {
+        const pa = NODES.find((n) => n.id === a)!; const pb = NODES.find((n) => n.id === b)!;
+        const x1 = pa.x + NODE_W / 2, y1 = pa.y + NODE_H;
+        const x2 = pb.x + NODE_W / 2, y2 = pb.y;
+        return <line key={a + '-' + b} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="5 4" />;
+      })}
+      {NODES.map((n) => {
+        const active = n.id === selected;
+        const count = relatedFiles(n).length;
+        return (
+          <foreignObject key={n.id} x={n.x} y={n.y} width={NODE_W} height={NODE_H}>
+            <button
+              onClick={() => setSelected(active ? null : n.id)}
+              className={`flex h-full w-full items-center gap-2 rounded-xl border px-3 text-left transition ${active ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'}`}
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-600'}`}>{n.icon}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-semibold text-navy-900">{n.label}</span>
+                <span className="block text-[10px] text-gray-500">{count} file{count === 1 ? '' : 's'}</span>
+              </span>
+            </button>
+          </foreignObject>
+        );
+      })}
+    </svg>
+  );
+
+  const detailBody = sel ? (
+    <>
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700">{sel.icon}</span>
+        <h3 className="text-sm font-semibold text-navy-900">{sel.label}</h3>
+      </div>
+      <p className="mb-3 text-xs leading-relaxed text-gray-600">{sel.detail}</p>
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Related files</div>
+      <ul className="space-y-1">
+        {relatedFiles(sel).slice(0, 30).map((f) => (
+          <li key={f.path}>
+            <button onClick={() => onOpenFile(f.path)} className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left rounded-lg hover:bg-brand-50 hover:text-brand-700 transition-colors group">
+              <ChevronRight size={12} className="shrink-0 text-gray-400" />
+              <span className="truncate font-mono text-[11px] text-gray-700">{f.path}</span>
+            </button>
+          </li>
+        ))}
+        {relatedFiles(sel).length === 0 && <li className="px-2 py-1.5 text-xs text-gray-400">No matching files detected.</li>}
+      </ul>
+    </>
+  ) : (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200 text-gray-400"><Network size={22} /></div>
+      <h3 className="text-sm font-semibold text-navy-900">Select a node</h3>
+      <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-gray-500">Click any node in the diagram to inspect its role and the repository files that back it.</p>
+    </div>
+  );
+
+  // Compact mode: a single self-contained card that fits a narrow column
+  // (e.g. top-right of the Changes view). Selected-node detail shows inline
+  // below the diagram instead of in a separate side panel.
+  if (compact) {
+    return (
       <div className="card p-4">
-        {sel ? (
-          <>
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700">{sel.icon}</span>
-              <h3 className="text-sm font-semibold text-navy-900">{sel.label}</h3>
+        {header}
+        {diagram}
+        {sel && (
+          <div className="mt-3 border-t border-gray-100 pt-3">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-100 text-brand-700">{sel.icon}</span>
+              <h4 className="text-xs font-semibold text-navy-900">{sel.label}</h4>
             </div>
-            <p className="mb-3 text-xs leading-relaxed text-gray-600">{sel.detail}</p>
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Related files</div>
-            <ul className="space-y-1">
-              {relatedFiles(sel).slice(0, 30).map((f) => (
-                <li key={f.path}>
-                  <button onClick={() => onOpenFile(f.path)} className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left rounded-lg hover:bg-brand-50 hover:text-brand-700 transition-colors group">
-                    <ChevronRight size={12} className="shrink-0 text-gray-400" />
-                    <span className="truncate font-mono text-[11px] text-gray-700">{f.path}</span>
-                  </button>
-                </li>
+            <p className="mb-2 text-[11px] leading-relaxed text-gray-600">{sel.detail}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {relatedFiles(sel).slice(0, 8).map((f) => (
+                <button key={f.path} onClick={() => onOpenFile(f.path)} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 font-mono text-[10px] text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition-colors">
+                  <FileCode size={10} className="shrink-0" />{f.path.split('/').pop()}
+                </button>
               ))}
-              {relatedFiles(sel).length === 0 && <li className="px-2 py-1.5 text-xs text-gray-400">No matching files detected.</li>}
-            </ul>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200 text-gray-400"><Network size={22} /></div>
-            <h3 className="text-sm font-semibold text-navy-900">Select a node</h3>
-            <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-gray-500">Click any node in the diagram to inspect its role and the repository files that back it.</p>
+              {relatedFiles(sel).length === 0 && <span className="text-[11px] text-gray-400">No matching files detected.</span>}
+            </div>
           </div>
         )}
       </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
+      <div className="card p-4">{header}{diagram}</div>
+      <div className="card p-4">{detailBody}</div>
     </div>
   );
 }

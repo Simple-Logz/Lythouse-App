@@ -71,15 +71,15 @@ export function FileExplorer({ projectId, openFilePath, highlightLine, onHighlig
   }, [openFilePath]);
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(300px,360px)_1fr]">
       {/* File tree */}
-      <div className="card lg:col-span-1 flex flex-col" style={{ maxHeight: '70vh' }}>
+      <div className="card lg:col-span-1 flex flex-col" style={{ minHeight: 520, maxHeight: '80vh' }}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-navy-900">Repository Files</h3>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Files</span>
           <div className="flex items-center gap-1">
-            <button onClick={fetchFiles} title="Refresh" className="btn-ghost !px-2 !py-1.5"><RefreshCw size={14} /></button>
-            <button onClick={() => setModal('file')} title="New File" className="btn-ghost !px-2 !py-1.5"><FilePlus size={14} /></button>
-            <button onClick={() => setModal('folder')} title="New Folder" className="btn-ghost !px-2 !py-1.5"><FolderPlus size={14} /></button>
+            <button onClick={fetchFiles} title="Refresh" className="btn-ghost !px-2 !py-1.5"><RefreshCw size={15} /></button>
+            <button onClick={() => setModal('file')} title="New File" className="btn-ghost !px-2 !py-1.5"><FilePlus size={15} /></button>
+            <button onClick={() => setModal('folder')} title="New Folder" className="btn-ghost !px-2 !py-1.5"><FolderPlus size={15} /></button>
           </div>
         </div>
         {error && <div className="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-danger-600"><AlertTriangle size={13} />{error}</div>}
@@ -96,11 +96,11 @@ export function FileExplorer({ projectId, openFilePath, highlightLine, onHighlig
       </div>
 
       {/* Viewer / editor */}
-      <div className="lg:col-span-2">
+      <div className="min-w-0">
         {selected ? (
           <FileViewer projectId={projectId} path={selected} highlightLine={highlightLine} onHighlightConsumed={onHighlightConsumed} onDelete={setDeletePath} onSaved={fetchFiles} />
         ) : (
-          <div className="card flex h-full min-h-[300px] items-center justify-center">
+          <div className="card flex h-full min-h-[520px] items-center justify-center">
             <EmptyState icon={<FileIcon size={22} />} title="Select a file" description="Choose a file from the tree to view or edit its contents." />
           </div>
         )}
@@ -119,14 +119,14 @@ function TreeList({ node, depth, expanded, selected, onToggle, onSelect, onDelet
 }) {
   const entries = [...node.children.values()].sort((a, b) => a.type === b.type ? a.name.localeCompare(b.name) : a.type === 'dir' ? -1 : 1);
   return (
-    <ul className="space-y-0.5">
+    <ul className="space-y-1">
       {entries.map(n => {
         const isOpen = expanded.has(n.path);
         const isSel = selected === n.path;
-        const pad = { paddingLeft: depth * 14 + 8 };
+        const pad = { paddingLeft: depth * 16 + 8 };
         return (
           <li key={n.path}>
-            <div className={`group flex items-center gap-1 rounded-lg py-1 pr-1.5 text-sm transition-colors ${isSel ? 'bg-brand-50 text-brand-700' : 'hover:bg-gray-50 text-navy-700'}`} style={pad}>
+            <div className={`group flex items-center gap-1.5 rounded-lg py-1.5 pr-1.5 text-sm transition-colors ${isSel ? 'bg-brand-50 text-brand-700 font-medium' : 'hover:bg-gray-50 text-navy-700'}`} style={pad}>
               {n.type === 'dir' ? (
                 <button onClick={() => onToggle(n.path)} className="flex flex-1 items-center gap-1.5 min-w-0">
                   {isOpen ? <ChevronDown size={14} className="shrink-0 text-gray-400" /> : <ChevronRight size={14} className="shrink-0 text-gray-400" />}
