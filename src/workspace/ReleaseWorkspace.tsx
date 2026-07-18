@@ -59,6 +59,8 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   const[editorOpen,setEditorOpen]=useState(false);
   const[editorPath,setEditorPath]=useState('');
   const[filesDrawerOpen,setFilesDrawerOpen]=useState(false);
+  const[advisorForced,setAdvisorForced]=useState(false);
+  const askAdvisor=()=>{setAdvisorForced(true);setSidebarOpen(true);getAdvisor();};
   const[updatingFinding,setUpdatingFinding]=useState<string|null>(null);
   const chatEndRef=useRef<HTMLDivElement>(null);
   const wsId=localStorage.getItem('sandbox.activeWs')||'';
@@ -378,7 +380,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                     <span className="text-xs text-gray-500 ml-2">· {nextAction.time}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={getAdvisor} className="btn-ghost text-xs"><Sparkles size={12}/>Ask AI</button>
+                    <button onClick={askAdvisor} className="btn-ghost text-xs"><Sparkles size={12}/>Ask AI</button>
                     <button onClick={nextAction.go} className="btn-primary text-xs"><ArrowRight size={13}/>{nextAction.cta}</button>
                   </div>
                 </div>
@@ -781,11 +783,11 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
       </div>
 
       {/* ── RIGHT PANEL — Persistent Intelligence ────────────────────────── */}
-      {sidebarOpen&&stage!=='changes'&&(
+      {sidebarOpen&&(stage!=='changes'||advisorForced)&&(
         <div className="w-72 shrink-0 border-l border-gray-100 bg-gray-50/30 flex flex-col overflow-y-auto">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5"><Sparkles size={11}/>AI Release Advisor</span>
-            <button onClick={()=>setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 p-1"><X size={14}/></button>
+            <button onClick={()=>{setSidebarOpen(false);setAdvisorForced(false);}} className="text-gray-400 hover:text-gray-600 p-1"><X size={14}/></button>
           </div>
 
           <div className="p-4 space-y-4 flex-1">
