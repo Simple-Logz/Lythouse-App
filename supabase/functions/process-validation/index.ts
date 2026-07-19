@@ -54,8 +54,9 @@ function parseGitUrl(url: string): { owner: string; repo: string } | null {
   return null;
 }
 
-async function fetchGitHubTree(owner: string, repo: string, branch: string, token: string): Promise<{ path: string; type: string }[] | null> {
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "sandbox-ai" };
+async function fetchGitHubTree(owner: string, repo: string, branch: string, token: string | null): Promise<{ path: string; type: string }[] | null> {
+  const headers: Record<string, string> = { Accept: "application/vnd.github+json", "User-Agent": "sandbox-ai" };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, { headers });
   if (!res.ok) {
     const text = await res.text();
@@ -66,8 +67,9 @@ async function fetchGitHubTree(owner: string, repo: string, branch: string, toke
   return data.tree as { path: string; type: string }[];
 }
 
-async function fetchFileContent(owner: string, repo: string, path: string, branch: string, token: string): Promise<string | null> {
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.raw+json", "User-Agent": "sandbox-ai" };
+async function fetchFileContent(owner: string, repo: string, path: string, branch: string, token: string | null): Promise<string | null> {
+  const headers: Record<string, string> = { Accept: "application/vnd.github.raw+json", "User-Agent": "sandbox-ai" };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, { headers });
   if (!res.ok) return null;
   return await res.text();
@@ -214,10 +216,10 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "project not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (!project.github_token) {
-      await sb.from("validations").update({ status: "failed", summary: "No GitHub token configured for this project. Add a token when creating the project." }).eq("id", validationId);
-      return new Response(JSON.stringify({ error: "no github token" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    // Public repos need no token; private repos do. We try the token if present
+    // and fall back to unauthenticated for public repos.
+    const ghToken: string | null = ghToken || null;
+    const branch: string = branch || "main";
 
     const startTime = Date.now();
 
@@ -252,7 +254,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "invalid git url" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const tree = await fetchGitHubTree(parsed.owner, parsed.repo, project.git_branch, project.github_token);
+    const tree = await fetchGitHubTree(parsed.owner, parsed.repo, branch, ghToken);
     if (!tree) {
       await sb.from("validation_steps").update({ status: "failed", detail: "Failed to fetch repository tree. Check the token has repo scope and the branch exists.", duration_ms: Date.now() - stepStart, completed_at: new Date().toISOString() }).eq("validation_id", validationId).eq("key", "repo_fetch");
       await sb.from("validations").update({ status: "failed", summary: "Failed to fetch repository from GitHub. Verify the token has 'repo' scope and the branch name is correct." }).eq("id", validationId);
@@ -260,7 +262,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const scanableFiles = tree.filter((f) => f.type === "blob" && shouldScan(f.path)).slice(0, MAX_FILES);
-    await sb.from("validation_steps").update({ status: "completed", detail: `Fetched ${tree.length} files from ${parsed.owner}/${parsed.repo} on branch ${project.git_branch}. ${scanableFiles.length} files to scan.`, duration_ms: Date.now() - stepStart, completed_at: new Date().toISOString() }).eq("validation_id", validationId).eq("key", "repo_fetch");
+    await sb.from("validation_steps").update({ status: "completed", detail: `Fetched ${tree.length} files from ${parsed.owner}/${parsed.repo} on branch ${branch}. ${scanableFiles.length} files to scan.`, duration_ms: Date.now() - stepStart, completed_at: new Date().toISOString() }).eq("validation_id", validationId).eq("key", "repo_fetch");
 
     // Step 2 & 3 & 4: Scan files for secrets, static analysis, and dependencies
     const allFindings: Finding[] = [];
@@ -277,7 +279,7 @@ Deno.serve(async (req: Request) => {
     let secretCount = 0, staticCount = 0, depCount = 0;
 
     for (const file of scanableFiles) {
-      const content = await fetchFileContent(parsed.owner, parsed.repo, file.path, project.git_branch, project.github_token);
+      const content = await fetchFileContent(parsed.owner, parsed.repo, file.path, branch, ghToken);
       if (!content || content.length > MAX_FILE_SIZE) continue;
       filesScanned++;
 
