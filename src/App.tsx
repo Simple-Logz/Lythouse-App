@@ -25,6 +25,8 @@ import{LoadTestingPage}from'./pages/LoadTestingPage';
 import{ApiTestingPage}from'./pages/ApiTestingPage';
 import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
 import{useAuth}from'./lib/auth';
+import{useIsMobile}from'./lib/useIsMobile';
+import{MobileApp}from'./mobile/MobileApp';
 import{LandingPage}from'./pages/LandingPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
@@ -72,6 +74,7 @@ return<AppShell>{c}</AppShell>;
 function AuthGate(){
 const{session,loading}=useAuth();
 const{path}=useRouter();
+const isMobile=useIsMobile();
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">
@@ -87,6 +90,8 @@ if(!session){
   if(authPaths.includes(path))return<AuthPage initialMode={path==='/signup'?'signup':'signin'}/>;
   return<LandingPage/>;
 }
+// Phones get the dedicated mobile app; desktop keeps the full workspace.
+if(isMobile)return<MobileApp/>;
 return<Routes/>;
 }
 
