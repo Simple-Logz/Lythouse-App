@@ -17,6 +17,8 @@ import{TopologyView}from'./TopologyView';
 import{RepoDiscovery}from'./RepoDiscovery';
 import{ValidationReport}from'./ValidationReport';
 import{FileBrowser}from'./FileBrowser';
+import{WorkspaceSettings}from'./WorkspaceSettings';
+import{loadSettings}from'./workspaceSettings';
 
 function timeAgo(iso:string):string{
   const ms=Date.now()-new Date(iso).getTime();
@@ -63,6 +65,8 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   const[editorPath,setEditorPath]=useState('');
   const[filesDrawerOpen,setFilesDrawerOpen]=useState(false);
   const[fileBrowserOpen,setFileBrowserOpen]=useState(false);
+  const[settingsOpen,setSettingsOpen]=useState(false);
+  const[settings,setSettings]=useState(()=>loadSettings(project));
   const[advisorForced,setAdvisorForced]=useState(false);
   const askAdvisor=()=>{setAdvisorForced(true);setSidebarOpen(true);getAdvisor();};
   const[updatingFinding,setUpdatingFinding]=useState<string|null>(null);
@@ -197,6 +201,15 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   const readiness=riskScore!==null?Math.max(0,100-riskScore):null;
   const isBlocked=critical.length>0;
   const connected=connections.filter(c=>c.status==='connected');
+  // ── Deployment policy gate (from Release Settings) ──
+  const anyApprovedNow=approvals.some(a=>a.status==='approved');
+  const policyReasons=[
+    ...(isBlocked?[`${critical.length} critical finding${critical.length!==1?'s':''} must be resolved`]:[]),
+    ...(settings.blockOnHigh&&high.length>0?[`${high.length} high-severity finding${high.length!==1?'s':''} block deployment (policy)`]:[]),
+    ...(settings.deployGateReadiness>0&&readiness!==null&&readiness<settings.deployGateReadiness?[`Readiness ${readiness}% is below the required ${settings.deployGateReadiness}%`]:[]),
+    ...(settings.requireApproval&&!anyApprovedNow?['At least one release approval is required']:[]),
+  ];
+  const deployGated=policyReasons.length>0;
 
   // Stage completion status
   // Nothing is "done" until a COMPLETED assessment exists — so every
@@ -241,7 +254,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         })}
 
         <div className="mt-auto px-1 pt-4 border-t border-gray-200">
-          <button className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60`} onClick={()=>window.location.href=`/projects/${projectId}/settings`}>
+          <button className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60`} onClick={()=>setSettingsOpen(true)}>
             <Settings size={13}/>Settings
           </button>
         </div>
@@ -734,19 +747,22 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
             <div className="space-y-4">
               <h2 className="text-base font-semibold text-navy-900 mb-1">Deployment</h2>
               <p className="text-sm text-gray-500">Monitor your deployment pipeline, build steps, and environment changes in real time.</p>
-              <div className={`card border-2 text-center py-12 ${isBlocked?'border-red-200':'border-gray-200'}`}>
-                {isBlocked?(
+              <div className={`card border-2 text-center py-12 ${deployGated?'border-red-200':'border-gray-200'}`}>
+                {deployGated?(
                   <>
                     <XCircle size={32} className="mx-auto text-red-400 mb-3"/>
-                    <p className="text-sm font-semibold text-red-700 mb-1">Deployment Blocked</p>
-                    <p className="text-xs text-red-600 mb-4">{critical.length} critical issue{critical.length!==1?'s':''} must be resolved before deploying</p>
-                    <button onClick={()=>setStage('remediation')} className="btn-primary text-sm flex items-center gap-2 mx-auto"><Zap size={13}/>Fix Issues First →</button>
+                    <p className="text-sm font-semibold text-red-700 mb-1">Deployment Blocked by Policy</p>
+                    <ul className="text-xs text-red-600 mb-4 inline-block text-left space-y-0.5">
+                      {policyReasons.map((r,i)=>(<li key={i} className="flex items-start gap-1.5"><XCircle size={11} className="shrink-0 mt-0.5"/>{r}</li>))}
+                    </ul>
+                    <div><button onClick={()=>setStage(isBlocked||(settings.blockOnHigh&&high.length>0)?'remediation':'approvals')} className="btn-primary text-sm flex items-center gap-2 mx-auto"><Zap size={13}/>{isBlocked||(settings.blockOnHigh&&high.length>0)?'Fix Issues First':'Resolve Requirements'} →</button></div>
+                    <p className="text-[11px] text-gray-400 mt-3">These gates come from Release Settings — adjust them via Settings if they don't match your policy.</p>
                   </>
                 ):(
                   <>
                     <Play size={32} className="mx-auto text-green-400 mb-3"/>
                     <p className="text-sm font-semibold text-green-700 mb-1">Ready to Deploy</p>
-                    <p className="text-xs text-gray-500 mb-4">Connect your CI/CD pipeline in Environment → Assets to trigger deployments from LytHouse and see real-time build logs here.</p>
+                    <p className="text-xs text-gray-500 mb-4">All release policy gates are satisfied. Connect your CI/CD pipeline in Environment → Assets to trigger deployments from LytHouse and see real-time build logs here.</p>
                     <button className="btn-primary text-sm flex items-center gap-2 mx-auto"><Play size={13}/>Deploy to Production</button>
                   </>
                 )}
@@ -885,6 +901,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         />
       )}
       {fileBrowserOpen&&<FileBrowser project={project} onClose={()=>setFileBrowserOpen(false)}/>}
+      {settingsOpen&&<WorkspaceSettings project={project} onClose={()=>setSettingsOpen(false)} onSaved={({repoChanged})=>{setSettings(loadSettings(project));if(repoChanged)load();}}/>}
     </div>
   );
 }

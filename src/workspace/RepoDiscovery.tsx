@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
 import { DetailedFindings } from './DetailedFindings';
 import { getTree, getFile, ERROR_TEXT, loadReport, saveReport, clearReport, getHeadSha, getCompare } from './repoCache';
+import { loadSettings } from './workspaceSettings';
 
 // Resolve a commit author to a REGISTERED LytHouse team member only. A raw git
 // identity is never surfaced — unknown authors are shown as a neutral generic
@@ -342,6 +343,8 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
     if (cached && cached.data) {
       setResult(cached.data); setRevealed(STEPS.length); setLoading(false);
       // Continuous change detection: compare the analyzed commit to HEAD now.
+      // Honors the per-project "Watch for repository changes" setting.
+      if (!loadSettings(project).watchChanges) return () => { alive = false; };
       (async () => {
         const head = await getHeadSha(project);
         const analyzedSha = cached.data.analyzedSha;
