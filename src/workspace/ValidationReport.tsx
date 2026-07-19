@@ -5,7 +5,7 @@ import {
   Clock, Rocket, Server, Boxes, Lock, Layers, Zap, Package, ShieldCheck,
 } from 'lucide-react';
 import { linterFor, selectScanTargets } from './fileLinters';
-import { getTree, getFile, ERROR_TEXT } from './repoCache';
+import { getTree, getFile, ERROR_TEXT, loadReport, saveReport } from './repoCache';
 
 const OK = 'text-[#0f9a4c]', WARN = 'text-[#e07600]', BAD = 'text-[#d61f1f]';
 const SEVCLS = { high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]', medium: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]', low: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]' };
@@ -34,6 +34,8 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
 
   useEffect(() => {
     let alive = true;
+    const cached = loadReport('validation', project);
+    if (cached && cached.data) { setData(cached.data); setLoading(false); return () => { alive = false; }; }
     (async () => {
       const tree = await getTree(project);
       if (tree.error) { if (alive) { setData({ error: ERROR_TEXT[tree.error] }); setLoading(false); } return; }
@@ -109,7 +111,8 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
       ];
       const simFail = sim.some((s) => s.s === 'fail');
 
-      if (alive) { setData({ executed, passed, warnings: warnings + lows, blockers: blockers.length, overall, confidence, rollbackProb, catList, topBlockers, sim, simFail, status: blockers.length ? 'BLOCKED' : (warnings + lows) ? 'REVIEW' : 'READY' }); setLoading(false); }
+      const out = { executed, passed, warnings: warnings + lows, blockers: blockers.length, overall, confidence, rollbackProb, catList, topBlockers, sim, simFail, status: blockers.length ? 'BLOCKED' : (warnings + lows) ? 'REVIEW' : 'READY' };
+      if (alive) { setData(out); setLoading(false); saveReport('validation', project, out); }
     })();
     return () => { alive = false; };
   }, [project.git_url, project.git_branch]);

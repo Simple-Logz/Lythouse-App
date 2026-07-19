@@ -7,7 +7,7 @@ import {
 import { InfoHint } from '../lib/ui';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
 import { DetailedFindings } from './DetailedFindings';
-import { getTree, getFile, ERROR_TEXT } from './repoCache';
+import { getTree, getFile, ERROR_TEXT, loadReport, saveReport, clearReport } from './repoCache';
 
 // Structural inventory from the file tree (no content needed).
 function analyze(paths) {
@@ -209,10 +209,15 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [pr, setPr] = useState({ state: 'idle', url: null, error: null, applied: [] });
+  const [nonce, setNonce] = useState(0);
   const timer = useRef(null);
+  const reanalyze = () => { clearReport('discovery', project); clearReport('findings', project); clearReport('validation', project); setResult(null); setError(null); setLoading(true); setRevealed(0); setNonce((n) => n + 1); };
 
   useEffect(() => {
     let alive = true;
+    // Persistent cache: if this project was analyzed before, show it instantly.
+    const cached = loadReport('discovery', project);
+    if (cached && cached.data) { setResult(cached.data); setRevealed(STEPS.length); setLoading(false); return () => { alive = false; }; }
     timer.current = setInterval(() => setRevealed((r) => Math.min(STEPS.length, r + 1)), 320);
     (async () => {
       try {
@@ -229,12 +234,14 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         ]);
         const insights = deriveInsights(base, dRes.filter((x) => x.c), wRes.filter((x) => x.c), paths);
         if (!alive) return;
-        setResult({ ...base, ...insights, allPaths: paths });
+        const full = { ...base, ...insights, allPaths: paths };
+        setResult(full);
+        saveReport('discovery', project, full);
       } catch (e) { if (alive) setError(e.message || 'Could not analyze the repository.'); }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; clearInterval(timer.current); };
-  }, [project.git_url, project.git_branch]);
+  }, [project.git_url, project.git_branch, nonce]);
 
   const stepsDone = revealed >= STEPS.length;
   if (loading || !stepsDone) {
@@ -307,6 +314,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button onClick={onRunValidation} className="btn-primary text-sm"><Shield size={14} />Assess Release</button>
           {r.infra === 'Terraform' && onConnect && <button onClick={onConnect} className="btn-secondary text-sm"><Cloud size={13} />Verify {r.cloud[0] || 'cloud'} infra</button>}
+          <button onClick={reanalyze} className="btn-ghost text-xs ml-auto" title="Re-read the repository and recompute">Re-analyze</button>
         </div>
       </div>
 

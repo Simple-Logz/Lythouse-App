@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Loader as Loader2, ChevronRight, ChevronDown, FileCode, AlertTriangle, Check, Copy, Ticket } from 'lucide-react';
 import { linterFor, selectScanTargets } from './fileLinters';
-import { getFile } from './repoCache';
+import { getFile, loadReport, saveReport } from './repoCache';
 
 const SEV = {
   high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]',
@@ -20,6 +20,8 @@ export function DetailedFindings({ project, paths, onTicket }) {
 
   useEffect(() => {
     let alive = true;
+    const cached = loadReport('findings', project);
+    if (cached && cached.data) { setByFile(cached.data.byFile || []); setPartial(!!cached.data.partial); setLoading(false); return () => { alive = false; }; }
     (async () => {
       if (!paths?.length) { setLoading(false); return; }
       const targets = selectScanTargets(paths);
@@ -34,7 +36,9 @@ export function DetailedFindings({ project, paths, onTicket }) {
       if (!alive) return;
       results.filter(Boolean).forEach((g) => groups.push(g));
       groups.sort((a, b) => b.findings.length - a.findings.length);
-      setByFile(groups); setPartial(failures > targets.length / 2); setLoading(false);
+      const isPartial = failures > targets.length / 2;
+      setByFile(groups); setPartial(isPartial); setLoading(false);
+      if (!isPartial) saveReport('findings', project, { byFile: groups, partial: isPartial });
     })();
     return () => { alive = false; };
   }, [project.git_url, project.git_branch, paths]);

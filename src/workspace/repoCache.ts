@@ -47,6 +47,25 @@ export async function getFile(project, path) {
   return content;
 }
 
+// ── Persistent report cache (localStorage) ───────────────────────────────
+// Stores the FINAL computed report so a project keeps its analysis across
+// page reloads and sessions — no GitHub re-fetch, no rate-limit dependency.
+const CACHE_VERSION = 'v4';
+function reportKey(kind, project) {
+  const p = parseGitUrl(project.git_url);
+  const b = project.git_branch || 'main';
+  return `lh_report_${CACHE_VERSION}_${kind}_${p ? p.owner + '/' + p.repo : project.id}#${b}`;
+}
+export function loadReport(kind, project) {
+  try { const s = localStorage.getItem(reportKey(kind, project)); return s ? JSON.parse(s) : null; } catch { return null; }
+}
+export function saveReport(kind, project, data) {
+  try { localStorage.setItem(reportKey(kind, project), JSON.stringify({ t: Date.now(), data })); } catch {}
+}
+export function clearReport(kind, project) {
+  try { localStorage.removeItem(reportKey(kind, project)); } catch {}
+}
+
 export const ERROR_TEXT = {
   'not-github': 'Live analysis currently supports GitHub repositories only. This project uses a different provider (GitLab, Bitbucket, Azure, or a non-GitHub URL), so the report can’t be generated yet.',
   'not-found': 'The repository or branch couldn’t be reached. Private repositories need a token (import them with one), and the branch must exist.',
