@@ -110,11 +110,11 @@ export function FileBrowser({ project, onClose }) {
   const topKids = Object.entries(tree).sort((a, b) => { const af = a[1].__file, bf = b[1].__file; return af === bf ? a[0].localeCompare(b[0]) : af ? 1 : -1; });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-5xl h-[85vh] animate-scale-in rounded-xl bg-white shadow-xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-          <h2 className="text-base font-semibold flex items-center gap-2"><Folder size={16} className="text-brand-600" />Files — {project.name}</h2>
-          <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full max-w-none sm:max-w-5xl h-full sm:h-[85vh] animate-scale-in rounded-none sm:rounded-xl bg-white shadow-xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 shrink-0">
+          <h2 className="text-base font-semibold flex items-center gap-2 min-w-0"><Folder size={16} className="text-brand-600 shrink-0" /><span className="truncate">Files — {project.name}</span></h2>
+          <div className="flex items-center gap-2 shrink-0">
             {selected && file && !file.error && (
               editing
                 ? <><button onClick={() => setEditing(false)} className="btn-ghost text-xs"><Eye size={13} />Preview</button><button onClick={doSave} disabled={saving} className="btn-primary text-xs">{saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}Save</button></>
@@ -124,17 +124,21 @@ export function FileBrowser({ project, onClose }) {
           </div>
         </div>
         <div className="flex flex-1 min-h-0">
-          <div className="w-72 shrink-0 border-r border-gray-100 overflow-auto py-2">
+          {/* file tree — hidden on mobile once a file is open */}
+          <div className={`${selected ? 'hidden' : 'block'} sm:block w-full sm:w-72 shrink-0 border-r border-gray-100 overflow-auto py-2`}>
             {loading ? <div className="flex justify-center py-8"><Loader2 size={18} className="animate-spin text-gray-400" /></div>
               : error ? <p className="px-4 text-sm text-amber-700">{error}</p>
                 : topKids.map(([n, c]) => <Node key={c.__path} node={c} name={n} depth={0} onSelect={select} selected={selected} expanded={expanded} toggle={toggle} />)}
           </div>
-          <div className="flex-1 min-w-0 flex flex-col">
+          <div className={`${selected ? 'flex' : 'hidden'} sm:flex flex-1 min-w-0 flex-col`}>
             {!selected ? <div className="flex-1 flex items-center justify-center text-sm text-gray-400">Select a file to view. Use “Open in Editor” to make changes.</div>
               : (
                 <>
-                  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 shrink-0">
-                    <span className="font-mono text-xs text-navy-800 truncate">{selected}{editing && <span className="ml-2 text-[10px] text-brand-600 font-sans font-semibold uppercase">editing</span>}</span>
+                  <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-100 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button onClick={() => { setSelected(null); setEditing(false); }} className="sm:hidden shrink-0 text-brand-600 -ml-1 p-1"><ChevronRight size={16} className="rotate-180" /></button>
+                      <span className="font-mono text-xs text-navy-800 truncate">{selected}{editing && <span className="ml-2 text-[10px] text-brand-600 font-sans font-semibold uppercase">editing</span>}</span>
+                    </div>
                     {file?.html && <a href={file.html} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-black hover:bg-gray-50"><GH s={14} /><ExternalLink size={12} />Open on GitHub</a>}
                   </div>
                   {editing && !file?.error && (

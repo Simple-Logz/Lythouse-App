@@ -232,30 +232,31 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   };
 
   return(
-    <div className="flex flex-col lg:flex-row h-full" style={{minHeight:'calc(100vh - 130px)'}}>
+    <div className="flex flex-row h-full" style={{minHeight:'calc(100vh - 130px)'}}>
 
-      {/* ── STAGE NAV — left rail on desktop, horizontal scroller on mobile ── */}
-      <div className="w-full lg:w-48 shrink-0 border-b lg:border-b-0 lg:border-r border-gray-100 bg-gray-50/60 flex flex-row lg:flex-col py-2 lg:py-4 px-2 gap-1.5 lg:gap-1 overflow-x-auto lg:overflow-visible no-scrollbar">
+      {/* ── STAGE NAV — vertical side rail: slim (numbers) on mobile, full on desktop ── */}
+      <div className="w-[68px] lg:w-48 shrink-0 border-r border-gray-100 bg-gray-50/60 flex flex-col py-3 lg:py-4 px-1.5 lg:px-2 gap-1.5 lg:gap-1">
         <p className="hidden lg:block text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 mb-2">Release Stages</p>
         {STAGES.map((s,i)=>{
           const st=stageStatus[s.id];
           return(
-            <button key={s.id} onClick={()=>setStage(s.id)} className={`shrink-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left border ${stage===s.id?'bg-[#f97316]/10 text-[#c2560c] border-[#fb923c]/40':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
-              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-[#f97316]/80 text-white':st==='done'?'bg-green-500 text-white':'bg-gray-200 text-gray-500'}`}>
-                {stage===s.id?i+1:st==='done'?<Check size={11}/>:i+1}
+            <button key={s.id} onClick={()=>setStage(s.id)} title={s.label} className={`flex flex-col lg:flex-row items-center lg:gap-2.5 gap-0.5 px-1 lg:px-3 py-2 lg:py-2.5 rounded-xl text-sm font-medium transition-all lg:text-left border ${stage===s.id?'bg-[#f97316]/10 text-[#c2560c] border-[#fb923c]/40':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
+              <div className={`flex h-7 w-7 lg:h-6 lg:w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-[#f97316]/90 text-white':st==='done'?'bg-green-500 text-white':'bg-gray-200 text-gray-500'}`}>
+                {stage===s.id?i+1:st==='done'?<Check size={12}/>:i+1}
               </div>
-              <span className="min-w-0 flex-1">
+              <span className="lg:hidden text-[9px] leading-none text-center truncate w-full">{s.label}</span>
+              <span className="hidden lg:block min-w-0 flex-1">
                 <span className="block leading-tight">{s.label}</span>
                 <span className={`block text-[10px] font-normal leading-tight ${stage===s.id?'text-[#ea7a00]/80':'text-gray-400'}`}>{s.sub}</span>
               </span>
-              {stage===s.id?<span className="w-1.5 h-1.5 rounded-full bg-[#f97316]/80 shrink-0"/>:st==='active'?<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
+              {stage===s.id?<span className="hidden lg:block w-1.5 h-1.5 rounded-full bg-[#f97316]/80 shrink-0"/>:st==='active'?<span className="hidden lg:block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
             </button>
           );
         })}
 
-        <div className="shrink-0 flex items-center lg:mt-auto border-l lg:border-l-0 lg:border-t border-gray-200 pl-1.5 lg:pl-0 lg:px-1 lg:pt-4">
-          <button className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs whitespace-nowrap w-auto lg:w-full text-gray-500 hover:bg-white/60`} onClick={()=>setSettingsOpen(true)}>
-            <Settings size={13}/>Settings
+        <div className="mt-auto pt-3 lg:pt-4 border-t border-gray-200">
+          <button className="flex flex-col lg:flex-row items-center lg:gap-2 gap-0.5 px-1 lg:px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60" onClick={()=>setSettingsOpen(true)}>
+            <Settings size={16}/><span className="text-[9px] lg:text-xs leading-none">Settings</span>
           </button>
         </div>
       </div>

@@ -673,50 +673,49 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           )}
         </button>
 
-        {decisionOpen && (<div className="px-4 sm:px-5 pb-5">
+        {decisionOpen && (<div className="px-4 sm:px-5 pb-4">
 
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
           {[
             { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall), hint: 'A 0–100 score of how ready this release is to ship, averaged across architecture, security, deployment automation, observability, disaster recovery and operational readiness.' },
             { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb), hint: 'Estimated probability the deployment succeeds without needing a rollback, based on readiness and the number of open blockers.' },
             { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]', hint: 'Findings serious enough that the release should not be promoted to production until they are resolved.' },
             { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900', hint: 'Estimated total hands-on time to fix all blocking issues before this release can be approved.' },
           ].map((x) => (
-            <div key={x.l}><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-[11px] uppercase tracking-wide text-gray-400 mt-0.5 flex items-center gap-1">{x.l}<InfoHint text={x.hint} /></div></div>
+            <div key={x.l}><div className={`text-xl font-bold ${x.c}`}>{x.v}</div><div className="text-[10px] uppercase tracking-wide text-gray-400 mt-0.5 flex items-center gap-1">{x.l}<InfoHint text={x.hint} /></div></div>
           ))}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-gray-200/70">
-          <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Recommendation</p>
-          <p className="text-sm text-navy-800">{r.recommendation.text}</p>
+        <div className="mt-2.5 pt-2.5 border-t border-gray-200/70">
+          <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Recommendation</p>
+          <p className="text-[13px] text-navy-800 leading-snug">{r.recommendation.text}</p>
         </div>
 
         {/* Why it's blocked + how to resolve — only when there are blockers */}
         {r.summary.blockers > 0 && (() => {
           const blockers = r.concerns.filter((c) => c.sev === 'high');
           return (
-            <div className="mt-4 pt-3 border-t border-[#f5a3a3]/60">
-              <p className="text-[11px] uppercase tracking-wide font-semibold text-[#b3261e] mb-2 flex items-center gap-1.5"><AlertTriangle size={12} />Why this release is blocked ({blockers.length})</p>
-              <ul className="space-y-2">
+            <div className="mt-2.5 pt-2.5 border-t border-[#f5a3a3]/60">
+              <p className="text-[10px] uppercase tracking-wide font-semibold text-[#b3261e] mb-1.5 flex items-center gap-1.5"><AlertTriangle size={12} />Why this release is blocked ({blockers.length})</p>
+              <ul className="space-y-1.5">
                 {blockers.map((c, i) => (
-                  <li key={i} className="rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/40 px-3 py-2">
+                  <li key={i} className="rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/40 px-3 py-1.5">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-navy-900">{c.label}</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{c.impact}{c.affected ? <span className="block text-[11px] text-gray-400 mt-0.5">Potentially affects: {c.affected.join(', ')}</span> : null}</p>
+                        <p className="text-[13px] font-semibold text-navy-900">{c.label}</p>
+                        <p className="text-xs text-gray-600 mt-0.5 leading-snug">{c.impact}{c.affected ? <span className="text-gray-400"> · Affects: {c.affected.join(', ')}</span> : null}</p>
                       </div>
-                      <span className="text-[11px] text-gray-500 whitespace-nowrap shrink-0">Owner: {c.owner}{c.eta && c.eta !== '—' ? ` · ${c.eta}` : ''}</span>
+                      <span className="text-[10px] text-gray-500 whitespace-nowrap shrink-0">{c.owner}{c.eta && c.eta !== '—' ? ` · ${c.eta}` : ''}</span>
                     </div>
-                    <p className="text-xs mt-1.5 flex items-start gap-1.5"><ArrowRight size={12} className="text-[#0f9a4c] shrink-0 mt-0.5" /><span><span className="font-semibold text-[#0f7a3c]">How to resolve:</span> {c.fix}.</span></p>
+                    <p className="text-xs mt-1 flex items-start gap-1.5"><ArrowRight size={12} className="text-[#0f9a4c] shrink-0 mt-0.5" /><span><span className="font-semibold text-[#0f7a3c]">Fix:</span> {c.fix}.</span></p>
                   </li>
                 ))}
               </ul>
-              <p className="text-[11px] text-gray-500 mt-2">The release stays blocked until every item above is cleared. LytHouse can open a pull request for the auto-fixable items in <span className="font-medium text-navy-700">AI Auto-Remediation</span> below, or assign each to its owner.</p>
             </div>
           );
         })()}
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <button onClick={onRunValidation} className="btn-primary text-sm"><Shield size={14} />Assess Release</button>
           {r.infra === 'Terraform' && onConnect && <button onClick={onConnect} className="btn-secondary text-sm"><Cloud size={13} />Verify {r.cloud[0] || 'cloud'} infra</button>}
           <button onClick={reanalyze} className="btn-ghost text-xs ml-auto" title="Re-read the repository and recompute">Re-analyze</button>
