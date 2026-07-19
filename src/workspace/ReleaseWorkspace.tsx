@@ -195,11 +195,21 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   const connected=connections.filter(c=>c.status==='connected');
 
   // Stage completion status
-  const stageStatus:Record<Stage,'done'|'active'|'pending'>={
-    changes:validations.length>0?'done':'pending',
-    validation:validations.length>0?(critical.length===0?'done':'active'):'pending',
+  // Nothing is "done" until a COMPLETED assessment exists — so every
+  // un-assessed project shows the same clean numbered rail (1..6).
+  const hasAssessment=validations.some(v=>v.status==='completed');
+  const stageStatus:Record<Stage,'done'|'active'|'pending'>=hasAssessment?{
+    changes:'done',
+    validation:critical.length===0?'done':'active',
     remediation:critical.length===0&&high.length===0?'done':open.length>0?'active':'pending',
     approvals:approvals.some(a=>a.status==='approved')?'done':approvals.length>0?'active':'pending',
+    deployment:'pending',
+    verification:'pending',
+  }:{
+    changes:'active',
+    validation:'pending',
+    remediation:'pending',
+    approvals:'pending',
     deployment:'pending',
     verification:'pending',
   };
@@ -427,9 +437,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                       ))}
                       <div className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5">
                         <span className="flex items-center gap-2 text-sm text-navy-800"><Shield size={15} className="text-gray-400"/>Validation</span>
-                        {validations.some(v=>v.status==='failed')
-                          ?<span className="chip text-[10px] bg-red-50 text-red-700 border border-red-200">Last run failed</span>
-                          :<span className="chip text-[10px] bg-amber-50 text-amber-700 border border-amber-200">Not Run</span>}
+                        <span className="chip text-[10px] bg-amber-50 text-amber-700 border border-amber-200">Not Run</span>
                       </div>
                     </div>
 
@@ -441,7 +449,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                       </div>
                       <div className="flex items-center gap-2">
                         {connectedCount<3&&<button onClick={()=>window.location.href=`/projects/${projectId}`} className="btn-secondary text-sm"><Server size={13}/>Connect systems</button>}
-                        <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary text-sm"><Shield size={14}/>{validations.some(v=>v.status==='failed')?'Re-run Assessment':'Start Assessment'}</button>
+                        <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary text-sm"><Shield size={14}/>Start Assessment</button>
                       </div>
                     </div>
                   </div>
