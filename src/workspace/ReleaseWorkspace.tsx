@@ -240,15 +240,15 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         {STAGES.map((s,i)=>{
           const st=stageStatus[s.id];
           return(
-            <button key={s.id} onClick={()=>setStage(s.id)} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left border ${stage===s.id?'bg-[#fff7e9] text-[#8a5a00] border-[#f9c777] shadow-sm':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
-              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-[#e8890c] text-white ring-2 ring-[#f9c777]':st==='done'?'bg-green-500 text-white':'bg-gray-200 text-gray-500'}`}>
+            <button key={s.id} onClick={()=>setStage(s.id)} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left border ${stage===s.id?'bg-amber-100/40 text-amber-800/90 border-amber-200/60':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
+              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-amber-400/80 text-white':st==='done'?'bg-green-500 text-white':'bg-gray-200 text-gray-500'}`}>
                 {stage===s.id?i+1:st==='done'?<Check size={11}/>:i+1}
               </div>
               <span className="min-w-0 flex-1">
                 <span className="block leading-tight">{s.label}</span>
-                <span className={`block text-[10px] font-normal leading-tight ${stage===s.id?'text-[#b06a00]':'text-gray-400'}`}>{s.sub}</span>
+                <span className={`block text-[10px] font-normal leading-tight ${stage===s.id?'text-amber-600/70':'text-gray-400'}`}>{s.sub}</span>
               </span>
-              {stage===s.id?<span className="w-1.5 h-1.5 rounded-full bg-[#e8890c] shrink-0"/>:st==='active'?<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
+              {stage===s.id?<span className="w-1.5 h-1.5 rounded-full bg-amber-400/80 shrink-0"/>:st==='active'?<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
             </button>
           );
         })}
