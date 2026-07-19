@@ -240,10 +240,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
           );
         })}
 
-        <div className="mt-auto px-1 space-y-1 pt-4 border-t border-gray-200">
-          <button onClick={()=>setFileBrowserOpen(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60">
-            <FolderOpen size={13}/>Files
-          </button>
+        <div className="mt-auto px-1 pt-4 border-t border-gray-200">
           <button className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60`} onClick={()=>window.location.href=`/projects/${projectId}/settings`}>
             <Settings size={13}/>Settings
           </button>
