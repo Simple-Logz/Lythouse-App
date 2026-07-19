@@ -30,7 +30,7 @@ const MENU = [
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-const TONE = {
+export const TONE = {
   red: { text: 'text-[#dc2626]', bg: 'bg-[#fde3e3]', border: 'border-[#f5a3a3]', dot: 'bg-[#dc2626]' },
   amber: { text: 'text-[#e07600]', bg: 'bg-[#fff0d9]', border: 'border-[#f9c777]', dot: 'bg-[#e07600]' },
   green: { text: 'text-[#12a150]', bg: 'bg-[#e3f7ea]', border: 'border-[#9adcb4]', dot: 'bg-[#12a150]' },
@@ -213,12 +213,12 @@ export function MobileApp({ renderPage }) {
   );
 }
 
-function StatusPill({ tone, children }) {
+export function StatusPill({ tone, children }) {
   const t = TONE[tone] || TONE.gray;
   return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${t.bg} ${t.text} border ${t.border} shrink-0`}><span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />{children}</span>;
 }
 
-function HomeScreen({ statuses, stale, onOpen, name }) {
+export function HomeScreen({ statuses, stale, onOpen, name }) {
   const counts = statuses.reduce((a, { s }) => { a[s.tone] = (a[s.tone] || 0) + 1; return a; }, {});
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
@@ -278,7 +278,7 @@ function HomeScreen({ statuses, stale, onOpen, name }) {
   );
 }
 
-function ProjectDetail({ project, status: s, stale, approvals, onApprove, onClose }) {
+export function ProjectDetail({ project, status: s, stale, approvals, onApprove, onClose }) {
   const t = TONE[s.tone];
   const blockers = [...s.crit, ...s.high];
   const release = approvals.find((a) => a.status === 'pending') || approvals[0];
@@ -357,7 +357,7 @@ const ROLES = [
   { id: 'product', label: 'Product Management' },
 ];
 
-function ApprovalCard({ release, onApprove }) {
+export function ApprovalCard({ release, onApprove }) {
   const approvedRoles = new Set((release.approvals || []).map((a) => a.role));
   const allApproved = ROLES.every((r) => approvedRoles.has(r.id));
   return (
@@ -389,7 +389,7 @@ function ApprovalCard({ release, onApprove }) {
   );
 }
 
-function ApprovalsScreen({ approvals, onApprove }) {
+export function ApprovalsScreen({ approvals, onApprove }) {
   const pending = approvals.filter((a) => a.status === 'pending');
   const done = approvals.filter((a) => a.status !== 'pending');
   return (
@@ -415,7 +415,7 @@ function ApprovalsScreen({ approvals, onApprove }) {
   );
 }
 
-function AlertsScreen({ statuses, stale, onOpen }) {
+export function AlertsScreen({ statuses, stale, onOpen }) {
   const staleList = statuses.filter(({ p }) => stale[p.id]);
   return (
     <div className="px-4 py-4 space-y-4">
@@ -442,7 +442,7 @@ function AlertsScreen({ statuses, stale, onOpen }) {
   );
 }
 
-function AccountScreen({ user, profile, signOut }) {
+export function AccountScreen({ user, profile, signOut }) {
   return (
     <div className="px-4 py-4 space-y-4">
       <h1 className="text-lg font-bold text-navy-900">Account</h1>

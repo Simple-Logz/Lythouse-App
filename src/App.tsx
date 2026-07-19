@@ -28,6 +28,7 @@ import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
 import{useAuth}from'./lib/auth';
 import{useIsMobile}from'./lib/useIsMobile';
 import{MobileApp}from'./mobile/MobileApp';
+import{MobilePreview}from'./mobile/MobilePreview';
 import{LandingPage}from'./pages/LandingPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
@@ -82,6 +83,8 @@ function AuthGate(){
 const{session,loading}=useAuth();
 const{path}=useRouter();
 const isMobile=useIsMobile();
+// TEMP: design preview of the mobile UI without auth.
+if(path==='/__mpreview')return<MobilePreview/>;
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">
