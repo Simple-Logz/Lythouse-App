@@ -1,6 +1,29 @@
 // @ts-nocheck
+import { useRef, useState } from 'react';
 import { Logo } from '../lib/ui';
 import { useRouter } from '../lib/router';
+
+// Cursor-driven 3D tilt: the card swivels a little toward the pointer and
+// eases back to its resting angle when the cursor leaves.
+function Tilt({ children, className = '', style = {}, baseRx = 0, baseRy = 0, max = 9 }) {
+  const ref = useRef(null);
+  const rest = `perspective(1400px) rotateX(${baseRx}deg) rotateY(${baseRy}deg)`;
+  const [t, setT] = useState(rest);
+  const onMove = (e) => {
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    setT(`perspective(1400px) rotateX(${(baseRx - py * max * 2).toFixed(2)}deg) rotateY(${(baseRy + px * max * 2).toFixed(2)}deg)`);
+  };
+  return (
+    <div ref={ref} onMouseMove={onMove} onMouseLeave={() => setT(rest)}
+      className={className}
+      style={{ ...style, transform: t, transformStyle: 'preserve-3d', transition: 'transform .18s ease-out', willChange: 'transform' }}>
+      {children}
+    </div>
+  );
+}
 import {
   ShieldCheck, GitBranch, ScanLine, Users, Rocket, Activity, CheckCircle2,
   ArrowRight, Zap, Lock, TrendingUp,
@@ -54,12 +77,13 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* product preview card — tilted in 3D, straightens on hover */}
-        <div className="relative group/card" style={{ perspective: '1400px' }}>
+        {/* product preview card — swivels toward the cursor in 3D */}
+        <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-tr from-brand-200 to-transparent rounded-[2rem] blur-2xl opacity-70" />
-          <div
-            className="relative rounded-2xl border border-gray-200 bg-white p-5 transition-transform duration-500 ease-out group-hover/card:rotate-0"
-            style={{ transform: 'rotateX(6deg) rotateY(-12deg) rotateZ(1deg)', transformStyle: 'preserve-3d', boxShadow: '0 2px 4px rgba(16,24,40,.06), 0 24px 48px -12px rgba(16,24,40,.28), -18px 30px 60px -20px rgba(79,69,171,.30)' }}>
+          <Tilt
+            baseRx={6} baseRy={-12} max={9}
+            className="relative rounded-2xl border border-gray-200 bg-white p-5"
+            style={{ boxShadow: '0 2px 4px rgba(16,24,40,.06), 0 24px 48px -12px rgba(16,24,40,.28), -18px 30px 60px -20px rgba(124,58,237,.32)' }}>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wide text-navy-400">Release Decision</span>
               <span className="chip text-[10px] bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]">CLEARED</span>
@@ -84,7 +108,7 @@ export function LandingPage() {
                 <div key={t} className="flex items-center gap-2 text-xs text-navy-700"><CheckCircle2 size={14} className="text-brand-500 shrink-0" />{t}</div>
               ))}
             </div>
-          </div>
+          </Tilt>
         </div>
       </section>
 
@@ -110,11 +134,11 @@ export function LandingPage() {
             { icon: Rocket, t: 'Deployment', d: 'Policy gates enforce your minimum readiness and required approvals before deploy.' },
             { icon: Activity, t: 'Observability', d: 'Continuous watching detects new commits and tells you if your decision is still valid.' },
           ].map((f) => (
-            <div key={f.t} className="rounded-2xl border border-gray-200 bg-white p-6 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-brand-200 [box-shadow:0_1px_2px_rgba(16,24,40,.05),0_10px_20px_-8px_rgba(16,24,40,.12)] hover:[box-shadow:0_8px_16px_rgba(16,24,40,.10),0_28px_44px_-16px_rgba(79,69,171,.28)]">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 [box-shadow:inset_0_1px_0_rgba(255,255,255,.6),0_4px_10px_-2px_rgba(79,69,171,.35)]"><f.icon size={18} /></span>
+            <Tilt key={f.t} max={6} className="rounded-2xl border border-gray-200 bg-white p-6 hover:border-brand-200 [box-shadow:0_1px_2px_rgba(16,24,40,.05),0_10px_20px_-8px_rgba(16,24,40,.12)] hover:[box-shadow:0_10px_20px_rgba(16,24,40,.10),0_30px_48px_-16px_rgba(124,58,237,.30)]">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 [box-shadow:inset_0_1px_0_rgba(255,255,255,.6),0_4px_10px_-2px_rgba(124,58,237,.35)]"><f.icon size={18} /></span>
               <h3 className="mt-4 text-lg font-bold">{f.t}</h3>
               <p className="mt-1.5 text-sm text-navy-500 leading-relaxed">{f.d}</p>
-            </div>
+            </Tilt>
           ))}
         </div>
       </section>
