@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Loader as Loader2, Check, ArrowRight, Shield, Boxes, Database, AlertTriangle,
-  Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2,
+  Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2, Clock, FileText, GitBranch, ShieldAlert,
 } from 'lucide-react';
 import { InfoHint } from '../lib/ui';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
@@ -203,6 +203,93 @@ function deriveInsights(r, dockers, wfs, paths) {
 
 const STEPS = ['Repository indexed', 'Services detected', 'Containers inspected', 'CI/CD pipelines parsed', 'Security posture assessed', 'Platform maturity scored', 'Risks evaluated', 'Assessment compiled'];
 
+// ── Change-window classification ────────────────────────────────────────────
+// Groups changed files by category, determines blast radius, and decides how
+// the change affects the last verified release decision. Runs purely on the
+// filenames GitHub's compare API returns — no fabricated telemetry.
+const CHANGE_GROUPS = [
+  { key: 'secrets', label: 'Secrets / credentials', re: /(^|\/)\.env($|\.)|(^|\/)[^/]*secret[^/]*\.(ya?ml|json|env)$|(^|\/)credentials?\.(json|ya?ml)$/i, functional: true },
+  { key: 'db', label: 'Database migrations', re: /(^|\/)migrations?\/|(^|\/)migrate\/|\.sql$/i, functional: true },
+  { key: 'tests', label: 'Tests', re: /(^|\/)(tests?|__tests__|spec|e2e)\/|[._-](test|spec)\.[a-z]+$|_test\.[a-z]+$/i, functional: false },
+  { key: 'docs', label: 'Documentation', re: /\.(md|mdx|rst|adoc|txt)$|(^|\/)docs?\/|(^|\/)(LICENSE|CHANGELOG|CODEOWNERS)[^/]*$/i, functional: false },
+  { key: 'deps', label: 'Dependencies', re: /(^|\/)(package(-lock)?\.json|yarn\.lock|pnpm-lock\.ya?ml|go\.(mod|sum)|requirements[^/]*\.txt|Pipfile(\.lock)?|poetry\.lock|Gemfile(\.lock)?|pom\.xml|build\.gradle[^/]*|Cargo\.(toml|lock)|composer\.(json|lock))$/i, functional: true },
+  { key: 'cicd', label: 'CI/CD', re: /\.github\/workflows\/|(^|\/)\.gitlab-ci\.ya?ml$|(^|\/)Jenkinsfile$|(^|\/)\.circleci\//i, functional: true },
+  { key: 'containers', label: 'Containers', re: /(^|\/)(Dockerfile|\.dockerignore)|docker-compose[^/]*\.ya?ml$|(^|\/)compose\.ya?ml$/i, functional: true },
+  { key: 'k8s', label: 'Kubernetes', re: /(k8s|kubernetes|manifests?|deploy(ments?)?|overlays?|helm|charts?)\/.*\.ya?ml$|(^|\/)(Chart\.ya?ml|values[^/]*\.ya?ml)$/i, functional: true },
+  { key: 'infra', label: 'Infrastructure (IaC)', re: /\.tf(vars)?$/i, functional: true },
+  { key: 'app', label: 'Application code', re: /\.(go|tsx?|jsx?|py|rb|rs|java|php|cs|kt|swift|scala|c|cc|cpp|h|hpp|vue|svelte|proto|sh|bash)$/i, functional: true },
+  { key: 'config', label: 'Configuration', re: /\.(ya?ml|json|toml|ini|conf|cfg|config|properties|xml)$|(^|\/)(Makefile|\.gitignore)$/i, functional: true },
+];
+
+function classifyChanges(files) {
+  const items = (files || []).map((f) => (typeof f === 'string' ? { filename: f, status: 'modified' } : f));
+  const groups = {};
+  items.forEach((f) => {
+    const g = CHANGE_GROUPS.find((c) => c.re.test(f.filename));
+    const key = g ? g.key : 'other';
+    (groups[key] || (groups[key] = { key, label: g ? g.label : 'Other / assets', functional: g ? g.functional : false, files: [] })).files.push(f);
+  });
+  const grouped = Object.values(groups).sort((a, b) => b.files.length - a.files.length);
+  const names = items.map((f) => f.filename);
+  const any = (re) => names.filter((n) => re.test(n));
+
+  // Sensitive changes that suspend a prior release approval outright.
+  const blockers = [];
+  if (groups.secrets) blockers.push({ label: 'Secrets or credentials changed', files: groups.secrets.files.map((f) => f.filename) });
+  if (groups.db) blockers.push({ label: 'Database migration(s) changed', files: groups.db.files.map((f) => f.filename) });
+  const iam = any(/\.tf(vars)?$/i).filter((n) => /(iam|policy|policies|role|rbac)/i.test(n));
+  if (iam.length) blockers.push({ label: 'IAM / access-policy changed', files: iam });
+  const k8sSec = any(/(rbac|networkpolicy|podsecurity|psp|securitycontext|serviceaccount|clusterrole|secret)/i).filter((n) => /\.ya?ml$/i.test(n));
+  if (k8sSec.length) blockers.push({ label: 'Kubernetes security manifest changed', files: k8sSec });
+  const prodWf = any(/\.github\/workflows\/[^/]*\.ya?ml$/i).filter((n) => /(prod|production|release|deploy)/i.test(n));
+  if (prodWf.length) blockers.push({ label: 'Production deployment workflow changed', files: prodWf });
+
+  const functionalGroups = grouped.filter((g) => g.functional && g.key !== 'other');
+  const state = blockers.length ? 'blocker' : functionalGroups.length ? 'assess' : 'low';
+
+  // Which review dimensions the change touches (honest scope, not fake approvals).
+  const has = (k) => !!groups[k];
+  const security = !!(groups.secrets || groups.deps || groups.containers || iam.length || k8sSec.length);
+  const platform = !!(groups.infra || groups.k8s || groups.containers || groups.cicd);
+  const application = !!(groups.app || groups.db);
+  const scopeImpact = [
+    { scope: 'Security review', touched: security },
+    { scope: 'Platform / infrastructure review', touched: platform },
+    { scope: 'Application review', touched: application },
+  ];
+
+  return { grouped, blockers, state, scopeImpact,
+    affected: functionalGroups.map((g) => g.label),
+    unaffected: grouped.filter((g) => !g.functional).map((g) => g.label) };
+}
+
+const CHANGE_STATE = {
+  blocker: {
+    tone: 'bg-[#fde3e3] border-[#f5a3a3]', title: 'text-[#b3261e]', icon: 'text-[#d61f1f]',
+    heading: 'Release approval suspended', chipCls: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]', chip: 'Immediate blocker',
+    line: 'Sensitive changes since the last verified assessment invalidate the previous release decision. Re-assess before promoting.',
+  },
+  assess: {
+    tone: 'bg-[#fff7e9] border-[#f9c777]', title: 'text-[#8a5a00]', icon: 'text-[#e07600]',
+    heading: 'Assessment out of date', chipCls: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]', chip: 'Assessment required',
+    line: 'Functional changes have landed since the last verified assessment. The current release decision may no longer be valid.',
+  },
+  low: {
+    tone: 'bg-[#eef4ff] border-[#b9cffb]', title: 'text-[#1e40af]', icon: 'text-[#2f66e0]',
+    heading: 'Minor changes since last assessment', chipCls: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]', chip: 'Low impact',
+    line: 'Only documentation or tests changed since the last verified assessment — the previous release decision remains valid.',
+  },
+};
+
+function timeAgo(ts) {
+  if (!ts) return null;
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  if (s < 60) return 'just now';
+  const m = Math.round(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60); if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+
 export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure }) {
   const [loading, setLoading] = useState(true);
   const [revealed, setRevealed] = useState(0);
@@ -226,7 +313,13 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         const analyzedSha = cached.data.analyzedSha;
         if (head && analyzedSha && head !== analyzedSha) {
           const cmp = await getCompare(project, analyzedSha, head);
-          if (alive) setStale({ head, commits: cmp?.commits || 0, files: cmp?.files || [] });
+          if (alive) setStale({
+            head,
+            since: cached.data.analyzedAt || null,
+            commits: cmp?.commits || [],
+            files: cmp?.files || [],
+            permalink: cmp?.permalink || null,
+          });
         }
       })();
       return () => { alive = false; };
@@ -299,27 +392,98 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
   return (
     <div className="space-y-5">
-      {/* ── CONTINUOUS VALIDATION: new commits detected ──────────────────── */}
+      {/* ── CONTINUOUS VALIDATION: aggregated change window ──────────────── */}
       {stale && (() => {
-        const areas = new Set();
-        stale.files.forEach((f) => {
-          if (/(^|\/)Dockerfile/i.test(f)) areas.add('Containers');
-          else if (/\.tf$/i.test(f)) areas.add('Infrastructure');
-          else if (/\.github\/workflows\/|gitlab-ci|Jenkinsfile/i.test(f)) areas.add('CI/CD');
-          else if (/(k8s|kubernetes|manifest|deploy|overlays|base)\/.*\.ya?ml$/i.test(f)) areas.add('Kubernetes');
-          else if (/\.env|secret/i.test(f)) areas.add('Secrets');
-          else areas.add('Application code');
-        });
+        const cx = classifyChanges(stale.files);
+        const st = CHANGE_STATE[cx.state];
+        const commitCount = stale.commits.length;
+        const fileCount = stale.files.length;
+        const contributors = [...new Set(stale.commits.map((c) => c.author).filter(Boolean))];
+        const latest = stale.commits[0]?.date ? new Date(stale.commits[0].date).getTime() : null;
+        const Icon = cx.state === 'blocker' ? ShieldAlert : cx.state === 'assess' ? AlertTriangle : Check;
         return (
-          <div className="card border-[#f9c777] bg-[#fff7e9]">
+          <div className={`card border ${st.tone}`}>
             <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <p className="text-sm font-semibold text-[#8a5a00] flex items-center gap-1.5"><Loader2 size={14} className="text-[#e07600]" />New changes pushed since last analysis</p>
-                <p className="text-sm text-gray-700 mt-0.5">{stale.commits || 'New'} commit{stale.commits === 1 ? '' : 's'} · {stale.files.length} file{stale.files.length === 1 ? '' : 's'} changed. This assessment is now out of date.</p>
-                {areas.size > 0 && <p className="text-xs text-gray-600 mt-1">Impact areas: <span className="font-medium">{[...areas].join(', ')}</span> — re-analyze to see the updated release decision.</p>}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className={`text-sm font-bold flex items-center gap-1.5 ${st.title}`}><Icon size={15} className={st.icon} />{st.heading}</p>
+                  <span className={`chip text-[10px] ${st.chipCls}`}>{st.chip}</span>
+                </div>
+                <p className="text-sm text-gray-700 mt-1">
+                  {commitCount || 'New'} commit{commitCount === 1 ? '' : 's'} changed {fileCount} file{fileCount === 1 ? '' : 's'} since the last verified assessment. {st.line}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-gray-500">
+                  {stale.since && <span className="inline-flex items-center gap-1"><Clock size={11} />Last verified {timeAgo(stale.since)}</span>}
+                  {latest && <span className="inline-flex items-center gap-1"><GitBranch size={11} />Latest change {timeAgo(latest)}</span>}
+                  {contributors.length > 0 && <span>{contributors.length} contributor{contributors.length === 1 ? '' : 's'}: {contributors.slice(0, 3).join(', ')}{contributors.length > 3 ? ` +${contributors.length - 3}` : ''}</span>}
+                </div>
               </div>
-              <button onClick={reanalyze} className="btn-primary text-sm shrink-0"><Shield size={14} />Re-analyze</button>
+              <button onClick={reanalyze} className="btn-primary text-sm shrink-0"><Shield size={14} />Re-assess now</button>
             </div>
+
+            {/* changes grouped by category */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {cx.grouped.map((g) => (
+                <span key={g.key} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-navy-700">
+                  <FileText size={12} className="text-gray-400" /><span className="font-medium">{g.label}</span><span className="text-gray-400">{g.files.length}</span>
+                </span>
+              ))}
+            </div>
+
+            {/* immediate-blocker reasons */}
+            {cx.blockers.length > 0 && (
+              <div className="mt-3 rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/60 px-3 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#b3261e] mb-1">Why this suspends approval</p>
+                <ul className="space-y-0.5">
+                  {cx.blockers.map((b, i) => <li key={i} className="flex items-start gap-1.5 text-xs text-[#8a1f1a]"><XCircle size={12} className="shrink-0 mt-0.5" />{b.label}</li>)}
+                </ul>
+              </div>
+            )}
+
+            {/* validation-scope impact */}
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {cx.scopeImpact.map((s) => (
+                <div key={s.scope} className={`rounded-lg border px-3 py-2 ${s.touched ? 'border-[#f9c777] bg-[#fff7e9]' : 'border-[#9adcb4] bg-[#e3f7ea]'}`}>
+                  <div className="text-[11px] text-gray-500">{s.scope}</div>
+                  <div className={`text-xs font-semibold mt-0.5 flex items-center gap-1 ${s.touched ? 'text-[#e07600]' : 'text-[#0f9a4c]'}`}>
+                    {s.touched ? <><AlertTriangle size={11} />Revalidation required</> : <><CheckCircle2 size={11} />Still valid</>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* review-changes drawer */}
+            <details className="group mt-3">
+              <summary className="flex items-center gap-1.5 cursor-pointer list-none text-xs font-medium text-brand-700">
+                <ArrowRight size={13} className="group-open:rotate-90 transition-transform" />Review changes
+                {stale.permalink && <a href={stale.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 text-gray-400 hover:text-brand-700 hover:underline">View full diff on GitHub →</a>}
+              </summary>
+              <div className="mt-2 pt-2 border-t border-gray-200/70 grid gap-4 lg:grid-cols-2">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Commits ({commitCount})</p>
+                  <ul className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {stale.commits.map((c) => (
+                      <li key={c.sha} className="text-xs">
+                        <a href={c.url || stale.permalink || '#'} target="_blank" rel="noreferrer" className="font-mono text-brand-700 hover:underline">{c.short}</a>
+                        <span className="text-navy-800"> {c.message}</span>
+                        <span className="block text-gray-400">{c.author}{c.date ? ` · ${timeAgo(new Date(c.date).getTime())}` : ''}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Changed files ({fileCount})</p>
+                  <ul className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                    {stale.files.map((f, i) => (
+                      <li key={i} className="text-xs flex items-center gap-1.5">
+                        <span className={`shrink-0 w-14 font-medium ${f.status === 'added' ? 'text-[#0f9a4c]' : f.status === 'removed' ? 'text-[#d61f1f]' : 'text-[#e07600]'}`}>{f.status || 'modified'}</span>
+                        {f.url ? <a href={f.url} target="_blank" rel="noreferrer" className="text-navy-700 hover:text-brand-700 hover:underline truncate">{f.filename}</a> : <span className="text-navy-700 truncate">{f.filename}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </details>
           </div>
         );
       })()}

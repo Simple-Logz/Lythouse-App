@@ -75,7 +75,9 @@ export async function getHeadSha(project) {
   try { const r = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits/${branch}`, { headers }); if (!r.ok) return null; return (await r.json()).sha; } catch { return null; }
 }
 
-// What changed between two commits (files + count) — the basis for impact.
+// What changed between two commits — the basis for impact. Returns rich detail
+// (per-commit author/message, per-file status, diff permalinks) so the change
+// window can group, scope and link changes without extra requests.
 export async function getCompare(project, base, head) {
   const parsed = parseGitUrl(project.git_url); if (!parsed || !base || !head) return null;
   const headers = { Accept: 'application/vnd.github+json' };
@@ -84,7 +86,30 @@ export async function getCompare(project, base, head) {
     const r = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/compare/${base}...${head}`, { headers });
     if (!r.ok) return null;
     const d = await r.json();
-    return { ahead: d.ahead_by || 0, files: (d.files || []).map((f) => f.filename), commits: (d.commits || []).length };
+    const commits = (d.commits || []).map((c) => ({
+      sha: c.sha,
+      short: (c.sha || '').slice(0, 7),
+      message: (c.commit?.message || '').split('\n')[0],
+      author: c.commit?.author?.name || c.author?.login || 'unknown',
+      date: c.commit?.author?.date || null,
+      url: c.html_url || null,
+    }));
+    const files = (d.files || []).map((f) => ({
+      filename: f.filename,
+      status: f.status || 'modified',
+      additions: f.additions || 0,
+      deletions: f.deletions || 0,
+      url: f.blob_url || null,
+    }));
+    return {
+      ahead: d.ahead_by || 0,
+      commits,
+      files,
+      // Back-compat: some callers still read plain filename/count arrays.
+      fileNames: files.map((f) => f.filename),
+      commitCount: commits.length,
+      permalink: d.permalink_url || d.html_url || `https://github.com/${parsed.owner}/${parsed.repo}/compare/${base}...${head}`,
+    };
   } catch { return null; }
 }
 
