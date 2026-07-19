@@ -155,13 +155,61 @@ function deriveInsights(r, dockers, wfs, paths) {
   const blockers = concerns.filter((c) => c.sev === 'high').length;
   const warnings = concerns.filter((c) => c.sev === 'medium').length;
   const opportunities = concerns.filter((c) => c.sev === 'low').length;
+  const totalIssues = blockers + warnings + opportunities;
   const recommendation = blockers > 0
     ? { verdict: 'Do not promote this release yet', tone: 'red', text: `I found ${blockers} issue${blockers === 1 ? '' : 's'} that should be resolved before production — chiefly around ${[...new Set(concerns.filter((c) => c.sev === 'high').map((c) => c.cat))].join(' and ')}.` }
     : warnings > 0
     ? { verdict: 'Proceed with caution', tone: 'amber', text: `No hard blockers, but ${warnings} item${warnings === 1 ? '' : 's'} warrant review before release.` }
     : { verdict: 'Looks release-ready', tone: 'green', text: 'I found no blocking issues in what I could inspect.' };
 
-  return { strengths: [...new Set(strengths)], concerns, areas, overall, summary: { blockers, warnings, opportunities }, recommendation, inspected: { dockers: inspectedDockers, workflows: inspectedWf } };
+  // ── Business consequence layer — owner, ETA, impact, readiness delta ──
+  const META = {
+    'Secrets': { impact: 'Exposed credentials could grant unauthorized access to production systems and data.', owner: 'Security', eta: '15 min', delta: 12, fix: 'Remove committed .env and rotate secrets' },
+    'Container security': { impact: 'A compromised container could escalate privileges and reach adjacent services and credentials.', owner: 'Platform', eta: '30 min', delta: 9, fix: 'Run containers as a non-root user' },
+    'Governance': { impact: 'A faulty or unauthorized release could bypass your release policy and reach production automatically.', owner: 'DevOps', eta: '10 min', delta: 6, fix: 'Add a production approval gate' },
+    'Pipeline security': { impact: 'Vulnerabilities can ship undetected without automated scanning in CI.', owner: 'DevOps', eta: '20 min', delta: 5, fix: 'Add security scanning to CI' },
+    'Reproducibility': { impact: 'Mutable base images make builds non-deterministic and rollbacks unreliable.', owner: 'Platform', eta: '15 min', delta: 4, fix: 'Pin image base tags' },
+    'Resilience': { impact: 'Workloads may take avoidable downtime during node failure or maintenance.', owner: 'SRE', eta: '25 min', delta: 5, fix: 'Add PodDisruptionBudgets' },
+    'Consistency': { impact: 'Divergent deploy paths cause environment drift and inconsistent releases.', owner: 'Platform', eta: '30 min', delta: 3, fix: 'Consolidate deployment strategy' },
+    'Single point of failure': { impact: 'A failure in this shared dependency could affect a large share of the platform.', owner: 'SRE', eta: 'varies', delta: 5, fix: 'Add failover for the shared datastore' },
+  };
+  const sensitive = r.serviceNames.filter((n) => /pay|checkout|billing|order|auth|identity|user|account|login|cart/i.test(n)).slice(0, 3);
+  concerns.forEach((c) => {
+    const m = META[c.cat] || { impact: 'Increases operational risk for this release.', owner: 'Platform', eta: '20 min', delta: 4, fix: `Address ${c.cat.toLowerCase()}` };
+    Object.assign(c, m, { likelihood: c.sev === 'high' ? 'High' : c.sev === 'medium' ? 'Medium' : 'Low',
+      affected: (/security|secret|failure/i.test(c.cat) && sensitive.length) ? sensitive : null });
+  });
+
+  // ── AI prediction (transparent heuristics off readiness + findings) ──
+  const clampP = (n) => Math.max(2, Math.min(60, Math.round(n)));
+  const rollbackProb = clampP(4 + blockers * 7 + warnings * 3 + (security < 60 ? 8 : 0));
+  const successProb = 100 - rollbackProb;
+  const blockerDelta = concerns.filter((c) => c.sev === 'high').reduce((s, c) => s + c.delta, 0);
+  const afterReadiness = Math.min(96, overall + blockerDelta);
+  const afterRollback = Math.max(2, Math.min(rollbackProb, 4 + warnings * 3));
+  const incident = rollbackProb >= 30 ? 'High' : rollbackProb >= 15 ? 'Medium' : 'Low';
+  const expectedTime = 6 + Math.min(18, Math.round(r.services / 3));
+  const prediction = { successProb, rollbackProb, incident, expectedTime, mostLikely: (concerns.find((c) => c.sev === 'high') || concerns[0])?.cat || null };
+
+  // ── Prioritized quick wins & projection ──
+  const priorities = [...concerns].sort((a, b) => b.delta - a.delta).slice(0, 3).map((c) => ({ fix: c.fix, delta: c.delta, eta: c.eta }));
+  const projection = {
+    readiness: [overall, afterReadiness],
+    rollback: [rollbackProb, afterRollback],
+    confidence: [successProb, Math.min(96, successProb + (rollbackProb - afterRollback))],
+  };
+
+  // ── Release narrative (paste-able) ──
+  const topStrength = (strengths[0] || 'solid engineering practices').replace(/\.$/, '').replace(/^./, (m) => m.toLowerCase());
+  const topConcern = concerns.find((c) => c.sev === 'high') || concerns[0];
+  const narrative = `Your platform demonstrates ${topStrength}${r.monitoring.length >= 2 ? ' with mature observability and automated CI/CD' : ''}. ` +
+    (totalIssues
+      ? `However, I identified ${blockers + warnings} issue${blockers + warnings === 1 ? '' : 's'} that increase operational risk. The most urgent is ${topConcern ? topConcern.text.replace(/^./, (m) => m.toLowerCase()) : 'a configuration gap.'} ` +
+        (blockerDelta ? `Resolving the highest-priority issues should raise deployment readiness from ${overall}% to about ${afterReadiness}%, while reducing estimated rollback probability from ${rollbackProb}% to below ${afterRollback}%.` : '')
+      : 'I found no material risks in what I could inspect, so this release looks ready to proceed.');
+
+  return { strengths: [...new Set(strengths)], concerns, areas, overall, summary: { blockers, warnings, opportunities }, recommendation,
+    prediction, priorities, projection, narrative, inspected: { dockers: inspectedDockers, workflows: inspectedWf } };
 }
 
 const STEPS = ['Reading repository', 'Detecting services', 'Inspecting containers', 'Reading CI/CD pipelines', 'Assessing security posture', 'Scoring platform maturity', 'Forming an opinion', 'Writing your briefing'];
@@ -256,42 +304,96 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         </div>
       </div>
 
-      {/* ── STRENGTHS / CONCERNS ─────────────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="card">
-          <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500" />What impressed me</h3>
-          {r.strengths.length ? (
-            <ul className="space-y-1.5">{r.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check size={15} className="text-green-500 shrink-0 mt-0.5" />{s}</li>)}</ul>
-          ) : <p className="text-sm text-gray-400">Nothing notable detected yet.</p>}
+      {/* ── RELEASE NARRATIVE (paste-able) ───────────────────────────────── */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-1.5">
+          <h3 className="text-sm font-semibold text-navy-900">Release narrative</h3>
+          <button onClick={() => navigator.clipboard?.writeText(r.narrative)} className="btn-ghost text-xs">Copy</button>
         </div>
-        <div className="card">
-          <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" />What concerns me</h3>
-          {r.concerns.length ? (
-            <ul className="space-y-2">
-              {r.concerns.map((c, i) => (
-                <li key={i} className="text-sm">
-                  <span className="flex items-center gap-1.5">
-                    <span className={`chip text-[10px] ${c.sev === 'high' ? 'bg-red-50 text-red-700 border border-red-200' : c.sev === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>{c.sev === 'high' ? 'Blocker' : c.sev === 'medium' ? 'Needs attention' : 'Optimization'}</span>
-                    <span className="font-medium text-navy-800">{c.cat}</span>
-                  </span>
-                  <p className="text-gray-600 mt-0.5 leading-snug">{c.text}</p>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-sm text-green-700">No concerns in what I could inspect.</p>}
-        </div>
+        <p className="text-sm text-gray-700 leading-relaxed">{r.narrative}</p>
       </div>
 
-      {/* ── AI FINDINGS SUMMARY ──────────────────────────────────────────── */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-navy-900 mb-1">AI findings summary</h3>
-        <p className="text-sm text-gray-600 mb-3">After analyzing {r.inventory.total.toLocaleString()} files, I found <span className="font-semibold text-navy-900">{totalIssues} issue{totalIssues === 1 ? '' : 's'} that matter</span>{totalIssues === 0 ? '.' : ':'}</p>
-        <div className="grid gap-3 grid-cols-3">
-          {[{ n: r.summary.blockers, l: 'Blockers', c: 'text-red-600' }, { n: r.summary.warnings, l: 'Need attention', c: 'text-amber-600' }, { n: r.summary.opportunities, l: 'Optimizations', c: 'text-brand-700' }].map((x) => (
-            <div key={x.l} className="rounded-xl border border-gray-200 p-3 text-center"><div className={`text-2xl font-bold ${x.c}`}>{x.n}</div><div className="text-xs text-gray-500 mt-0.5">{x.l}</div></div>
+      {/* ── AI PREDICTION ────────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-navy-900 mb-2">AI prediction — if released today</h3>
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {[
+            { l: 'Deployment success', v: `${r.prediction.successProb}%`, c: r.prediction.successProb >= 85 ? 'text-green-600' : r.prediction.successProb >= 70 ? 'text-amber-600' : 'text-red-600' },
+            { l: 'Rollback probability', v: `${r.prediction.rollbackProb}%`, c: r.prediction.rollbackProb <= 10 ? 'text-green-600' : r.prediction.rollbackProb <= 25 ? 'text-amber-600' : 'text-red-600' },
+            { l: 'Expected deploy time', v: `~${r.prediction.expectedTime} min`, c: 'text-navy-900' },
+            { l: 'Incident risk', v: r.prediction.incident, c: r.prediction.incident === 'Low' ? 'text-green-600' : r.prediction.incident === 'Medium' ? 'text-amber-600' : 'text-red-600' },
+          ].map((x) => (
+            <div key={x.l} className="card !p-3"><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-xs text-gray-500 mt-0.5">{x.l}</div></div>
           ))}
         </div>
+        {r.prediction.mostLikely && <p className="text-[11px] text-gray-400 mt-2">Most likely failure mode: <span className="text-gray-600">{r.prediction.mostLikely}</span>. Estimates are derived from the detected findings and maturity signals.</p>}
       </div>
+
+      {/* ── WHAT IMPRESSED ME + EXECUTIVE RISK REGISTER ──────────────────── */}
+      <div className="card">
+        <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500" />What impressed me</h3>
+        {r.strengths.length ? (
+          <ul className="grid gap-1.5 sm:grid-cols-2">{r.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check size={15} className="text-green-500 shrink-0 mt-0.5" />{s}</li>)}</ul>
+        ) : <p className="text-sm text-gray-400">Nothing notable detected yet.</p>}
+      </div>
+
+      {r.concerns.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" />AI executive risk register</h3>
+          <div className="card !p-0 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium">ETA</th></tr></thead>
+              <tbody>
+                {r.concerns.map((c, i) => (
+                  <tr key={i} className="border-b border-gray-50 last:border-0 align-top">
+                    <td className="px-4 py-2.5">
+                      <span className={`chip text-[10px] mb-1 ${c.sev === 'high' ? 'bg-red-50 text-red-700 border border-red-200' : c.sev === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>{c.sev === 'high' ? 'Blocker' : c.sev === 'medium' ? 'Needs attention' : 'Optimization'}</span>
+                      <div className="font-medium text-navy-800">{c.cat}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-600 max-w-md">{c.impact}{c.affected ? <span className="block text-[11px] text-gray-400 mt-0.5">Potentially affects: {c.affected.join(', ')}</span> : null}</td>
+                    <td className="px-4 py-2.5 text-navy-700 whitespace-nowrap">{c.owner}</td>
+                    <td className="px-4 py-2.5 text-navy-700 whitespace-nowrap">{c.eta}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── PRIORITIZED QUICK WINS + IMPACT PROJECTION ───────────────────── */}
+      {r.concerns.length > 0 && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="card">
+            <h3 className="text-sm font-semibold text-navy-900 mb-2">If you only have one hour, fix these first</h3>
+            <ol className="space-y-2">
+              {r.priorities.map((p, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{i + 1}</span>
+                  <span className="flex-1 text-sm text-navy-800">{p.fix}</span>
+                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">+{p.delta} readiness</span>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{p.eta}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="card">
+            <h3 className="text-sm font-semibold text-navy-900 mb-2">If you fix the blockers</h3>
+            <div className="space-y-2.5">
+              {[
+                { l: 'Deployment readiness', a: r.projection.readiness[0], b: r.projection.readiness[1], suf: '', up: true },
+                { l: 'Rollback risk', a: r.projection.rollback[0], b: r.projection.rollback[1], suf: '%', up: false },
+                { l: 'Deployment confidence', a: r.projection.confidence[0], b: r.projection.confidence[1], suf: '%', up: true },
+              ].map((x) => (
+                <div key={x.l} className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">{x.l}</span>
+                  <span className="flex items-center gap-2"><span className="text-gray-400">{x.a}{x.suf}</span><ArrowRight size={12} className="text-gray-300" /><span className={`font-bold ${x.up ? 'text-green-600' : 'text-green-600'}`}>{x.b}{x.suf}</span></span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── PLATFORM MATURITY ────────────────────────────────────────────── */}
       <div className="card">
