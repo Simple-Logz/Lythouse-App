@@ -1,7 +1,17 @@
 import type{ReactNode}from'react';
-import{ShieldCheck,ShieldAlert,ShieldX,TriangleAlert as AlertTriangle,Check,X,Loader as Loader2,ChevronRight}from'lucide-react';
+import{ShieldCheck,ShieldAlert,ShieldX,TriangleAlert as AlertTriangle,Check,X,Loader as Loader2,ChevronRight,Info}from'lucide-react';
 import type{Severity,ValidationStatus,StepStatus,FindingStatus}from'./supabase';
 import{useRouter}from'./router';
+
+// A tiny hover/focus info affordance. Sits inline next to a label; on hover
+// (or keyboard focus / tap) reveals a small popover explaining the term.
+// Used sparingly — only where a metric or label isn't self-explanatory.
+export function InfoHint({text,align='center',className=''}:{text:string;align?:'center'|'right';className?:string}){
+return<span tabIndex={0} className={`group/hint relative inline-flex items-center align-middle outline-none ${className}`}>
+<Info size={12} className="text-gray-400 transition-colors group-hover/hint:text-brand-600 group-focus/hint:text-brand-600 cursor-help"/>
+<span className={`pointer-events-none absolute top-full z-40 mt-1.5 hidden w-56 rounded-lg bg-navy-900 px-3 py-2 text-[11px] font-normal leading-snug text-white shadow-xl group-hover/hint:block group-focus/hint:block ${align==='right'?'right-0':'left-1/2 -translate-x-1/2'}`}>{text}</span>
+</span>;
+}
 
 export function Logo({size=26}:{size?:number}){
 return<div className="flex items-center gap-2.5 select-none">

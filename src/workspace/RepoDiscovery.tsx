@@ -4,6 +4,7 @@ import {
   Loader as Loader2, Check, ArrowRight, Shield, Boxes, Database, AlertTriangle,
   Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2,
 } from 'lucide-react';
+import { InfoHint } from '../lib/ui';
 
 function parseGitUrl(url) {
   if (!url) return null;
@@ -308,12 +309,12 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mt-4">
           {[
-            { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall) },
-            { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb) },
-            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]' },
-            { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900' },
+            { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall), hint: 'A 0–100 score of how ready this release is to ship, averaged across architecture, security, deployment automation, observability, disaster recovery and operational readiness.' },
+            { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb), hint: 'Estimated probability the deployment succeeds without needing a rollback, based on readiness and the number of open blockers.' },
+            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]', hint: 'Findings serious enough that the release should not be promoted to production until they are resolved.' },
+            { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900', hint: 'Estimated total hands-on time to fix all blocking issues before this release can be approved.' },
           ].map((x) => (
-            <div key={x.l}><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-[11px] uppercase tracking-wide text-gray-400 mt-0.5">{x.l}</div></div>
+            <div key={x.l}><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-[11px] uppercase tracking-wide text-gray-400 mt-0.5 flex items-center gap-1">{x.l}<InfoHint text={x.hint} /></div></div>
           ))}
         </div>
 
@@ -351,12 +352,12 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         <h3 className="text-sm font-semibold text-navy-900 mb-2">Release Forecast</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {[
-            { l: 'Deployment success', v: `${r.prediction.successProb}%`, c: r.prediction.successProb >= 85 ? 'text-green-600' : r.prediction.successProb >= 70 ? 'text-amber-600' : 'text-red-600' },
-            { l: 'Rollback probability', v: `${r.prediction.rollbackProb}%`, c: r.prediction.rollbackProb <= 10 ? 'text-green-600' : r.prediction.rollbackProb <= 25 ? 'text-amber-600' : 'text-red-600' },
-            { l: 'Expected deploy time', v: `~${r.prediction.expectedTime} min`, c: 'text-navy-900' },
-            { l: 'Incident risk', v: r.prediction.incident, c: r.prediction.incident === 'Low' ? 'text-green-600' : r.prediction.incident === 'Medium' ? 'text-amber-600' : 'text-red-600' },
+            { l: 'Deployment success', v: `${r.prediction.successProb}%`, c: r.prediction.successProb >= 85 ? 'text-[#0f9a4c]' : r.prediction.successProb >= 70 ? 'text-[#e07600]' : 'text-[#d61f1f]', hint: 'Estimated chance this release deploys cleanly with no rollback, if shipped as-is today.' },
+            { l: 'Rollback probability', v: `${r.prediction.rollbackProb}%`, c: r.prediction.rollbackProb <= 10 ? 'text-[#0f9a4c]' : r.prediction.rollbackProb <= 25 ? 'text-[#e07600]' : 'text-[#d61f1f]', hint: 'Estimated chance you would need to roll this release back within the first hour after deploying.' },
+            { l: 'Expected deploy time', v: `~${r.prediction.expectedTime} min`, c: 'text-navy-900', hint: 'Rough estimate of how long the deployment pipeline takes to run, based on service count and pipeline stages.' },
+            { l: 'Incident risk', v: r.prediction.incident, c: r.prediction.incident === 'Low' ? 'text-[#0f9a4c]' : r.prediction.incident === 'Medium' ? 'text-[#e07600]' : 'text-[#d61f1f]', hint: 'Likelihood of a production incident if this release ships without addressing the open findings.' },
           ].map((x) => (
-            <div key={x.l} className="card !p-3"><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-xs text-gray-500 mt-0.5">{x.l}</div></div>
+            <div key={x.l} className="card !p-3"><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">{x.l}<InfoHint text={x.hint} /></div></div>
           ))}
         </div>
         {r.prediction.mostLikely && <p className="text-[11px] text-gray-400 mt-2">Most likely failure mode: <span className="text-gray-600">{r.prediction.mostLikely}</span>. Estimates are derived from the detected findings and maturity signals.</p>}
@@ -376,7 +377,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" />Deployment Risks</h3>
           <div className="card !p-0 overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business Impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium">Time to Fix</th></tr></thead>
+              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business Impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium"><span className="inline-flex items-center gap-1">Time to Fix<InfoHint text="Estimated hands-on effort to remediate this specific risk." align="right" /></span></th></tr></thead>
               <tbody>
                 {r.concerns.map((c, i) => (
                   <tr key={i} className="border-b border-gray-50 last:border-0 align-top">
@@ -432,7 +433,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
       {/* ── PLATFORM MATURITY ────────────────────────────────────────────── */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-1.5"><TrendingUp size={14} className="text-brand-600" />Platform maturity</h3>
+          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-1.5"><TrendingUp size={14} className="text-brand-600" />Platform maturity<InfoHint text="Each area is scored 0–100 from signals detected in your repository (containers, CI, IaC, orchestration, observability, resilience). The overall score is their average." /></h3>
           <span className="text-sm text-gray-500">Overall <span className={`font-bold ${scoreColor(r.overall)}`}>{r.overall}/100</span></span>
         </div>
         <div className="space-y-2.5">
