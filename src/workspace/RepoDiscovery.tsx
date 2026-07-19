@@ -534,6 +534,9 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
                 </span>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <span onClick={(e) => e.stopPropagation()} className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-brand-200 bg-brand-50 hover:bg-brand-100 transition-colors">
+                  <InfoHint align="right" text="Continuous validation. LytHouse watches your connected Git repository and detects new commits pushed after the last assessment — then tells you what changed, which review areas need revalidating, and whether your previous release decision is still valid." />
+                </span>
                 <span onClick={(e) => { e.stopPropagation(); reanalyze(); }} className="btn-primary text-xs cursor-pointer"><Shield size={13} />{btnLabel}</span>
                 <ChevronDown size={16} className={`text-gray-400 transition-transform ${changeOpen ? 'rotate-180' : ''}`} />
               </div>
