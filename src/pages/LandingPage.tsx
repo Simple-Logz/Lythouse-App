@@ -54,10 +54,12 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* product preview card */}
-        <div className="relative">
-          <div className="absolute -inset-4 bg-gradient-to-tr from-brand-100 to-transparent rounded-[2rem] blur-2xl opacity-70" />
-          <div className="relative rounded-2xl border border-gray-200 bg-white shadow-xl p-5">
+        {/* product preview card — tilted in 3D, straightens on hover */}
+        <div className="relative group/card" style={{ perspective: '1400px' }}>
+          <div className="absolute -inset-4 bg-gradient-to-tr from-brand-200 to-transparent rounded-[2rem] blur-2xl opacity-70" />
+          <div
+            className="relative rounded-2xl border border-gray-200 bg-white p-5 transition-transform duration-500 ease-out group-hover/card:rotate-0"
+            style={{ transform: 'rotateX(6deg) rotateY(-12deg) rotateZ(1deg)', transformStyle: 'preserve-3d', boxShadow: '0 2px 4px rgba(16,24,40,.06), 0 24px 48px -12px rgba(16,24,40,.28), -18px 30px 60px -20px rgba(79,69,171,.30)' }}>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wide text-navy-400">Release Decision</span>
               <span className="chip text-[10px] bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]">CLEARED</span>
@@ -108,8 +110,8 @@ export function LandingPage() {
             { icon: Rocket, t: 'Deployment', d: 'Policy gates enforce your minimum readiness and required approvals before deploy.' },
             { icon: Activity, t: 'Observability', d: 'Continuous watching detects new commits and tells you if your decision is still valid.' },
           ].map((f) => (
-            <div key={f.t} className="rounded-2xl border border-gray-200 bg-white p-6 hover:shadow-md hover:border-brand-200 transition-all">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><f.icon size={18} /></span>
+            <div key={f.t} className="rounded-2xl border border-gray-200 bg-white p-6 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-brand-200 [box-shadow:0_1px_2px_rgba(16,24,40,.05),0_10px_20px_-8px_rgba(16,24,40,.12)] hover:[box-shadow:0_8px_16px_rgba(16,24,40,.10),0_28px_44px_-16px_rgba(79,69,171,.28)]">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 [box-shadow:inset_0_1px_0_rgba(255,255,255,.6),0_4px_10px_-2px_rgba(79,69,171,.35)]"><f.icon size={18} /></span>
               <h3 className="mt-4 text-lg font-bold">{f.t}</h3>
               <p className="mt-1.5 text-sm text-navy-500 leading-relaxed">{f.d}</p>
             </div>
@@ -125,8 +127,8 @@ export function LandingPage() {
             { icon: TrendingUp, t: 'Decision-first', d: 'Open a release and immediately see the call: cleared, review, or blocked — and why.' },
             { icon: Lock, t: 'Policy as code', d: 'Encode your deployment rules once and let LytHouse enforce them on every release.' },
           ].map((f) => (
-            <div key={f.t}>
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15"><f.icon size={20} /></span>
+            <div key={f.t} className="rounded-2xl bg-white/5 p-5 transition-transform duration-300 ease-out hover:-translate-y-1 [box-shadow:inset_0_1px_0_rgba(255,255,255,.12),0_16px_30px_-14px_rgba(0,0,0,.5)]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 [box-shadow:inset_0_1px_0_rgba(255,255,255,.25)]"><f.icon size={20} /></span>
               <h3 className="mt-4 text-xl font-bold">{f.t}</h3>
               <p className="mt-2 text-sm text-white/80 leading-relaxed">{f.d}</p>
             </div>
