@@ -130,9 +130,29 @@ function analyze(paths) {
   monitoring.forEach((m) => detected.push(m));
   cloud.forEach((c) => detected.push(c));
 
+  // ── Repository inventory — partition EVERY file into one bucket so the
+  // numbers are transparent and add up to the true total.
+  const CATS = [
+    { key: 'Documentation', re: /\.(md|mdx|rst|adoc|txt)$/i, relevant: false },
+    { key: 'Kubernetes', re: /(k8s|kubernetes|manifests?|deploy(ments?)?|overlays?|base)\/.*\.ya?ml$/i, relevant: true },
+    { key: 'Helm', re: /(^|\/)(Chart\.ya?ml|values[^/]*\.ya?ml)$|\/(charts|helm)\/.*\/templates\//i, relevant: true },
+    { key: 'Terraform', re: /\.tf(vars)?$/i, relevant: true },
+    { key: 'Containers', re: /(^|\/)(Dockerfile|\.dockerignore)|docker-compose[^/]*\.ya?ml$|(^|\/)compose\.ya?ml$/i, relevant: true },
+    { key: 'CI/CD', re: /\.github\/workflows\/|(^|\/)\.gitlab-ci\.ya?ml$|(^|\/)Jenkinsfile$|(^|\/)\.circleci\//i, relevant: true },
+    { key: 'Source code', re: /\.(go|tsx?|jsx?|py|rb|rs|java|php|cs|kt|swift|scala|c|cc|cpp|h|hpp|vue|svelte|proto)$/i, relevant: true },
+    { key: 'Configuration', re: /\.(ya?ml|json|toml|ini|env|conf|cfg|config|properties|xml|lock|sh|bash)$|(^|\/)(\.env[^/]*|Makefile|\.gitignore|\.editorconfig)$/i, relevant: true },
+  ];
+  const buckets = {}; CATS.forEach((c) => (buckets[c.key] = 0)); buckets['Other / assets'] = 0;
+  paths.forEach((p) => { const c = CATS.find((c) => c.re.test(p)); buckets[c ? c.key : 'Other / assets']++; });
+  const relevant = CATS.filter((c) => c.relevant).reduce((s, c) => s + buckets[c.key], 0);
+  const inventory = {
+    total: paths.length, relevant, ignored: paths.length - relevant,
+    buckets: [...CATS.map((c) => ({ key: c.key, n: buckets[c.key] })), { key: 'Other / assets', n: buckets['Other / assets'] }].filter((b) => b.n > 0),
+  };
+
   return {
     appType, services, serviceNames, langs, frameworks, infra, container, orchestration, orchTarget,
-    ci, cloud, monitoring, stores, envs, confidence, pipeline, learned, detected,
+    ci, cloud, monitoring, stores, envs, confidence, pipeline, learned, detected, inventory,
     counts: { files: paths.length, services, dockerfiles, tf, k8s, ghActions: ghActions || (gitlabCI ? 1 : jenkins ? 1 : 0), helm, compose },
   };
 }
@@ -225,8 +245,8 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             <p className="text-xs font-bold uppercase tracking-wide text-brand-700 mb-1 flex items-center gap-1.5"><Boxes size={12} />AI Discovery Report</p>
             <h2 className="text-xl font-bold text-navy-900">{r.appType}</h2>
             <p className="text-sm text-gray-700 mt-1.5 leading-relaxed max-w-2xl">
-              I analyzed <span className="font-semibold">{r.counts.files.toLocaleString()} files</span>, identified <span className="font-semibold">{r.services} deployable service{r.services === 1 ? '' : 's'}</span>
-              {r.detected.length ? <>, and detected <span className="font-semibold">{r.detected.slice(0, 7).join(', ')}</span></> : null}. I now understand how your application is built and deployed.
+              I scanned <span className="font-semibold">{r.inventory.total.toLocaleString()} repository files</span> and identified <span className="font-semibold">{r.inventory.relevant.toLocaleString()} deployment-relevant files</span> across application code, infrastructure, Kubernetes, containers, CI/CD and configuration — spanning <span className="font-semibold">{r.services} deployable service{r.services === 1 ? '' : 's'}</span>
+              {r.detected.length ? <>, using <span className="font-semibold">{r.detected.slice(0, 7).join(', ')}</span></> : null}.
             </p>
           </div>
           <div className="text-center shrink-0">
@@ -264,16 +284,22 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             </div>
           </div>
         )}
-        {structure.length > 0 && (
-          <div className="card">
-            <h3 className="text-sm font-semibold text-navy-900 mb-3">Repository structure</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {structure.map((s) => (
-                <div key={s.l} className="flex items-baseline gap-2"><span className="text-lg font-bold text-navy-900">{s.n}</span><span className="text-xs text-gray-500">{s.l}</span></div>
-              ))}
-            </div>
+        <div className="card">
+          <h3 className="text-sm font-semibold text-navy-900 mb-3">Repository inventory</h3>
+          <div className="space-y-1.5">
+            {r.inventory.buckets.map((b) => (
+              <div key={b.key} className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">{b.key}</span>
+                <span className="font-semibold text-navy-900 tabular-nums">{b.n.toLocaleString()}</span>
+              </div>
+            ))}
           </div>
-        )}
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-gray-500">Total repository files</span><span className="font-semibold text-navy-900 tabular-nums">{r.inventory.total.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Deployment-relevant</span><span className="font-semibold text-brand-700 tabular-nums">{r.inventory.relevant.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Ignored (docs, assets, lockfiles)</span><span className="font-medium text-gray-400 tabular-nums">{r.inventory.ignored.toLocaleString()}</span></div>
+          </div>
+        </div>
       </div>
 
       {/* ── INFERRED ARCHITECTURE ────────────────────────────────────────── */}
