@@ -370,6 +370,18 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               {n:contArea?.count||0,label:'container image'},
               {n:secretsArea?.count||0,label:'secret changes'},
             ];
+            // ── Project Overview (pre-assessment reality) ─────────────────
+            const isConn=(...s:string[])=>connected.some(c=>s.includes(c.source));
+            const hasRepo=!!project.git_url||isConn('github','gitlab','bitbucket');
+            const overview=[
+              {k:'Repository',icon:GitBranch,ok:hasRepo},
+              {k:'Environment',icon:Server,ok:isConn('kubernetes','aws','gcp','azure')},
+              {k:'Kubernetes',icon:Layers,ok:isConn('kubernetes')},
+              {k:'AWS',icon:Server,ok:isConn('aws')},
+              {k:'Terraform',icon:Layers,ok:isConn('terraform')},
+              {k:'CI/CD',icon:Zap,ok:isConn('github-actions','gitlab-ci','jenkins','circleci')},
+            ];
+            const connectedCount=overview.filter(o=>o.ok).length;
 
             return(
             <div className="space-y-5">
@@ -377,7 +389,9 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               {/* ── Live status strip ────────────────────────────────────── */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 {running?(
-                  <span className="inline-flex items-center gap-1.5 font-medium text-brand-700"><Loader2 size={12} className="animate-spin"/>Analyzing release… recalculating readiness</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium text-brand-700"><Loader2 size={12} className="animate-spin"/>Analyzing release… gathering evidence</span>
+                ):validations.length===0?(
+                  <span className="inline-flex items-center gap-1.5 font-medium text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-gray-400"/>Not yet analyzed</span>
                 ):(
                   <span className="inline-flex items-center gap-1.5 font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>Continuously monitoring</span>
                 )}
@@ -386,21 +400,73 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               </div>
 
               {validations.length===0?(
-                /* ── First run: the briefing hasn't been generated yet ──── */
-                <div className={`card border ${dBg}`}>
-                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Briefing</p>
-                  <h2 className="text-xl font-bold text-navy-900">{greeting}{firstName?`, ${firstName}`:''}.</h2>
-                  <p className="text-sm text-gray-600 mt-1 mb-4">I haven't reviewed <span className="font-semibold text-navy-800">{project.name}</span> yet. Let me analyze the release and I'll tell you whether it's safe to deploy — and why.</p>
-                  <div className="flex flex-wrap items-center gap-1.5 mb-5">
-                    {['Repository','Infrastructure','Dependencies','Secrets','Deployment Config','Assessment'].map((step,i,arr)=>(
-                      <div key={step} className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium text-navy-600">{step}</span>
-                        {i<arr.length-1&&<ArrowRight size={12} className="text-gray-300"/>}
+                /* ── PROJECT OVERVIEW — reality before any assessment ───── */
+                <>
+                  <div className="card">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">Project Overview</p>
+                        <h2 className="text-xl font-bold text-navy-900">{project.name}</h2>
+                        <p className="text-sm text-gray-600 mt-1 max-w-xl">Let's prepare your release. Before I can tell you whether it's safe to deploy, I need to understand your application and environment.</p>
                       </div>
-                    ))}
+                      <div className="text-right">
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Deployment Confidence</div>
+                        <div className="text-2xl font-bold text-gray-400">Unknown</div>
+                        <div className="text-[11px] text-gray-400">not assessed yet</div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 mt-5">
+                      {overview.map(o=>(
+                        <div key={o.k} className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5">
+                          <span className="flex items-center gap-2 text-sm text-navy-800"><o.icon size={15} className="text-gray-400"/>{o.k}</span>
+                          {o.ok
+                            ?<span className="chip text-[10px] bg-green-50 text-green-700 border border-green-200">Connected</span>
+                            :<span className="chip text-[10px] bg-gray-100 text-gray-500 border border-gray-200">Not Connected</span>}
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5">
+                        <span className="flex items-center gap-2 text-sm text-navy-800"><Shield size={15} className="text-gray-400"/>Validation</span>
+                        <span className="chip text-[10px] bg-amber-50 text-amber-700 border border-amber-200">Not Run</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-sm">
+                        <span className="text-[11px] uppercase tracking-wide text-gray-400 mr-2">Next step</span>
+                        <span className="font-semibold text-navy-900">Run Initial Assessment</span>
+                        <span className="text-xs text-gray-500 ml-2">· ~2 min</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {connectedCount<3&&<button onClick={()=>window.location.href=`/projects/${projectId}`} className="btn-secondary text-sm"><Server size={13}/>Connect systems</button>}
+                        <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary text-sm"><Shield size={14}/>Start Assessment</button>
+                      </div>
+                    </div>
                   </div>
-                  <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary"><Shield size={14}/>Generate Release Briefing</button>
-                </div>
+
+                  {/* Setup timeline — what happens as we go */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-navy-900 mb-2">How this works</h3>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[
+                        {t:'Repository Imported',done:hasRepo},
+                        {t:'Discover Environment',done:connectedCount>1},
+                        {t:'Connect Systems',done:connectedCount>=3},
+                        {t:'Run Validation',done:false},
+                        {t:'Generate Findings',done:false},
+                        {t:'AI Decision',done:false},
+                      ].map((s,i,arr)=>(
+                        <div key={s.t} className="flex items-center gap-1.5">
+                          <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${s.done?'border-green-200 bg-green-50 text-green-700':'border-gray-200 bg-white text-gray-500'}`}>
+                            {s.done?<Check size={12}/>:<span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-gray-300 text-[8px]">{i+1}</span>}{s.t}
+                          </span>
+                          {i<arr.length-1&&<ArrowRight size={12} className="text-gray-300"/>}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-3">The AI won't make a release decision until it has gathered enough evidence. Run the assessment and this page becomes your release briefing.</p>
+                  </div>
+                </>
               ):(
                 <>
                   {/* ── 1. AI RELEASE BRIEFING (the decision) ────────────── */}
