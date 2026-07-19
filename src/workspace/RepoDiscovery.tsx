@@ -671,6 +671,32 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Recommendation</p>
           <p className="text-sm text-navy-800">{r.recommendation.text}</p>
         </div>
+
+        {/* Why it's blocked + how to resolve — only when there are blockers */}
+        {r.summary.blockers > 0 && (() => {
+          const blockers = r.concerns.filter((c) => c.sev === 'high');
+          return (
+            <div className="mt-4 pt-3 border-t border-[#f5a3a3]/60">
+              <p className="text-[11px] uppercase tracking-wide font-semibold text-[#b3261e] mb-2 flex items-center gap-1.5"><AlertTriangle size={12} />Why this release is blocked ({blockers.length})</p>
+              <ul className="space-y-2">
+                {blockers.map((c, i) => (
+                  <li key={i} className="rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/40 px-3 py-2">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-navy-900">{c.label}</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{c.impact}{c.affected ? <span className="block text-[11px] text-gray-400 mt-0.5">Potentially affects: {c.affected.join(', ')}</span> : null}</p>
+                      </div>
+                      <span className="text-[11px] text-gray-500 whitespace-nowrap shrink-0">Owner: {c.owner}{c.eta && c.eta !== '—' ? ` · ${c.eta}` : ''}</span>
+                    </div>
+                    <p className="text-xs mt-1.5 flex items-start gap-1.5"><ArrowRight size={12} className="text-[#0f9a4c] shrink-0 mt-0.5" /><span><span className="font-semibold text-[#0f7a3c]">How to resolve:</span> {c.fix}.</span></p>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-gray-500 mt-2">The release stays blocked until every item above is cleared. LytHouse can open a pull request for the auto-fixable items in <span className="font-medium text-navy-700">AI Auto-Remediation</span> below, or assign each to its owner.</p>
+            </div>
+          );
+        })()}
+
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button onClick={onRunValidation} className="btn-primary text-sm"><Shield size={14} />Assess Release</button>
           {r.infra === 'Terraform' && onConnect && <button onClick={onConnect} className="btn-secondary text-sm"><Cloud size={13} />Verify {r.cloud[0] || 'cloud'} infra</button>}
