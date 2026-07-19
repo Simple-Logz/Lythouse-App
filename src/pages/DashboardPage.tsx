@@ -2,7 +2,19 @@
 import{useCallback,useEffect,useState}from'react';
 import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
 import{useAuth}from'../lib/auth';
-import{Spinner}from'../lib/ui';
+import{Spinner,InfoHint}from'../lib/ui';
+
+// Deterministic, transparent deployment confidence — derived only from real
+// signals (last risk score + open blockers + pending approvals). Returns null
+// when there's nothing to base it on, so we never show an invented number.
+function computeConfidence(latest,critical,high,pendingApprovals,validationsRun){
+  if(!validationsRun||latest?.risk_score==null)return null;
+  let c=100-latest.risk_score;
+  c-=critical.length*25;
+  c-=high.length*8;
+  c-=pendingApprovals.length*6;
+  return Math.max(5,Math.min(98,Math.round(c)));
+}
 import{Link}from'../lib/router';
 import{
   CheckCircle2,XCircle,AlertTriangle,Clock,Shield,Zap,
@@ -77,18 +89,20 @@ Context:
 - Connected systems: ${connectedSystems.length}`}]
         })
       });
+      // Confidence is NOT taken from the model — it's computed from real signals.
+      const conf=computeConfidence(latest,critical,high,pendingApprovals,validations.length);
       if(res.ok){
         const d=await res.json();
         try{
           const text=d.content?.replace(/```json|```/g,'').trim();
           const parsed=JSON.parse(text);
-          setAiRec(parsed);
+          setAiRec({...parsed,confidence:conf});
         }catch{
           // Fallback structured recommendation
           const isBlocked=critical.length>0;
           setAiRec({
             decision:isBlocked?'DO NOT DEPLOY':high.length>0?'DELAY':validations.length===0?'DELAY':'DEPLOY NOW',
-            confidence:isBlocked?15:high.length>0?55:validations.length===0?30:88,
+            confidence:conf,
             reasons:isBlocked?[`${critical.length} critical blocker${critical.length!==1?'s':''} unresolved`,pendingApprovals.length>0?`${pendingApprovals.length} approval${pendingApprovals.length!==1?'s':''} pending`:'Recent validation failed','Deployment gate blocked'].filter(Boolean)
               :high.length>0?[`${high.length} high-severity issue${high.length!==1?'s':''} needs review`,pendingApprovals.length>0?`${pendingApprovals.length} approval pending`:'All blockers cleared'].filter(Boolean)
               :validations.length===0?['No validation has been run','Cannot assess risk without a scan','Connect repository and run scan first']
@@ -193,13 +207,17 @@ Context:
                   </h1>
                 )}
                 {aiRec&&(
+                  aiRec.confidence!=null?(
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-bold text-gray-600">Confidence</span>
+                    <span className="text-sm font-bold text-gray-600 flex items-center gap-1">Confidence<InfoHint text="Computed from your latest scan: readiness (100 − risk score) minus fixed penalties for open critical/high findings and pending approvals. Not a model guess or live telemetry."/></span>
                     <span className={`text-xl font-semibold ${aiRec.confidence>=80?'text-green-600':aiRec.confidence>=60?'text-amber-600':'text-red-600'}`}>{aiRec.confidence}%</span>
                     <div className="flex-1 h-1.5 rounded-full bg-gray-200 overflow-hidden max-w-24">
                       <div className={`h-1.5 rounded-full transition-all ${aiRec.confidence>=80?'bg-green-500':aiRec.confidence>=60?'bg-amber-500':'bg-red-500'}`} style={{width:`${aiRec.confidence}%`}}/>
                     </div>
                   </div>
+                  ):(
+                    <p className="text-xs text-gray-400 mt-1">Confidence isn't scored yet — run a validation to compute it from real findings.</p>
+                  )
                 )}
               </div>
             </div>
