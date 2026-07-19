@@ -18,6 +18,7 @@ const NAV: NavItem[] = [
   { label: 'Command Center', to: '/executive', icon: BarChart3 },
   { label: 'Projects', to: '/projects', icon: FolderGit2 },
   { label: 'Policy Studio', to: '/policies', icon: ShieldCheck },
+  { label: 'Integrations', to: '/integrations', icon: Webhook },
   { label: 'Workspaces', to: '/workspaces', icon: Boxes },
   { label: 'Team', to: '/team', icon: Users },
   { label: 'Plans', to: '/plans', icon: Sparkles },

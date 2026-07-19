@@ -54,6 +54,36 @@ serve(async (req) => {
       return json({ url: null, id: 'posted' });
     }
 
+    if (provider === 'msteams') {
+      const { webhook } = config;
+      if (!webhook) return json({ error: 'Teams needs an incoming webhook URL.' }, 400);
+      const res = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: ticket.title, text: (ticket.body || '').replace(/\n/g, '<br/>') }) });
+      if (!res.ok) return json({ error: 'Teams webhook rejected the message.' }, 400);
+      return json({ url: null, id: 'posted' });
+    }
+
+    if (provider === 'azureboards') {
+      const { orgUrl, project: proj, pat } = config;
+      if (!orgUrl || !proj || !pat) return json({ error: 'Azure Boards needs org URL, project and PAT.' }, 400);
+      const auth = btoa(':' + pat);
+      const res = await fetch(`${orgUrl.replace(/\/$/, '')}/${encodeURIComponent(proj)}/_apis/wit/workitems/$Issue?api-version=7.0`, {
+        method: 'POST', headers: { Authorization: 'Basic ' + auth, 'Content-Type': 'application/json-patch+json' },
+        body: JSON.stringify([{ op: 'add', path: '/fields/System.Title', value: ticket.title }, { op: 'add', path: '/fields/System.Description', value: (ticket.body || '').replace(/\n/g, '<br/>') }]),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) return json({ error: d.message || `Azure returned ${res.status}` }, 400);
+      return json({ url: d._links?.html?.href || `${orgUrl}/${proj}/_workitems/edit/${d.id}`, id: d.id });
+    }
+
+    if (provider === 'github') {
+      const { token, owner, repo } = config;
+      if (!token || !owner || !repo) return json({ error: 'GitHub Issues needs a token (repo scope); owner/repo come from the project.' }, 400);
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, { method: 'POST', headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'User-Agent': 'lythouse' }, body: JSON.stringify({ title: ticket.title, body: ticket.body || '' }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) return json({ error: d.message || `GitHub returned ${res.status}` }, 400);
+      return json({ url: d.html_url, id: `#${d.number}` });
+    }
+
     return json({ error: 'Unknown provider.' }, 400);
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : 'Ticket creation failed.' }, 500);
