@@ -2,12 +2,23 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Loader as Loader2, Check, ArrowRight, Shield, Boxes, Database, AlertTriangle,
-  Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2, Clock, FileText, GitBranch, ShieldAlert,
+  Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2, Clock, GitBranch, ShieldAlert,
 } from 'lucide-react';
 import { InfoHint } from '../lib/ui';
+import { supabase } from '../lib/supabase';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
 import { DetailedFindings } from './DetailedFindings';
 import { getTree, getFile, ERROR_TEXT, loadReport, saveReport, clearReport, getHeadSha, getCompare } from './repoCache';
+
+// Resolve a commit author to a REGISTERED LytHouse team member only. A raw git
+// identity is never surfaced — unknown authors are shown as a neutral generic
+// label, so nobody's tooling or personal git handle is ever exposed.
+const GENERIC_AUTHOR = 'Third-Party App';
+function resolveAuthor(commit, memberMap) {
+  const keys = [commit?.authorEmail, commit?.authorLogin].filter(Boolean).map((s) => String(s).toLowerCase());
+  for (const k of keys) { if (memberMap && memberMap[k]) return memberMap[k]; }
+  return GENERIC_AUTHOR;
+}
 
 // Structural inventory from the file tree (no content needed).
 function analyze(paths) {
@@ -267,17 +278,17 @@ const CHANGE_STATE = {
   blocker: {
     tone: 'bg-[#fde3e3] border-[#f5a3a3]', title: 'text-[#b3261e]', icon: 'text-[#d61f1f]',
     heading: 'Release approval suspended', chipCls: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]', chip: 'Immediate blocker',
-    line: 'Sensitive changes since the last verified assessment invalidate the previous release decision. Re-assess before promoting.',
+    line: 'These changes invalidate the previous release decision — re-assess before promoting.',
   },
   assess: {
     tone: 'bg-[#fff7e9] border-[#f9c777]', title: 'text-[#8a5a00]', icon: 'text-[#e07600]',
     heading: 'Assessment out of date', chipCls: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]', chip: 'Assessment required',
-    line: 'Functional changes have landed since the last verified assessment. The current release decision may no longer be valid.',
+    line: 'The current release decision may no longer be valid.',
   },
   low: {
     tone: 'bg-[#eef4ff] border-[#b9cffb]', title: 'text-[#1e40af]', icon: 'text-[#2f66e0]',
     heading: 'Minor changes since last assessment', chipCls: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]', chip: 'Low impact',
-    line: 'Only documentation or tests changed since the last verified assessment — the previous release decision remains valid.',
+    line: 'Only documentation or tests changed — the previous release decision remains valid.',
   },
 };
 
@@ -298,7 +309,30 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   const [pr, setPr] = useState({ state: 'idle', url: null, error: null, applied: [] });
   const [nonce, setNonce] = useState(0);
   const [stale, setStale] = useState(null);
+  const [memberMap, setMemberMap] = useState({});
   const timer = useRef(null);
+
+  // Load registered team members (best-effort). Keyed by lowercased email so a
+  // commit author can be matched to a real member; unmatched → generic label.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const wid = localStorage.getItem('sandbox.activeWs');
+        if (!wid) return;
+        const { data } = await supabase.from('workspace_members').select('profiles(email,full_name)').eq('workspace_id', wid);
+        if (!alive || !data) return;
+        const map = {};
+        data.forEach((m) => {
+          const email = m.profiles?.email;
+          const name = m.profiles?.full_name || (email ? email.split('@')[0] : null);
+          if (email && name) map[email.toLowerCase()] = name;
+        });
+        setMemberMap(map);
+      } catch { /* leave map empty → everyone shows as generic */ }
+    })();
+    return () => { alive = false; };
+  }, []);
   const reanalyze = () => { clearReport('discovery', project); clearReport('findings', project); clearReport('validation', project); setResult(null); setError(null); setLoading(true); setRevealed(0); setNonce((n) => n + 1); };
 
   useEffect(() => {
@@ -398,65 +432,56 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         const st = CHANGE_STATE[cx.state];
         const commitCount = stale.commits.length;
         const fileCount = stale.files.length;
-        const contributors = [...new Set(stale.commits.map((c) => c.author).filter(Boolean))];
         const latest = stale.commits[0]?.date ? new Date(stale.commits[0].date).getTime() : null;
         const Icon = cx.state === 'blocker' ? ShieldAlert : cx.state === 'assess' ? AlertTriangle : Check;
+        const scopeShort = { 'Security review': 'Security', 'Platform / infrastructure review': 'Platform', 'Application review': 'Application' };
         return (
-          <div className={`card border ${st.tone}`}>
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className={`text-sm font-bold flex items-center gap-1.5 ${st.title}`}><Icon size={15} className={st.icon} />{st.heading}</p>
-                  <span className={`chip text-[10px] ${st.chipCls}`}>{st.chip}</span>
-                </div>
-                <p className="text-sm text-gray-700 mt-1">
-                  {commitCount || 'New'} commit{commitCount === 1 ? '' : 's'} changed {fileCount} file{fileCount === 1 ? '' : 's'} since the last verified assessment. {st.line}
-                </p>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-gray-500">
-                  {stale.since && <span className="inline-flex items-center gap-1"><Clock size={11} />Last verified {timeAgo(stale.since)}</span>}
-                  {latest && <span className="inline-flex items-center gap-1"><GitBranch size={11} />Latest change {timeAgo(latest)}</span>}
-                  {contributors.length > 0 && <span>{contributors.length} contributor{contributors.length === 1 ? '' : 's'}: {contributors.slice(0, 3).join(', ')}{contributors.length > 3 ? ` +${contributors.length - 3}` : ''}</span>}
-                </div>
+          <div className={`card !p-4 border ${st.tone}`}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <p className={`text-sm font-bold flex items-center gap-1.5 ${st.title}`}><Icon size={15} className={st.icon} />{st.heading}</p>
+                <span className={`chip text-[10px] ${st.chipCls}`}>{st.chip}</span>
               </div>
-              <button onClick={reanalyze} className="btn-primary text-sm shrink-0"><Shield size={14} />Re-assess now</button>
+              <button onClick={reanalyze} className="btn-primary text-xs shrink-0"><Shield size={13} />Re-assess</button>
             </div>
 
-            {/* changes grouped by category */}
-            <div className="mt-3 flex flex-wrap gap-2">
+            <p className="text-[13px] text-gray-700 mt-1.5">
+              <span className="font-medium">{commitCount || 'New'} commit{commitCount === 1 ? '' : 's'} · {fileCount} file{fileCount === 1 ? '' : 's'}</span> since the last verified assessment. {st.line}
+            </p>
+
+            {/* meta + category counts, one compact row */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-[11px] text-gray-500">
+              {stale.since && <span className="inline-flex items-center gap-1"><Clock size={11} />Verified {timeAgo(stale.since)}</span>}
+              {latest && <span className="inline-flex items-center gap-1"><GitBranch size={11} />Latest {timeAgo(latest)}</span>}
+              <span className="text-gray-300">·</span>
               {cx.grouped.map((g) => (
-                <span key={g.key} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs text-navy-700">
-                  <FileText size={12} className="text-gray-400" /><span className="font-medium">{g.label}</span><span className="text-gray-400">{g.files.length}</span>
-                </span>
+                <span key={g.key} className="inline-flex items-center gap-1 text-navy-700"><span className="font-medium">{g.label}</span><span className="text-gray-400">{g.files.length}</span></span>
               ))}
             </div>
 
             {/* immediate-blocker reasons */}
             {cx.blockers.length > 0 && (
-              <div className="mt-3 rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/60 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#b3261e] mb-1">Why this suspends approval</p>
-                <ul className="space-y-0.5">
-                  {cx.blockers.map((b, i) => <li key={i} className="flex items-start gap-1.5 text-xs text-[#8a1f1a]"><XCircle size={12} className="shrink-0 mt-0.5" />{b.label}</li>)}
+              <div className="mt-2.5 rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/60 px-3 py-1.5">
+                <ul className="flex flex-wrap gap-x-4 gap-y-0.5">
+                  {cx.blockers.map((b, i) => <li key={i} className="flex items-center gap-1.5 text-xs text-[#8a1f1a]"><XCircle size={12} className="shrink-0" />{b.label}</li>)}
                 </ul>
               </div>
             )}
 
-            {/* validation-scope impact */}
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {/* validation-scope impact — single compact row of pills */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
               {cx.scopeImpact.map((s) => (
-                <div key={s.scope} className={`rounded-lg border px-3 py-2 ${s.touched ? 'border-[#f9c777] bg-[#fff7e9]' : 'border-[#9adcb4] bg-[#e3f7ea]'}`}>
-                  <div className="text-[11px] text-gray-500">{s.scope}</div>
-                  <div className={`text-xs font-semibold mt-0.5 flex items-center gap-1 ${s.touched ? 'text-[#e07600]' : 'text-[#0f9a4c]'}`}>
-                    {s.touched ? <><AlertTriangle size={11} />Revalidation required</> : <><CheckCircle2 size={11} />Still valid</>}
-                  </div>
-                </div>
+                <span key={s.scope} className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${s.touched ? 'border-[#f9c777] bg-[#fff7e9] text-[#b06a00]' : 'border-[#9adcb4] bg-[#e3f7ea] text-[#0f7a3c]'}`}>
+                  {s.touched ? <AlertTriangle size={10} /> : <CheckCircle2 size={10} />}{scopeShort[s.scope]}: {s.touched ? 'revalidate' : 'valid'}
+                </span>
               ))}
             </div>
 
             {/* review-changes drawer */}
-            <details className="group mt-3">
+            <details className="group mt-2.5">
               <summary className="flex items-center gap-1.5 cursor-pointer list-none text-xs font-medium text-brand-700">
                 <ArrowRight size={13} className="group-open:rotate-90 transition-transform" />Review changes
-                {stale.permalink && <a href={stale.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 text-gray-400 hover:text-brand-700 hover:underline">View full diff on GitHub →</a>}
+                {stale.permalink && <a href={stale.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 text-gray-400 hover:text-brand-700 hover:underline">Full diff on GitHub →</a>}
               </summary>
               <div className="mt-2 pt-2 border-t border-gray-200/70 grid gap-4 lg:grid-cols-2">
                 <div>
@@ -466,7 +491,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
                       <li key={c.sha} className="text-xs">
                         <a href={c.url || stale.permalink || '#'} target="_blank" rel="noreferrer" className="font-mono text-brand-700 hover:underline">{c.short}</a>
                         <span className="text-navy-800"> {c.message}</span>
-                        <span className="block text-gray-400">{c.author}{c.date ? ` · ${timeAgo(new Date(c.date).getTime())}` : ''}</span>
+                        <span className="block text-gray-400">{resolveAuthor(c, memberMap)}{c.date ? ` · ${timeAgo(new Date(c.date).getTime())}` : ''}</span>
                       </li>
                     ))}
                   </ul>

@@ -90,7 +90,10 @@ export async function getCompare(project, base, head) {
       sha: c.sha,
       short: (c.sha || '').slice(0, 7),
       message: (c.commit?.message || '').split('\n')[0],
-      author: c.commit?.author?.name || c.author?.login || 'unknown',
+      // Raw identity is kept ONLY to match against registered team members — it
+      // is never rendered directly. Unmatched authors are shown generically.
+      authorEmail: c.commit?.author?.email || null,
+      authorLogin: c.author?.login || null,
       date: c.commit?.author?.date || null,
       url: c.html_url || null,
     }));
