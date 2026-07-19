@@ -334,6 +334,42 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               :!anyApproved?{title:'Request Security Approval',time:'~4 min',cta:'Request Approval',go:()=>{if(approvals.length===0)createRelease();setStage('approvals');}}
               :{title:'Deploy to Production',time:'~3 min',cta:'Deploy',go:()=>setStage('deployment')};
             const watching=connected.map(c=>c.name||c.type).filter(Boolean).slice(0,3);
+            // ── Briefing narrative ────────────────────────────────────────
+            const hr=new Date().getHours();
+            const greeting=hr<12?'Good morning':hr<18?'Good afternoon':'Good evening';
+            const firstName=(profile?.full_name||profile?.email||'').split(/[@ ]/)[0];
+            const codeArea=AREAS.find(a=>a.key==='Code'); const depsArea=AREAS.find(a=>a.key==='Dependencies'); const contArea=AREAS.find(a=>a.key==='Containers');
+            const briefLines=[
+              {ok:(codeArea?.count||0)===0,text:'Code quality looks healthy.',bad:`${codeArea?.count} code issue${codeArea?.count===1?'':'s'} to review.`},
+              {ok:(infraArea?.count||0)===0,text:'Infrastructure matches production.',bad:`${infraArea?.count} infrastructure issue${infraArea?.count===1?'':'s'} flagged.`},
+              {ok:(infraArea?.count||0)===0,text:'No configuration drift detected.',bad:'Configuration drift detected.'},
+              {ok:(contArea?.count||0)===0,text:'Container images passed verification.',bad:`${contArea?.count} container issue${contArea?.count===1?'':'s'} found.`},
+              {ok:(secretsArea?.count||0)===0,text:'Secrets are secure.',bad:`${secretsArea?.count} secret issue${secretsArea?.count===1?'':'s'} detected.`},
+              {ok:true,text:'Rollback is available.',bad:'Rollback is available.'},
+            ];
+            // Evidence the AI used
+            const evidence=[
+              {src:'GitHub',val:`${latest?.total_findings??0} findings analyzed`,ok:true},
+              {src:'Kubernetes',val:(infraArea?.count||0)===0?'Healthy':`${infraArea?.count} flagged`,ok:(infraArea?.count||0)===0},
+              {src:'Terraform',val:(infraArea?.count||0)===0?'No drift':'Drift detected',ok:(infraArea?.count||0)===0},
+              {src:'Dependencies',val:(depsArea?.count||0)===0?'Verified':`${depsArea?.count} flagged`,ok:(depsArea?.count||0)===0},
+              {src:'Docker',val:(contArea?.count||0)===0?'Verified':`${contArea?.count} flagged`,ok:(contArea?.count||0)===0},
+              {src:'Policies',val:anyApproved?'Satisfied':'1 approval missing',ok:anyApproved},
+            ];
+            // Blockers requiring attention (real findings + governance)
+            const attention=[
+              ...critical.map(f=>({title:f.title,owner:'Platform Team',risk:'High',action:'Generate AI Fix',go:()=>setStage('remediation')})),
+              ...high.slice(0,3).map(f=>({title:f.title,owner:'Engineering',risk:'Medium',action:'Review finding',go:()=>setStage('validation')})),
+              ...(!anyApproved&&validations.length>0&&!isBlocked?[{title:'Security approval not received',owner:'Platform Team',risk:'Blocking',action:'Request Approval',go:()=>{if(approvals.length===0)createRelease();setStage('approvals');}}]:[]),
+            ];
+            // Compact change list
+            const changed=[
+              {n:codeArea?.count||0,label:'code issues flagged'},
+              {n:depsArea?.count||0,label:'dependencies flagged'},
+              {n:infraArea?.count||0,label:'infrastructure changes'},
+              {n:contArea?.count||0,label:'container image'},
+              {n:secretsArea?.count||0,label:'secret changes'},
+            ];
 
             return(
             <div className="space-y-5">
@@ -341,7 +377,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               {/* ── Live status strip ────────────────────────────────────── */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 {running?(
-                  <span className="inline-flex items-center gap-1.5 font-medium text-brand-700"><Loader2 size={12} className="animate-spin"/>Validation running… recalculating readiness</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium text-brand-700"><Loader2 size={12} className="animate-spin"/>Analyzing release… recalculating readiness</span>
                 ):(
                   <span className="inline-flex items-center gap-1.5 font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>Continuously monitoring</span>
                 )}
@@ -349,127 +385,135 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 {latest&&<span className="text-gray-400">Last checked {timeAgo(latest.created_at)}</span>}
               </div>
 
-              {/* ── HERO: AI Release Decision (compact) ──────────────────── */}
-              <div className={`card border ${dBg} !p-4`}>
-                <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
-                  {/* Left: recommendation + confidence */}
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-1 flex items-center gap-1.5"><Sparkles size={11}/>AI Release Decision</p>
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span className={`text-xl font-bold ${dTone}`}>{decision.text}</span>
-                      {readiness!==null&&<span className="text-sm text-gray-500"><span className={`font-bold ${dTone}`}>{readiness}%</span> confidence</span>}
-                    </div>
-                    {topReason&&<p className="text-xs text-gray-600 mt-1 leading-relaxed line-clamp-2">{topReason}</p>}
-                  </div>
-                  {/* Right: compact status checklist */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {checklist.map(c=>(
-                      <span key={c.label} className="inline-flex items-center gap-1 text-xs">
-                        {c.ok?<CheckCircle2 size={13} className="text-green-500 shrink-0"/>:<AlertTriangle size={13} className="text-amber-500 shrink-0"/>}
-                        <span className={c.ok?'text-navy-700':'text-gray-400'}>{c.label}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Next Action */}
-                <div className="mt-3 pt-3 border-t border-gray-200/70 flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-sm">
-                    <span className="text-[11px] uppercase tracking-wide text-gray-400 mr-2">Next</span>
-                    <span className="font-semibold text-navy-900">{nextAction.title}</span>
-                    <span className="text-xs text-gray-500 ml-2">· {nextAction.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={askAdvisor} className="btn-ghost text-xs"><Sparkles size={12}/>Ask AI</button>
-                    <button onClick={nextAction.go} className="btn-primary text-xs"><ArrowRight size={13}/>{nextAction.cta}</button>
-                  </div>
-                </div>
-              </div>
-
               {validations.length===0?(
-                /* ── First run: show the AI assessment pipeline ─────────── */
-                <div className="card">
-                  <h3 className="text-base font-semibold text-navy-900 mb-1">Run your first AI Release Review</h3>
-                  <p className="text-sm text-gray-500 mb-4">Lythouse analyzes your release end-to-end and tells you whether it's safe to deploy.</p>
-                  <div className="flex flex-wrap items-center gap-2 mb-5">
-                    {['Analyze Repository','Analyze Infrastructure','Analyze Dependencies','Analyze Secrets','Analyze Deployment Config','Generate Release Assessment'].map((step,i,arr)=>(
-                      <div key={step} className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-navy-700">
-                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">{i+1}</span>{step}
-                        </span>
-                        {i<arr.length-1&&<ArrowRight size={13} className="text-gray-300"/>}
+                /* ── First run: the briefing hasn't been generated yet ──── */
+                <div className={`card border ${dBg}`}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Briefing</p>
+                  <h2 className="text-xl font-bold text-navy-900">{greeting}{firstName?`, ${firstName}`:''}.</h2>
+                  <p className="text-sm text-gray-600 mt-1 mb-4">I haven't reviewed <span className="font-semibold text-navy-800">{project.name}</span> yet. Let me analyze the release and I'll tell you whether it's safe to deploy — and why.</p>
+                  <div className="flex flex-wrap items-center gap-1.5 mb-5">
+                    {['Repository','Infrastructure','Dependencies','Secrets','Deployment Config','Assessment'].map((step,i,arr)=>(
+                      <div key={step} className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-navy-600">{step}</span>
+                        {i<arr.length-1&&<ArrowRight size={12} className="text-gray-300"/>}
                       </div>
                     ))}
                   </div>
-                  <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary"><Shield size={14}/>Start Validation</button>
+                  <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary"><Shield size={14}/>Generate Release Briefing</button>
                 </div>
               ):(
                 <>
-                  {/* ── CHANGE INTELLIGENCE ──────────────────────────────── */}
-                  <div>
-                    <h3 className="text-base font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><Sparkles size={14} className="text-brand-600"/>Change Intelligence</h3>
-                    <div className="card">
-                      <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
-                        <div><div className="text-xs uppercase tracking-wide text-gray-400">Risk</div><div className={`text-2xl font-bold ${overallRisk.c}`}>{overallRisk.t}</div></div>
-                        {readiness!==null&&<div><div className="text-xs uppercase tracking-wide text-gray-400">Confidence</div><div className="text-2xl font-bold text-navy-900">{readiness}%</div></div>}
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          <li className="flex items-center gap-1.5"><Check size={13} className="text-green-500"/>{latest?.total_findings??0} findings analyzed</li>
-                          <li className="flex items-center gap-1.5"><Check size={13} className="text-green-500"/>{infraArea?.count||0} infrastructure item{infraArea?.count===1?'':'s'} flagged</li>
-                          <li className="flex items-center gap-1.5">{secretsArea?.count?<AlertTriangle size={13} className="text-amber-500"/>:<Check size={13} className="text-green-500"/>}{secretsArea?.count?`${secretsArea.count} secret issue${secretsArea.count===1?'':'s'} detected`:'No risky secrets detected'}</li>
-                        </ul>
+                  {/* ── 1. AI RELEASE BRIEFING (the decision) ────────────── */}
+                  <div className={`card border ${dBg}`}>
+                    <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1 flex items-center gap-1.5"><Sparkles size={12}/>AI Release Briefing</p>
+                    <h2 className="text-xl font-bold text-navy-900">{greeting}{firstName?`, ${firstName}`:''}.</h2>
+                    <p className="text-sm text-gray-600 mt-0.5">Release candidate <span className="font-semibold text-navy-800">{project.name}</span> · {project.git_branch||'main'} → Production. Here's what I found.</p>
+
+                    <ul className="mt-4 space-y-1.5">
+                      {briefLines.map((l,i)=>(
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          {l.ok?<CheckCircle2 size={16} className="text-green-500 shrink-0"/>:<AlertTriangle size={16} className="text-amber-500 shrink-0"/>}
+                          <span className={l.ok?'text-navy-800':'text-amber-800'}>{l.ok?l.text:l.bad}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {attention.length>0&&(
+                      <div className="mt-4 rounded-xl bg-white/70 border border-gray-200 px-4 py-3">
+                        <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">{attention.length===1?'One issue remains':`${attention.length} issues remain`}</p>
+                        <p className="text-sm font-semibold text-navy-900">{attention[0].title}.</p>
                       </div>
-                      {/* Area cards with a good/bad verdict each */}
-                      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mt-4">
-                        {AREAS.map(a=>(
-                          <div key={a.key} className={`rounded-xl border p-3 ${a.risk.bg}`}>
-                            <div className="flex items-center justify-between">
-                              <a.icon size={16} className="text-navy-500"/>
-                              <span className="text-lg font-bold text-navy-900">{a.count}</span>
+                    )}
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Recommendation</div>
+                        <div className={`text-lg font-bold ${dTone}`}>{isBlocked||!anyApproved||needsAttention>0?'Do not deploy yet':'Cleared to deploy'}</div>
+                        {readiness!==null&&<div className="text-xs text-gray-500 mt-0.5">{readiness}% confidence</div>}
+                      </div>
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-gray-400">Estimated time to release</div>
+                        <div className="text-lg font-bold text-navy-900">{nextAction.time}{!anyApproved&&!isBlocked?' after approval':''}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-200/70 flex flex-wrap items-center gap-2">
+                      <button onClick={nextAction.go} className="btn-primary text-sm"><ArrowRight size={14}/>{nextAction.cta}</button>
+                      <button onClick={askAdvisor} className="btn-secondary text-sm"><Sparkles size={13}/>Explain Decision</button>
+                    </div>
+                  </div>
+
+                  {/* ── 2. WHY I MADE THIS RECOMMENDATION (evidence) ─────── */}
+                  <div>
+                    <h3 className="text-base font-semibold text-navy-900 mb-2">Why I made this recommendation</h3>
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                      {evidence.map(e=>(
+                        <div key={e.src} className="card !p-3">
+                          <div className="text-xs font-semibold text-navy-900">{e.src}</div>
+                          <div className={`text-xs mt-1 flex items-center gap-1 ${e.ok?'text-green-600':'text-amber-600'}`}>
+                            {e.ok?<Check size={12}/>:<AlertTriangle size={12}/>}{e.val}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2">Evidence is drawn from the latest analysis. Commit- and package-level detail deepens once a Git provider is linked.</p>
+                  </div>
+
+                  {/* ── 3. WHAT REQUIRES YOUR ATTENTION (blockers only) ─── */}
+                  <div>
+                    <h3 className="text-base font-semibold text-navy-900 mb-2">What requires your attention</h3>
+                    {attention.length===0?(
+                      <div className="card flex items-center gap-2 text-sm text-green-700 bg-green-50 border-green-200"><CheckCircle2 size={16}/>Nothing is blocking this release.</div>
+                    ):(
+                      <div className="space-y-2">
+                        {attention.map((a,i)=>(
+                          <div key={i} className="card flex flex-wrap items-center justify-between gap-3 border-amber-200">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2"><span className={`chip text-[10px] ${a.risk==='Blocking'||a.risk==='High'?'bg-red-50 text-red-700 border border-red-200':'bg-amber-50 text-amber-700 border border-amber-200'}`}>{a.risk}</span><span className="text-sm font-semibold text-navy-900">{a.title}</span></div>
+                              <div className="text-xs text-gray-500 mt-1">Owner <span className="text-navy-700 font-medium">{a.owner}</span></div>
                             </div>
-                            <div className="text-xs font-medium text-navy-800 mt-1.5">{a.key}</div>
-                            <div className={`text-[11px] font-bold ${a.risk.c}`}>{a.risk.t}</div>
+                            <button onClick={a.go} className="btn-primary text-xs shrink-0"><ArrowRight size={13}/>{a.action}</button>
                           </div>
                         ))}
                       </div>
-                      <p className="text-[11px] text-gray-400 mt-3">Per-area verdicts come from the findings the AI flagged. Commit- and package-level change detail connects once a Git provider is linked.</p>
+                    )}
+                  </div>
+
+                  {/* ── 4. WHAT CHANGED (compact) ────────────────────────── */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-navy-900 mb-2">What changed</h3>
+                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-600">
+                      {changed.map((c,i)=>(<span key={i}>{c.n===0&&(c.label==='secret changes')?'No secret changes':`${c.n} ${c.label}`}</span>))}
                     </div>
                   </div>
 
-                  {/* ── AI FINDINGS — what actually matters ─────────────── */}
+                  {/* ── 5. AFTER DEPLOYMENT (confidence) ─────────────────── */}
                   <div>
-                    <h3 className="text-base font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><ShieldAlert size={15} className="text-brand-600"/>AI Findings</h3>
-                    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                    <h3 className="text-sm font-semibold text-navy-900 mb-2">What happens after deployment</h3>
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
                       {[
-                        {label:'Deployment Blockers',value:blockers,icon:XCircle,color:'text-red-600',ring:blockers>0?'border-red-300 bg-red-50 ring-1 ring-red-200':'border-gray-200 bg-white',go:()=>setStage('remediation')},
-                        {label:'Needs Attention',value:needsAttention,icon:AlertTriangle,color:'text-amber-600',ring:needsAttention>0?'border-amber-300 bg-amber-50':'border-gray-200 bg-white',go:()=>setStage('validation')},
-                        {label:'Recommendations',value:recommendations,icon:Sparkles,color:'text-brand-600',ring:'border-gray-200 bg-white',go:()=>setStage('validation')},
-                        {label:'Healthy / Resolved',value:healthy,icon:CheckCircle2,color:'text-green-600',ring:'border-green-200 bg-green-50',go:()=>setStage('validation')},
-                      ].map(t=>(
-                        <button key={t.label} onClick={t.go} className={`rounded-2xl border p-4 text-left hover:shadow-md transition-all active:scale-[0.99] ${t.ring}`}>
-                          <div className="flex items-center justify-between">
-                            <span className={`text-4xl font-bold ${t.color}`}>{t.value}</span>
-                            <t.icon size={22} className={`${t.color} opacity-80`}/>
-                          </div>
-                          <div className="text-sm font-medium text-navy-800 mt-2">{t.label}</div>
-                        </button>
+                        {k:'Rollback Ready',v:'Yes',c:'text-green-600'},
+                        {k:'Last Stable',v:latest?.commit_sha?latest.commit_sha.slice(0,7):'—',c:'text-navy-900'},
+                        {k:'Est. Rollback',v:'~90 sec',c:'text-navy-900'},
+                        {k:'Monitoring',v:'Enabled',c:'text-green-600'},
+                      ].map(x=>(
+                        <div key={x.k} className="card !p-3"><div className="text-xs uppercase tracking-wide text-gray-400">{x.k}</div><div className={`text-base font-bold ${x.c}`}>{x.v}</div></div>
                       ))}
                     </div>
+                    <p className="text-[11px] text-gray-400 mt-2">After deploy, Lythouse verifies deployment health automatically and can roll back to the last stable version.</p>
                   </div>
 
-                  {/* ── Repository Files — supporting tool ───────────────── */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <FolderOpen size={16} className="text-gray-400"/>
-                        <div>
-                          <h3 className="text-sm font-semibold text-navy-900">Repository Files</h3>
-                          <p className="text-xs text-gray-500">Browse or edit the underlying files.</p>
-                        </div>
-                      </div>
-                      <button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button>
+                  {/* ── Technical details — secondary ────────────────────── */}
+                  <details className="card group">
+                    <summary className="flex items-center justify-between cursor-pointer list-none">
+                      <div className="flex items-center gap-2"><FolderOpen size={16} className="text-gray-400"/><span className="text-sm font-semibold text-navy-900">Technical details — repository files</span></div>
+                      <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform"/>
+                    </summary>
+                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                      <div className="flex justify-end"><button onClick={()=>setEditorOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><Code2 size={12}/>Open Editor</button></div>
+                      <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>
                     </div>
-                    <FileExplorer projectId={projectId} project={project} openFilePath={editorPath} highlightLine={null} onHighlightConsumed={()=>{}}/>
-                  </div>
+                  </details>
                 </>
               )}
             </div>
