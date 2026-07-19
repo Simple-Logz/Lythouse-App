@@ -390,7 +390,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                 {running?(
                   <span className="inline-flex items-center gap-1.5 font-medium text-brand-700"><Loader2 size={12} className="animate-spin"/>Analyzing release… gathering evidence</span>
-                ):validations.length===0?(
+                ):!latest?(
                   <span className="inline-flex items-center gap-1.5 font-medium text-gray-500"><span className="w-1.5 h-1.5 rounded-full bg-gray-400"/>Not yet analyzed</span>
                 ):(
                   <span className="inline-flex items-center gap-1.5 font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>Continuously monitoring</span>
@@ -399,8 +399,8 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 {latest&&<span className="text-gray-400">Last checked {timeAgo(latest.created_at)}</span>}
               </div>
 
-              {validations.length===0?(
-                /* ── PROJECT OVERVIEW — reality before any assessment ───── */
+              {!latest?(
+                /* ── PROJECT OVERVIEW — reality until a completed assessment ─ */
                 <>
                   <div className="card">
                     <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -427,7 +427,9 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                       ))}
                       <div className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5">
                         <span className="flex items-center gap-2 text-sm text-navy-800"><Shield size={15} className="text-gray-400"/>Validation</span>
-                        <span className="chip text-[10px] bg-amber-50 text-amber-700 border border-amber-200">Not Run</span>
+                        {validations.some(v=>v.status==='failed')
+                          ?<span className="chip text-[10px] bg-red-50 text-red-700 border border-red-200">Last run failed</span>
+                          :<span className="chip text-[10px] bg-amber-50 text-amber-700 border border-amber-200">Not Run</span>}
                       </div>
                     </div>
 
@@ -439,7 +441,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                       </div>
                       <div className="flex items-center gap-2">
                         {connectedCount<3&&<button onClick={()=>window.location.href=`/projects/${projectId}`} className="btn-secondary text-sm"><Server size={13}/>Connect systems</button>}
-                        <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary text-sm"><Shield size={14}/>Start Assessment</button>
+                        <button onClick={()=>{runValidation();setStage('validation');}} className="btn-primary text-sm"><Shield size={14}/>{validations.some(v=>v.status==='failed')?'Re-run Assessment':'Start Assessment'}</button>
                       </div>
                     </div>
                   </div>
