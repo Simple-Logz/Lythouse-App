@@ -15,7 +15,7 @@ function isGroup(n: NavItem): n is NavGroup { return (n as NavGroup).children !=
 
 const NAV: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Command Center', to: '/executive', icon: BarChart3 },
+  { label: 'Executive View', to: '/executive', icon: BarChart3 },
   { label: 'Projects', to: '/projects', icon: FolderGit2 },
   { label: 'Policy Studio', to: '/policies', icon: ShieldCheck },
   { label: 'Integrations', to: '/integrations', icon: Webhook },
