@@ -280,14 +280,14 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   }
 
   const r = result;
-  const recTone = { red: 'text-[#c0392b]', amber: 'text-[#b06a00]', green: 'text-[#2f7a4d]' }[r.recommendation.tone];
-  const recBg = { red: 'bg-[#fdf1f1] border-[#f1c9c9]', amber: 'bg-[#fef9f0] border-[#f3dcae]', green: 'bg-[#f2f9f3] border-[#cbe7d1]' }[r.recommendation.tone];
-  // Mild semantic red/amber/green — explicit hex so the indigo theme remap
-  // doesn't flatten these traffic-light severity signals.
+  const recTone = { red: 'text-[#e11d1d]', amber: 'text-[#ea7a00]', green: 'text-[#12a150]' }[r.recommendation.tone];
+  const recBg = { red: 'bg-[#fde3e3] border-[#f5a3a3]', amber: 'bg-[#fff0d9] border-[#f9c777]', green: 'bg-[#e3f7ea] border-[#9adcb4]' }[r.recommendation.tone];
+  // Vivid-but-tasteful semantic red/amber/green — explicit hex so the indigo
+  // theme remap doesn't flatten these traffic-light severity signals.
   const SEV = {
-    high: 'bg-[#fdecec] text-[#c0392b] border border-[#f1c9c9]',
-    medium: 'bg-[#fef4e6] text-[#b06a00] border border-[#f3dcae]',
-    low: 'bg-[#eef7ee] text-[#2f7a4d] border border-[#cbe7d1]',
+    high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]',
+    medium: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]',
+    low: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]',
   };
   const sevCls = (s) => SEV[s] || SEV.low;
   const scoreColor = (s) => s >= 88 ? 'text-green-600' : s >= 65 ? 'text-brand-700' : s >= 50 ? 'text-amber-600' : 'text-red-600';
@@ -310,7 +310,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           {[
             { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall) },
             { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb) },
-            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#c0392b]' : 'text-[#2f7a4d]' },
+            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]' },
             { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900' },
           ].map((x) => (
             <div key={x.l}><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-[11px] uppercase tracking-wide text-gray-400 mt-0.5">{x.l}</div></div>
