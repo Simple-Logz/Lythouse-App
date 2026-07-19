@@ -420,36 +420,17 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 {latest&&<span className="text-gray-400">Last checked {timeAgo(latest.created_at)}</span>}
               </div>
 
-              {!latest?(
-                /* ── PHASE 1: DISCOVERY — prove the AI understands the app ── */
-                <>
-                  <RepoDiscovery
-                    project={project}
-                    hadFailure={validations.some(v=>v.status==='failed')}
-                    onRunValidation={()=>{runValidation();setStage('validation');}}
-                    onConnect={()=>{window.location.href=`/projects/${projectId}`;}}
-                  />
+              {/* Discovery always shows the live AI Release Review (decision-first
+                  report + continuous change window). The greeting briefing below
+                  is retained but no longer shown here. */}
+              <RepoDiscovery
+                project={project}
+                hadFailure={validations.some(v=>v.status==='failed')}
+                onRunValidation={()=>{runValidation();setStage('validation');}}
+                onConnect={()=>{window.location.href=`/projects/${projectId}`;}}
+              />
 
-                  {/* Where this is going */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-navy-900 mb-2">Where this is going</h3>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {[
-                        {t:'Discover',done:true},{t:'Validate',done:false},{t:'Decide',done:false},
-                        {t:'Act',done:false},{t:'Deploy',done:false},{t:'Verify',done:false},
-                      ].map((s,i,arr)=>(
-                        <div key={s.t} className="flex items-center gap-1.5">
-                          <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${s.done?'border-green-200 bg-green-50 text-green-700':'border-gray-200 bg-white text-gray-500'}`}>
-                            {s.done?<Check size={12}/>:<span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-gray-300 text-[8px]">{i+1}</span>}{s.t}
-                          </span>
-                          {i<arr.length-1&&<ArrowRight size={12} className="text-gray-300"/>}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-gray-400 mt-3">I won't make a release decision until I've validated the evidence. Run validation and this page becomes your release briefing.</p>
-                  </div>
-                </>
-              ):(
+              {false&&(
                 <>
                   {/* ── 1. AI RELEASE BRIEFING (the decision) ────────────── */}
                   <div className={`card border ${dBg}`}>
