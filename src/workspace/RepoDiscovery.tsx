@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Loader as Loader2, Check, ArrowRight, Shield, Boxes, Database, AlertTriangle,
   Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2, Clock, GitBranch, ShieldAlert,
-  Sparkles, Server,
+  Sparkles, Server, ChevronDown,
 } from 'lucide-react';
 import { InfoHint } from '../lib/ui';
 import { supabase } from '../lib/supabase';
@@ -357,6 +357,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   const [pr, setPr] = useState({ state: 'idle', url: null, error: null, applied: [] });
   const [nonce, setNonce] = useState(0);
   const [stale, setStale] = useState(null);
+  const [changeOpen, setChangeOpen] = useState(false);
   const [memberMap, setMemberMap] = useState({});
   const timer = useRef(null);
 
@@ -521,15 +522,30 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         ];
 
         return (
-          <div className={`card !p-4 border ${st.tone}`}>
-            {/* header */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className={`card !p-3 border ${st.tone}`}>
+            {/* collapsed header — always visible, click to expand */}
+            <button onClick={() => setChangeOpen((v) => !v)} className="w-full flex items-center justify-between gap-3 text-left">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <p className={`text-sm font-bold flex items-center gap-1.5 ${st.title}`}><Icon size={15} className={st.icon} />{st.heading}</p>
+                <span className={`text-sm font-bold flex items-center gap-1.5 ${st.title}`}><Icon size={15} className={st.icon} />{st.heading}</span>
                 <span className={`chip text-[10px] ${st.chipCls}`}>{st.chip}</span>
+                <span className="text-[11px] text-gray-500 hidden sm:inline">
+                  · {commitCount || 'new'} commit{commitCount === 1 ? '' : 's'} · {fileCount} file{fileCount === 1 ? '' : 's'}
+                  {penalty > 0 && prevConf != null && <> · confidence <span className="text-gray-400">{prevConf}%</span><ArrowRight size={9} className="inline mx-0.5 text-gray-300" /><span className={newStatus.c}>{nowConf}%</span></>}
+                </span>
               </div>
-              <button onClick={reanalyze} className="btn-primary text-xs shrink-0"><Shield size={13} />{btnLabel}</button>
-            </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span onClick={(e) => { e.stopPropagation(); reanalyze(); }} className="btn-primary text-xs cursor-pointer"><Shield size={13} />{btnLabel}</span>
+                <ChevronDown size={16} className={`text-gray-400 transition-transform ${changeOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
+            {/* one-line teaser shown while collapsed */}
+            {!changeOpen && (
+              <p className="text-xs text-gray-600 mt-1.5">
+                <span className={`font-semibold ${newStatus.c}`}>{newStatus.t}.</span> {cx.state === 'low' ? 'Docs/tests only — previous decision still valid.' : `${cap1(cx.areas.filter((a) => a.touched).map((a) => a.label.toLowerCase()).join(', '))} changed. Expand for the full impact assessment.`}
+              </p>
+            )}
+
+            {changeOpen && (<div className="mt-3 space-y-3">
 
             {/* prior decision → new status + confidence delta */}
             <div className="mt-3 grid gap-2 sm:grid-cols-3 rounded-lg border border-gray-200/70 bg-white/70 p-3">
@@ -648,6 +664,8 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
                 </div>
               </div>
             </details>
+
+            </div>)}
           </div>
         );
       })()}
