@@ -16,6 +16,7 @@ import{FileExplorer}from'./FileExplorer';
 import{TopologyView}from'./TopologyView';
 import{RepoDiscovery}from'./RepoDiscovery';
 import{ValidationReport}from'./ValidationReport';
+import{FileBrowser}from'./FileBrowser';
 
 function timeAgo(iso:string):string{
   const ms=Date.now()-new Date(iso).getTime();
@@ -61,6 +62,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   const[editorOpen,setEditorOpen]=useState(false);
   const[editorPath,setEditorPath]=useState('');
   const[filesDrawerOpen,setFilesDrawerOpen]=useState(false);
+  const[fileBrowserOpen,setFileBrowserOpen]=useState(false);
   const[advisorForced,setAdvisorForced]=useState(false);
   const askAdvisor=()=>{setAdvisorForced(true);setSidebarOpen(true);getAdvisor();};
   const[updatingFinding,setUpdatingFinding]=useState<string|null>(null);
@@ -239,7 +241,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         })}
 
         <div className="mt-auto px-1 space-y-1.5 pt-4 border-t border-gray-200">
-          <button onClick={()=>{setEditorPath('');setEditorOpen(true);}} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold w-full bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-colors">
+          <button onClick={()=>setFileBrowserOpen(true)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold w-full bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-colors">
             <FolderOpen size={15}/>Browse &amp; Edit Files
           </button>
           <button className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60`} onClick={()=>window.location.href=`/projects/${projectId}/settings`}>
@@ -888,6 +890,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
           onClose={()=>{setEditorOpen(false);setEditorPath('');}}
         />
       )}
+      {fileBrowserOpen&&<FileBrowser project={project} onClose={()=>setFileBrowserOpen(false)}/>}
     </div>
   );
 }
