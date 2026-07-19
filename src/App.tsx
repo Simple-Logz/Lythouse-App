@@ -29,6 +29,7 @@ import{useAuth}from'./lib/auth';
 import{useIsMobile}from'./lib/useIsMobile';
 import{MobileApp}from'./mobile/MobileApp';
 import{MobilePreview}from'./mobile/MobilePreview';
+import{DecisionPreview}from'./workspace/DecisionPreview';
 import{LandingPage}from'./pages/LandingPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
@@ -83,8 +84,9 @@ function AuthGate(){
 const{session,loading}=useAuth();
 const{path}=useRouter();
 const isMobile=useIsMobile();
-// TEMP: design preview of the mobile UI without auth.
+// TEMP: design previews without auth.
 if(path==='/__mpreview')return<MobilePreview/>;
+if(path==='/__dpreview'){const D=DecisionPreview;return<D/>;}
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">
