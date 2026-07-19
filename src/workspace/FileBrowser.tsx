@@ -137,12 +137,19 @@ export function FileBrowser({ project, onClose }) {
                     <span className="font-mono text-xs text-navy-800 truncate">{selected}{editing && <span className="ml-2 text-[10px] text-brand-600 font-sans font-semibold uppercase">editing</span>}</span>
                     {file?.html && <a href={file.html} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-black hover:bg-gray-50"><GH s={14} /><ExternalLink size={12} />Open on GitHub</a>}
                   </div>
+                  {editing && !file?.error && (
+                    <div className="flex items-center gap-2 px-4 py-1.5 bg-[#fff7e9] border-b border-[#f9c777] text-[11px] text-[#8a5a00]">
+                      <Code2 size={12} /><span className="font-semibold">Editor open</span><span className="text-[#b06a00]">— edits are committed to the <span className="font-mono">{project.git_branch || 'main'}</span> branch when you press Save.</span>
+                    </div>
+                  )}
                   {saveMsg && <div className={`px-4 py-1.5 text-xs ${saveMsg.ok ? 'text-green-700 bg-green-50' : 'text-[#c0392b] bg-[#fde3e3]'}`}>{saveMsg.ok || saveMsg.err}</div>}
                   <div className="flex-1 min-h-0 overflow-hidden">
                     {fileLoading ? <div className="flex justify-center py-10"><Loader2 size={18} className="animate-spin text-gray-400" /></div>
                       : file?.error === 'binary' ? <div className="p-6 text-center text-sm text-gray-500"><FileIcon size={28} className="mx-auto text-gray-300 mb-2" />This is a binary file (image, archive, etc.) and can't be shown as text.{file.html && <div className="mt-2"><a href={file.html} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-black font-semibold hover:underline"><GH s={13} />Open on GitHub</a></div>}</div>
                         : file?.error ? <div className="p-4 text-sm text-gray-500">Couldn't load this file ({file.error}).</div>
-                          : <CodeMirror value={editing ? draft : (file?.content || '')} height="100%" theme={oneDark} editable={editing} readOnly={!editing} extensions={langFor(selected)} onChange={(v) => setDraft(v)} basicSetup={{ lineNumbers: true, highlightActiveLine: editing, foldGutter: true }} style={{ height: '100%', fontSize: 12.5 }} />}
+                          : editing
+                            ? <div className="h-full overflow-auto ring-2 ring-inset ring-brand-400"><CodeMirror value={draft} theme={oneDark} editable autoFocus extensions={langFor(selected)} onChange={(v) => setDraft(v)} basicSetup={{ lineNumbers: true, highlightActiveLine: true, foldGutter: true, highlightActiveLineGutter: true }} style={{ fontSize: 12.5 }} /></div>
+                            : <pre className="h-full overflow-auto bg-[#0f1117] text-gray-200 p-4 text-xs font-mono leading-relaxed whitespace-pre">{file?.content || ''}</pre>}
                   </div>
                 </>
               )}
