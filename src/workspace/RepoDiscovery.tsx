@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { InfoHint } from '../lib/ui';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
+import { DetailedFindings } from './DetailedFindings';
 
 function parseGitUrl(url) {
   if (!url) return null;
@@ -249,7 +250,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         ]);
         const insights = deriveInsights(base, dRes.filter((x) => x.c), wRes.filter((x) => x.c), paths);
         if (!alive) return;
-        setResult({ ...base, ...insights });
+        setResult({ ...base, ...insights, allPaths: paths });
       } catch (e) { if (alive) setError(e.message || 'Could not analyze the repository.'); }
       finally { if (alive) setLoading(false); }
     })();
@@ -397,6 +398,9 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           </div>
         </div>
       )}
+
+      {/* ── DETAILED FINDINGS (per-file drill-down) ──────────────────────── */}
+      {r.allPaths && <DetailedFindings project={project} paths={r.allPaths} />}
 
       {/* ── AI AUTO-REMEDIATION ──────────────────────────────────────────── */}
       {(() => {
