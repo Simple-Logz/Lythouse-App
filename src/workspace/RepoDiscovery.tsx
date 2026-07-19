@@ -280,8 +280,16 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   }
 
   const r = result;
-  const recTone = { red: 'text-red-600', amber: 'text-amber-600', green: 'text-green-600' }[r.recommendation.tone];
-  const recBg = { red: 'bg-red-50 border-red-200', amber: 'bg-amber-50 border-amber-200', green: 'bg-green-50 border-green-200' }[r.recommendation.tone];
+  const recTone = { red: 'text-[#c0392b]', amber: 'text-[#b06a00]', green: 'text-[#2f7a4d]' }[r.recommendation.tone];
+  const recBg = { red: 'bg-[#fdf1f1] border-[#f1c9c9]', amber: 'bg-[#fef9f0] border-[#f3dcae]', green: 'bg-[#f2f9f3] border-[#cbe7d1]' }[r.recommendation.tone];
+  // Mild semantic red/amber/green — explicit hex so the indigo theme remap
+  // doesn't flatten these traffic-light severity signals.
+  const SEV = {
+    high: 'bg-[#fdecec] text-[#c0392b] border border-[#f1c9c9]',
+    medium: 'bg-[#fef4e6] text-[#b06a00] border border-[#f3dcae]',
+    low: 'bg-[#eef7ee] text-[#2f7a4d] border border-[#cbe7d1]',
+  };
+  const sevCls = (s) => SEV[s] || SEV.low;
   const scoreColor = (s) => s >= 88 ? 'text-green-600' : s >= 65 ? 'text-brand-700' : s >= 50 ? 'text-amber-600' : 'text-red-600';
   const totalIssues = r.summary.blockers + r.summary.warnings + r.summary.opportunities;
 
@@ -295,14 +303,14 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             <div className={`text-2xl font-bold ${recTone} mt-0.5`}>{r.recommendation.verdict}</div>
             <p className="text-xs text-gray-500 mt-0.5">Release candidate · {r.appType}</p>
           </div>
-          <span className={`chip text-xs font-bold ${r.recommendation.tone === 'red' ? 'bg-red-100 text-red-700 border border-red-300' : r.recommendation.tone === 'amber' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-green-100 text-green-700 border border-green-300'}`}>{r.recommendation.status}</span>
+          <span className={`chip text-xs font-bold ${r.recommendation.tone === 'red' ? SEV.high : r.recommendation.tone === 'amber' ? SEV.medium : SEV.low}`}>{r.recommendation.status}</span>
         </div>
 
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mt-4">
           {[
             { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall) },
             { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb) },
-            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-red-600' : 'text-green-600' },
+            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#c0392b]' : 'text-[#2f7a4d]' },
             { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900' },
           ].map((x) => (
             <div key={x.l}><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-[11px] uppercase tracking-wide text-gray-400 mt-0.5">{x.l}</div></div>
@@ -368,12 +376,12 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" />Deployment Risks</h3>
           <div className="card !p-0 overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business Impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium">ETA</th></tr></thead>
+              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business Impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium">Time to Fix</th></tr></thead>
               <tbody>
                 {r.concerns.map((c, i) => (
                   <tr key={i} className="border-b border-gray-50 last:border-0 align-top">
                     <td className="px-4 py-2.5">
-                      <span className={`chip text-[10px] mb-1 ${c.sev === 'high' ? 'bg-red-50 text-red-700 border border-red-200' : c.sev === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>{c.sev === 'high' ? 'Blocker' : c.sev === 'medium' ? 'Needs Action' : 'Optimization'}</span>
+                      <span className={`chip text-[10px] mb-1 ${sevCls(c.sev)}`}>{c.sev === 'high' ? 'Blocker' : c.sev === 'medium' ? 'Needs Attention' : 'Optimization'}</span>
                       <div className="font-medium text-navy-800">{c.label}</div>
                     </td>
                     <td className="px-4 py-2.5 text-gray-600 max-w-md">{c.impact}{c.affected ? <span className="block text-[11px] text-gray-400 mt-0.5">Potentially affects: {c.affected.join(', ')}</span> : null}</td>
