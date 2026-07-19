@@ -15,6 +15,7 @@ import{CodeEditorPanel}from'./CodeEditorPanel';
 import{FileExplorer}from'./FileExplorer';
 import{TopologyView}from'./TopologyView';
 import{RepoDiscovery}from'./RepoDiscovery';
+import{ValidationReport}from'./ValidationReport';
 
 function timeAgo(iso:string):string{
   const ms=Date.now()-new Date(iso).getTime();
@@ -563,93 +564,14 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-navy-900 mb-1">Validation Results</h2>
-                  <p className="text-sm text-gray-500">Security scan results, policy checks, dependency audit, and infrastructure drift detection.</p>
+                  <h2 className="text-base font-semibold text-navy-900 mb-1">Production-Readiness Validation</h2>
+                  <p className="text-sm text-gray-500">Line-level checks across infrastructure, containers, Kubernetes, secrets, dependencies and governance — with a simulated deployment.</p>
                 </div>
-                <button onClick={runValidation} disabled={running} className="btn-primary text-sm shrink-0">
-                  {running?<><Loader2 size={13} className="animate-spin"/>Scanning…</>:<><Shield size={13}/>{validations.length?'Re-scan':'Run Scan'}</>}
+                <button onClick={runValidation} disabled={running} className="btn-secondary text-sm shrink-0">
+                  {running?<><Loader2 size={13} className="animate-spin"/>Re-scanning…</>:<><RefreshCw size={13}/>Re-run backend scan</>}
                 </button>
               </div>
-
-              {validations.length===0&&!running?(
-                <div className="card text-center py-12">
-                  <Shield size={36} className="mx-auto text-gray-200 mb-3"/>
-                  <p className="text-sm font-medium text-gray-600 mb-4">No scans yet — run a validation to check this repository</p>
-                  <button onClick={runValidation} className="btn-primary"><Shield size={14}/>Start Validation</button>
-                </div>
-              ):(
-                <div className="space-y-3">
-                  {/* Status banner */}
-                  <div className={`rounded-2xl border-2 px-5 py-4 ${isBlocked?'border-red-300 bg-red-50':readiness!==null&&readiness>=80?'border-green-300 bg-green-50':'border-amber-200 bg-amber-50'}`}>
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className={`text-xl font-semibold ${isBlocked?'text-red-700':readiness!==null&&readiness>=80?'text-green-700':'text-amber-700'}`}>
-                          {running?'Scanning repository…':isBlocked?`${critical.length} Deployment Blocker${critical.length!==1?'s':''}`:readiness!==null&&readiness>=80?'All checks passed':'Review before deploying'}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {isBlocked?'Critical issues must be resolved before this release can proceed. Go to Remediation to fix them.':
-                          readiness!==null&&readiness>=80?'No critical or high-severity issues found. You\'re clear to proceed to Approvals.':
-                          `${high.length} high-severity issue${high.length!==1?'s':''} need review before deployment.`}
-                        </p>
-                      </div>
-                      {readiness!==null&&<div className="text-center shrink-0"><div className={`text-4xl font-semibold ${readiness>=80?'text-green-600':readiness>=60?'text-amber-600':'text-red-600'}`}>{readiness}%</div><div className="text-xs text-gray-500">readiness</div></div>}
-                    </div>
-                    {(isBlocked||high.length>0)&&(
-                      <div className="mt-3 pt-3 border-t border-black/10 flex gap-2">
-                        <button onClick={()=>setStage('remediation')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${isBlocked?'bg-red-600 text-white hover:bg-red-700':'bg-amber-500 text-white hover:bg-amber-600'}`}>
-                          <Zap size={11}/>Fix Issues in Remediation →
-                        </button>
-                      </div>
-                    )}
-                    {!isBlocked&&high.length===0&&readiness!==null&&(
-                      <div className="mt-3 pt-3 border-t border-black/10 flex gap-2">
-                        <button onClick={()=>setStage('approvals')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700">
-                          <Users size={11}/>Proceed to Approvals →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Dimension breakdown */}
-                  {latest&&(
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {[
-                        {label:'Security',score:Math.max(0,100-critical.filter(f=>f.category==='static_analysis').length*30-high.length*10),status:critical.length>0?'fail':high.length>0?'warn':'pass'},
-                        {label:'Secrets',score:Math.max(0,100-open.filter(f=>f.category==='secret_scan').length*50),status:open.filter(f=>f.category==='secret_scan').length>0?'fail':'pass'},
-                        {label:'Dependencies',score:Math.max(0,100-open.filter(f=>f.category==='dependency_audit'&&f.severity==='critical').length*30),status:open.filter(f=>f.category==='dependency_audit'&&f.severity==='critical').length>0?'fail':'pass'},
-                        {label:'Code Quality',score:Math.max(0,100-open.filter(f=>f.category==='static_analysis').length*10),status:open.filter(f=>f.category==='static_analysis'&&f.severity==='critical').length>0?'fail':'pass'},
-                        {label:'Infrastructure',score:Math.max(0,100-open.filter(f=>f.category==='configuration').length*15),status:open.filter(f=>f.category==='configuration').length>2?'fail':open.filter(f=>f.category==='configuration').length>0?'warn':'pass'},
-                        {label:'Compliance',score:critical.length===0?95:40,status:critical.length>0?'fail':'pass'},
-                      ].map(d=>(
-                        <div key={d.label} className={`rounded-xl border px-3 py-3 ${d.status==='fail'?'border-red-200 bg-red-50':d.status==='warn'?'border-amber-200 bg-amber-50':'border-green-200 bg-green-50'}`}>
-                          <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-xs font-semibold text-gray-700">{d.label}</span>
-                            <span className={`text-lg font-semibold ${d.status==='fail'?'text-red-600':d.status==='warn'?'text-amber-600':'text-green-600'}`}>{d.score}%</span>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-black/10"><div className={`h-1.5 rounded-full ${d.status==='fail'?'bg-red-500':d.status==='warn'?'bg-amber-500':'bg-green-500'}`} style={{width:`${d.score}%`}}/></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Scan history */}
-                  {validations.length>1&&(
-                    <div className="card">
-                      <h3 className="text-sm font-semibold text-navy-900 mb-3">Scan History</h3>
-                      <div className="space-y-1">
-                        {validations.slice(0,5).map(v=>(
-                          <div key={v.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0 text-xs">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${v.status==='completed'&&v.critical_count===0?'bg-green-500':v.critical_count>0?'bg-red-500':'bg-amber-500'}`}/>
-                            <span className="text-gray-600 flex-1">{v.status==='completed'?`${v.total_findings} findings · risk ${v.risk_score}/100`:`Status: ${v.status}`}</span>
-                            <span className="text-gray-400">{timeAgo(v.created_at)}</span>
-                            {v.risk_score!==null&&<span className={`font-bold ${v.risk_score<40?'text-green-600':v.risk_score<70?'text-amber-600':'text-red-600'}`}>{v.risk_score}/100</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              <ValidationReport project={project} scanHistory={validations} onRemediate={()=>setStage('remediation')} onApprovals={()=>setStage('approvals')}/>
             </div>
           )}
 
