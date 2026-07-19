@@ -157,28 +157,29 @@ function deriveInsights(r, dockers, wfs, paths) {
   const opportunities = concerns.filter((c) => c.sev === 'low').length;
   const totalIssues = blockers + warnings + opportunities;
   const recommendation = blockers > 0
-    ? { verdict: 'Do not promote this release yet', tone: 'red', text: `I found ${blockers} issue${blockers === 1 ? '' : 's'} that should be resolved before production — chiefly around ${[...new Set(concerns.filter((c) => c.sev === 'high').map((c) => c.cat))].join(' and ')}.` }
+    ? { verdict: 'Release Blocked', status: 'BLOCKED', tone: 'red', text: 'Resolve the blocking issues before promoting this release. Release approval is unavailable until they are cleared.' }
     : warnings > 0
-    ? { verdict: 'Proceed with caution', tone: 'amber', text: `No hard blockers, but ${warnings} item${warnings === 1 ? '' : 's'} warrant review before release.` }
-    : { verdict: 'Looks release-ready', tone: 'green', text: 'I found no blocking issues in what I could inspect.' };
+    ? { verdict: 'Approval Required', status: 'REVIEW', tone: 'amber', text: 'No hard blockers. Review the open risks before promoting this release.' }
+    : { verdict: 'Cleared for Release', status: 'CLEARED', tone: 'green', text: 'No blocking issues detected. Cleared to proceed.' };
 
-  // ── Business consequence layer — owner, ETA, impact, readiness delta ──
+  // ── Business consequence layer — issue title, owner, ETA, impact ──
   const META = {
-    'Secrets': { impact: 'Exposed credentials could grant unauthorized access to production systems and data.', owner: 'Security', eta: '15 min', delta: 12, fix: 'Remove committed .env and rotate secrets' },
-    'Container security': { impact: 'A compromised container could escalate privileges and reach adjacent services and credentials.', owner: 'Platform', eta: '30 min', delta: 9, fix: 'Run containers as a non-root user' },
-    'Governance': { impact: 'A faulty or unauthorized release could bypass your release policy and reach production automatically.', owner: 'DevOps', eta: '10 min', delta: 6, fix: 'Add a production approval gate' },
-    'Pipeline security': { impact: 'Vulnerabilities can ship undetected without automated scanning in CI.', owner: 'DevOps', eta: '20 min', delta: 5, fix: 'Add security scanning to CI' },
-    'Reproducibility': { impact: 'Mutable base images make builds non-deterministic and rollbacks unreliable.', owner: 'Platform', eta: '15 min', delta: 4, fix: 'Pin image base tags' },
-    'Resilience': { impact: 'Workloads may take avoidable downtime during node failure or maintenance.', owner: 'SRE', eta: '25 min', delta: 5, fix: 'Add PodDisruptionBudgets' },
-    'Consistency': { impact: 'Divergent deploy paths cause environment drift and inconsistent releases.', owner: 'Platform', eta: '30 min', delta: 3, fix: 'Consolidate deployment strategy' },
-    'Single point of failure': { impact: 'A failure in this shared dependency could affect a large share of the platform.', owner: 'SRE', eta: 'varies', delta: 5, fix: 'Add failover for the shared datastore' },
+    'Secrets': { label: 'Secrets in Source Control', impact: 'Credential exposure — unauthorized access to production systems and data.', owner: 'Security', eta: '15 min', etaMin: 15, delta: 12, fix: 'Remove committed .env, rotate secrets' },
+    'Container security': { label: 'Containers Running as Root', impact: 'Privilege escalation — a compromised container can reach adjacent services and credentials.', owner: 'Platform', eta: '30 min', etaMin: 30, delta: 9, fix: 'Run containers as non-root' },
+    'Governance': { label: 'Production Approval Missing', impact: 'Policy violation — a merged commit can reach production without sign-off.', owner: 'DevOps', eta: '10 min', etaMin: 10, delta: 6, fix: 'Add production approval gate' },
+    'Pipeline security': { label: 'No CI Security Scanning', impact: 'Vulnerabilities can ship undetected without automated scanning.', owner: 'DevOps', eta: '20 min', etaMin: 20, delta: 5, fix: 'Add security scanning to CI' },
+    'Reproducibility': { label: 'Mutable Image Tags', impact: 'Non-deterministic builds and unreliable rollbacks.', owner: 'Platform', eta: '15 min', etaMin: 15, delta: 4, fix: 'Pin image base tags' },
+    'Resilience': { label: 'Missing PodDisruptionBudgets', impact: 'Avoidable downtime during node failure or maintenance.', owner: 'SRE', eta: '25 min', etaMin: 25, delta: 5, fix: 'Add PodDisruptionBudgets' },
+    'Consistency': { label: 'Inconsistent Deployment Strategy', impact: 'Environment drift and inconsistent releases.', owner: 'Platform', eta: '30 min', etaMin: 30, delta: 3, fix: 'Consolidate deployment strategy' },
+    'Single point of failure': { label: 'Single Datastore Dependency', impact: 'A failure in the shared dependency could affect a large share of the platform.', owner: 'SRE', eta: '—', etaMin: 20, delta: 5, fix: 'Add datastore failover' },
   };
   const sensitive = r.serviceNames.filter((n) => /pay|checkout|billing|order|auth|identity|user|account|login|cart/i.test(n)).slice(0, 3);
   concerns.forEach((c) => {
-    const m = META[c.cat] || { impact: 'Increases operational risk for this release.', owner: 'Platform', eta: '20 min', delta: 4, fix: `Address ${c.cat.toLowerCase()}` };
+    const m = META[c.cat] || { label: c.cat, impact: 'Increases operational risk for this release.', owner: 'Platform', eta: '20 min', etaMin: 20, delta: 4, fix: `Address ${c.cat.toLowerCase()}` };
     Object.assign(c, m, { likelihood: c.sev === 'high' ? 'High' : c.sev === 'medium' ? 'Medium' : 'Low',
       affected: (/security|secret|failure/i.test(c.cat) && sensitive.length) ? sensitive : null });
   });
+  const timeToReady = concerns.filter((c) => c.sev === 'high').reduce((s, c) => s + (c.etaMin || 20), 0);
 
   // ── AI prediction (transparent heuristics off readiness + findings) ──
   const clampP = (n) => Math.max(2, Math.min(60, Math.round(n)));
@@ -199,20 +200,20 @@ function deriveInsights(r, dockers, wfs, paths) {
     confidence: [successProb, Math.min(96, successProb + (rollbackProb - afterRollback))],
   };
 
-  // ── Release narrative (paste-able) ──
-  const topStrength = (strengths[0] || 'solid engineering practices').replace(/\.$/, '').replace(/^./, (m) => m.toLowerCase());
+  // ── Release summary (paste-able, platform voice — no first person) ──
+  const topStrength = (strengths[0] || 'Solid engineering practices').replace(/\.$/, '');
   const topConcern = concerns.find((c) => c.sev === 'high') || concerns[0];
-  const narrative = `Your platform demonstrates ${topStrength}${r.monitoring.length >= 2 ? ' with mature observability and automated CI/CD' : ''}. ` +
+  const narrative = `${r.appType} platform. ${topStrength}${r.monitoring.length >= 2 ? '; centralized observability and automated CI/CD in place' : ''}. ` +
     (totalIssues
-      ? `However, I identified ${blockers + warnings} issue${blockers + warnings === 1 ? '' : 's'} that increase operational risk. The most urgent is ${topConcern ? topConcern.text.replace(/^./, (m) => m.toLowerCase()) : 'a configuration gap.'} ` +
-        (blockerDelta ? `Resolving the highest-priority issues should raise deployment readiness from ${overall}% to about ${afterReadiness}%, while reducing estimated rollback probability from ${rollbackProb}% to below ${afterRollback}%.` : '')
-      : 'I found no material risks in what I could inspect, so this release looks ready to proceed.');
+      ? `${blockers + warnings} issue${blockers + warnings === 1 ? '' : 's'} increase operational risk. Highest priority: ${topConcern ? topConcern.label : 'configuration gap'}. ` +
+        (blockerDelta ? `Resolving the blockers raises release readiness from ${overall}% to ~${afterReadiness}% and lowers estimated rollback probability from ${rollbackProb}% to below ${afterRollback}%.` : '')
+      : 'No material risks detected. Release cleared to proceed.');
 
   return { strengths: [...new Set(strengths)], concerns, areas, overall, summary: { blockers, warnings, opportunities }, recommendation,
-    prediction, priorities, projection, narrative, inspected: { dockers: inspectedDockers, workflows: inspectedWf } };
+    prediction, priorities, projection, narrative, timeToReady, inspected: { dockers: inspectedDockers, workflows: inspectedWf } };
 }
 
-const STEPS = ['Reading repository', 'Detecting services', 'Inspecting containers', 'Reading CI/CD pipelines', 'Assessing security posture', 'Scoring platform maturity', 'Forming an opinion', 'Writing your briefing'];
+const STEPS = ['Repository indexed', 'Services detected', 'Containers inspected', 'CI/CD pipelines parsed', 'Security posture assessed', 'Platform maturity scored', 'Risks evaluated', 'Assessment compiled'];
 
 export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure }) {
   const [loading, setLoading] = useState(true);
@@ -256,7 +257,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   if (loading || !stepsDone) {
     return (
       <div className="card">
-        <p className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><Loader2 size={15} className="animate-spin text-brand-600" />Analyzing your delivery platform…</p>
+        <p className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><Loader2 size={15} className="animate-spin text-brand-600" />Assessing release…</p>
         <ul className="space-y-2">
           {STEPS.map((s, i) => (
             <li key={s} className={`flex items-center gap-2 text-sm transition-opacity ${i < revealed ? 'opacity-100' : 'opacity-30'}`}>
@@ -286,36 +287,60 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
   return (
     <div className="space-y-5">
-      {/* ── AI EXECUTIVE BRIEFING ────────────────────────────────────────── */}
+      {/* ── RELEASE DECISION (facts, no storytelling) ────────────────────── */}
       <div className={`card border ${recBg}`}>
-        <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-1 flex items-center gap-1.5"><Boxes size={12} />AI Executive Briefing</p>
-        <p className="text-sm text-gray-700 leading-relaxed max-w-3xl">
-          I analyzed your <span className="font-semibold">{r.appType}</span> platform — {r.inventory.relevant.toLocaleString()} deployment-relevant files across {r.services} service{r.services === 1 ? '' : 's'}
-          {r.inspected.dockers || r.inspected.workflows ? `, including the contents of ${r.inspected.dockers} Dockerfile${r.inspected.dockers === 1 ? '' : 's'} and ${r.inspected.workflows} CI workflow${r.inspected.workflows === 1 ? '' : 's'}` : ''}. Here's my assessment.
-        </p>
-        <div className="mt-3 flex items-baseline gap-3 flex-wrap">
-          <span className={`text-2xl font-bold ${recTone}`}>{r.recommendation.verdict}</span>
-          <span className="text-sm text-gray-500">Enterprise readiness <span className={`font-bold ${scoreColor(r.overall)}`}>{r.overall}/100</span></span>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Release Decision</p>
+            <div className={`text-2xl font-bold ${recTone} mt-0.5`}>{r.recommendation.verdict}</div>
+            <p className="text-xs text-gray-500 mt-0.5">Release candidate · {r.appType}</p>
+          </div>
+          <span className={`chip text-xs font-bold ${r.recommendation.tone === 'red' ? 'bg-red-100 text-red-700 border border-red-300' : r.recommendation.tone === 'amber' ? 'bg-amber-100 text-amber-700 border border-amber-300' : 'bg-green-100 text-green-700 border border-green-300'}`}>{r.recommendation.status}</span>
         </div>
-        <p className="text-sm text-gray-600 mt-1">{r.recommendation.text}</p>
+
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mt-4">
+          {[
+            { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall) },
+            { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb) },
+            { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-red-600' : 'text-green-600' },
+            { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900' },
+          ].map((x) => (
+            <div key={x.l}><div className={`text-2xl font-bold ${x.c}`}>{x.v}</div><div className="text-[11px] uppercase tracking-wide text-gray-400 mt-0.5">{x.l}</div></div>
+          ))}
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-gray-200/70">
+          <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Recommendation</p>
+          <p className="text-sm text-navy-800">{r.recommendation.text}</p>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button onClick={onRunValidation} className="btn-primary text-sm"><Shield size={14} />Run Full Assessment</button>
+          <button onClick={onRunValidation} className="btn-primary text-sm"><Shield size={14} />Assess Release</button>
           {r.infra === 'Terraform' && onConnect && <button onClick={onConnect} className="btn-secondary text-sm"><Cloud size={13} />Verify {r.cloud[0] || 'cloud'} infra</button>}
         </div>
       </div>
 
-      {/* ── RELEASE NARRATIVE (paste-able) ───────────────────────────────── */}
+      {/* ── PLATFORM INTELLIGENCE (terse) ────────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-navy-900 mb-2">Platform Intelligence</h3>
+        <div className="flex flex-wrap gap-2">
+          {[`${r.appType}`, `${r.services} services`, ...r.cloud, r.orchestration, r.ci, r.infra, ...r.monitoring].filter((x) => x && x !== '—').map((x, i) => (
+            <span key={i} className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-navy-700">{x}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── RELEASE SUMMARY (paste-able) ─────────────────────────────────── */}
       <div className="card">
         <div className="flex items-center justify-between mb-1.5">
-          <h3 className="text-sm font-semibold text-navy-900">Release narrative</h3>
+          <h3 className="text-sm font-semibold text-navy-900">Release Summary</h3>
           <button onClick={() => navigator.clipboard?.writeText(r.narrative)} className="btn-ghost text-xs">Copy</button>
         </div>
         <p className="text-sm text-gray-700 leading-relaxed">{r.narrative}</p>
       </div>
 
-      {/* ── AI PREDICTION ────────────────────────────────────────────────── */}
+      {/* ── RELEASE FORECAST ─────────────────────────────────────────────── */}
       <div>
-        <h3 className="text-sm font-semibold text-navy-900 mb-2">AI prediction — if released today</h3>
+        <h3 className="text-sm font-semibold text-navy-900 mb-2">Release Forecast</h3>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {[
             { l: 'Deployment success', v: `${r.prediction.successProb}%`, c: r.prediction.successProb >= 85 ? 'text-green-600' : r.prediction.successProb >= 70 ? 'text-amber-600' : 'text-red-600' },
@@ -329,26 +354,27 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         {r.prediction.mostLikely && <p className="text-[11px] text-gray-400 mt-2">Most likely failure mode: <span className="text-gray-600">{r.prediction.mostLikely}</span>. Estimates are derived from the detected findings and maturity signals.</p>}
       </div>
 
-      {/* ── WHAT IMPRESSED ME + EXECUTIVE RISK REGISTER ──────────────────── */}
+      {/* ── VALIDATED CONTROLS ───────────────────────────────────────────── */}
       <div className="card">
-        <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500" />What impressed me</h3>
+        <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><CheckCircle2 size={14} className="text-green-500" />Validated Controls</h3>
         {r.strengths.length ? (
           <ul className="grid gap-1.5 sm:grid-cols-2">{r.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check size={15} className="text-green-500 shrink-0 mt-0.5" />{s}</li>)}</ul>
-        ) : <p className="text-sm text-gray-400">Nothing notable detected yet.</p>}
+        ) : <p className="text-sm text-gray-400">No controls verified yet.</p>}
       </div>
 
+      {/* ── DEPLOYMENT RISKS ─────────────────────────────────────────────── */}
       {r.concerns.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" />AI executive risk register</h3>
+          <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={14} className="text-amber-500" />Deployment Risks</h3>
           <div className="card !p-0 overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium">ETA</th></tr></thead>
+              <thead><tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100"><th className="px-4 py-2 font-medium">Risk</th><th className="px-4 py-2 font-medium">Business Impact</th><th className="px-4 py-2 font-medium">Owner</th><th className="px-4 py-2 font-medium">ETA</th></tr></thead>
               <tbody>
                 {r.concerns.map((c, i) => (
                   <tr key={i} className="border-b border-gray-50 last:border-0 align-top">
                     <td className="px-4 py-2.5">
-                      <span className={`chip text-[10px] mb-1 ${c.sev === 'high' ? 'bg-red-50 text-red-700 border border-red-200' : c.sev === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>{c.sev === 'high' ? 'Blocker' : c.sev === 'medium' ? 'Needs attention' : 'Optimization'}</span>
-                      <div className="font-medium text-navy-800">{c.cat}</div>
+                      <span className={`chip text-[10px] mb-1 ${c.sev === 'high' ? 'bg-red-50 text-red-700 border border-red-200' : c.sev === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>{c.sev === 'high' ? 'Blocker' : c.sev === 'medium' ? 'Needs Action' : 'Optimization'}</span>
+                      <div className="font-medium text-navy-800">{c.label}</div>
                     </td>
                     <td className="px-4 py-2.5 text-gray-600 max-w-md">{c.impact}{c.affected ? <span className="block text-[11px] text-gray-400 mt-0.5">Potentially affects: {c.affected.join(', ')}</span> : null}</td>
                     <td className="px-4 py-2.5 text-navy-700 whitespace-nowrap">{c.owner}</td>
@@ -365,7 +391,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
       {r.concerns.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card">
-            <h3 className="text-sm font-semibold text-navy-900 mb-2">If you only have one hour, fix these first</h3>
+            <h3 className="text-sm font-semibold text-navy-900 mb-2">Recommended Actions</h3>
             <ol className="space-y-2">
               {r.priorities.map((p, i) => (
                 <li key={i} className="flex items-center gap-3">
@@ -378,7 +404,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             </ol>
           </div>
           <div className="card">
-            <h3 className="text-sm font-semibold text-navy-900 mb-2">If you fix the blockers</h3>
+            <h3 className="text-sm font-semibold text-navy-900 mb-2">Projected Impact — Blockers Resolved</h3>
             <div className="space-y-2.5">
               {[
                 { l: 'Deployment readiness', a: r.projection.readiness[0], b: r.projection.readiness[1], suf: '', up: true },
