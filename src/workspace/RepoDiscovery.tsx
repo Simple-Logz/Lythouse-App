@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Loader as Loader2, Check, ArrowRight, Shield, Boxes, Database, AlertTriangle,
   Globe, Network, Cloud, TrendingUp, XCircle, CheckCircle2, Clock, GitBranch, ShieldAlert,
+  Sparkles, Server,
 } from 'lucide-react';
 import { InfoHint } from '../lib/ui';
 import { supabase } from '../lib/supabase';
@@ -259,20 +260,64 @@ function classifyChanges(files) {
   const functionalGroups = grouped.filter((g) => g.functional && g.key !== 'other');
   const state = blockers.length ? 'blocker' : functionalGroups.length ? 'assess' : 'low';
 
-  // Which review dimensions the change touches (honest scope, not fake approvals).
-  const has = (k) => !!groups[k];
-  const security = !!(groups.secrets || groups.deps || groups.containers || iam.length || k8sSec.length);
-  const platform = !!(groups.infra || groups.k8s || groups.containers || groups.cicd);
-  const application = !!(groups.app || groups.db);
+  // Canonical areas — the "evidence" that is either still trustworthy or now stale.
+  const AREA_DEFS = [
+    { key: 'app', label: 'Application' }, { key: 'deps', label: 'Dependencies' },
+    { key: 'containers', label: 'Containers' }, { key: 'k8s', label: 'Kubernetes' },
+    { key: 'infra', label: 'Infrastructure' }, { key: 'cicd', label: 'CI/CD' },
+    { key: 'secrets', label: 'Secrets' }, { key: 'db', label: 'Database' },
+  ];
+  const areas = AREA_DEFS.map((a) => ({ ...a, touched: !!groups[a.key], count: groups[a.key]?.files.length || 0 }));
+
+  // Which review dimensions the change touches — with the evidence for each.
+  const secLabels = [
+    ...(groups.secrets ? ['secrets'] : []), ...(groups.deps ? ['dependencies'] : []),
+    ...(groups.containers ? ['container images'] : []), ...(iam.length ? ['IAM / access policy'] : []),
+    ...(k8sSec.length ? ['Kubernetes security manifests'] : []),
+  ];
+  const platLabels = [
+    ...(groups.infra ? ['Terraform / IaC'] : []), ...(groups.k8s ? ['Kubernetes manifests'] : []),
+    ...(groups.containers ? ['container images'] : []), ...(groups.cicd ? ['CI/CD pipelines'] : []),
+  ];
+  const appLabels = [...(groups.app ? ['application code'] : []), ...(groups.db ? ['database migrations'] : [])];
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const scopeImpact = [
-    { scope: 'Security review', touched: security },
-    { scope: 'Platform / infrastructure review', touched: platform },
-    { scope: 'Application review', touched: application },
+    { key: 'security', scope: 'Security', touched: secLabels.length > 0, reason: secLabels.length ? `${cap(secLabels.join(', '))} changed.` : 'No security-related files changed.' },
+    { key: 'platform', scope: 'Infrastructure', touched: platLabels.length > 0, reason: platLabels.length ? `${cap(platLabels.join(', '))} changed.` : 'No infrastructure, Kubernetes or pipeline changes.' },
+    { key: 'application', scope: 'Application', touched: appLabels.length > 0, reason: appLabels.length ? `${cap(appLabels.join(', '))} changed.` : 'No application code changed.' },
   ];
 
-  return { grouped, blockers, state, scopeImpact,
+  return { grouped, blockers, state, scopeImpact, areas,
     affected: functionalGroups.map((g) => g.label),
     unaffected: grouped.filter((g) => !g.functional).map((g) => g.label) };
+}
+
+// Services touched by the change, inferred from file paths (monorepo layouts +
+// Dockerfile directories + known service names from the last assessment).
+function affectedServices(files, known) {
+  const names = new Set();
+  (files || []).forEach((f) => {
+    const p = typeof f === 'string' ? f : f.filename;
+    const m = p.match(/^(services|apps|cmd|packages|microservices|src\/services)\/([^/]+)\//);
+    if (m) names.add(m[2]);
+    const d = p.match(/(^|\/)([^/]+)\/Dockerfile/i);
+    if (d && d[2] && d[2] !== '.') names.add(d[2]);
+  });
+  (known || []).forEach((sn) => {
+    if ((files || []).some((f) => { const p = typeof f === 'string' ? f : f.filename; return p.includes(`/${sn}/`) || p.startsWith(`${sn}/`); })) names.add(sn);
+  });
+  return [...names];
+}
+
+// Transparent confidence penalty — how much the previously-computed deployment
+// confidence is discounted while the changed areas are unvalidated. Weights are
+// fixed and visible; nothing here is telemetry.
+const AREA_WEIGHT = { secrets: 26, db: 20, infra: 11, k8s: 11, deps: 9, containers: 8, cicd: 8, app: 6, config: 3, other: 2 };
+function confidencePenalty(cx) {
+  if (cx.state === 'low') return 0;
+  let p = 0;
+  cx.areas.forEach((a) => { if (a.touched) p += AREA_WEIGHT[a.key] || 5; });
+  return Math.min(42, p);
 }
 
 const CHANGE_STATE = {
@@ -292,6 +337,8 @@ const CHANGE_STATE = {
     line: 'Only documentation or tests changed — the previous release decision remains valid.',
   },
 };
+
+function cap1(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function timeAgo(ts) {
   if (!ts) return null;
@@ -429,7 +476,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
   return (
     <div className="space-y-5">
-      {/* ── CONTINUOUS VALIDATION: aggregated change window ──────────────── */}
+      {/* ── CONTINUOUS VALIDATION: change intelligence ───────────────────── */}
       {stale && (() => {
         const cx = classifyChanges(stale.files);
         const st = CHANGE_STATE[cx.state];
@@ -437,53 +484,142 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         const fileCount = stale.files.length;
         const latest = stale.commits[0]?.date ? new Date(stale.commits[0].date).getTime() : null;
         const Icon = cx.state === 'blocker' ? ShieldAlert : cx.state === 'assess' ? AlertTriangle : Check;
-        const scopeShort = { 'Security review': 'Security', 'Platform / infrastructure review': 'Platform', 'Application review': 'Application' };
+
+        // ── Prior decision → new status, with a transparent confidence delta ──
+        const prevRec = r.recommendation || {};
+        const prevConf = r.prediction?.successProb ?? r.overall ?? null;
+        const penalty = confidencePenalty(cx);
+        const nowConf = prevConf != null ? Math.max(25, prevConf - penalty) : null;
+        const newStatus = cx.state === 'blocker' ? { t: 'Approval suspended', c: 'text-[#b3261e]' } : cx.state === 'assess' ? { t: 'Review required', c: 'text-[#b06a00]' } : { t: 'Still valid', c: 'text-[#0f7a3c]' };
+
+        // ── Blast radius (all inferred from changed paths — no telemetry) ──
+        const services = affectedServices(stale.files, r.serviceNames);
+        const g = (k) => cx.areas.find((a) => a.key === k)?.touched;
+        const present = { app: true, deps: !!g('deps'), containers: (r.counts?.dockerfiles || 0) > 0, k8s: (r.counts?.k8s || 0) > 0, infra: (r.counts?.tf || 0) > 0, cicd: r.ci && r.ci !== '—', secrets: !!g('secrets'), db: !!g('db') };
+        const freshness = cx.areas.filter((a) => present[a.key] || a.touched);
+        const btnLabel = cx.state === 'blocker' ? 'Revalidate now' : cx.state === 'assess' ? 'Revalidate changed components' : 'Refresh decision';
+
+        // ── Release-engineer narrative (deterministic, grounded in the facts) ──
+        const changedFn = cx.areas.filter((a) => a.touched).map((a) => a.label.toLowerCase());
+        const untouched = cx.areas.filter((a) => !a.touched && present[a.key]).map((a) => a.label.toLowerCase());
+        const svcPhrase = services.length ? ` in ${services.slice(0, 2).join(' and ')}${services.length > 2 ? ` and ${services.length - 2} more` : ''}` : '';
+        const narrative = cx.state === 'low'
+          ? `Only documentation or tests changed since your last verified assessment${svcPhrase}. Every prior validation still holds — the release decision does not need to change.`
+          : `Since your last verified assessment, ${fileCount} file${fileCount === 1 ? '' : 's'} across ${changedFn.join(', ')}${svcPhrase} changed.` +
+            (untouched.length ? ` ${cap1(untouched.join(', '))} ${untouched.length === 1 ? 'was' : 'were'} not modified, so ${untouched.length === 1 ? 'its' : 'their'} previous validation remains trustworthy.` : '') +
+            (cx.state === 'blocker'
+              ? ' Because sensitive components changed, the previous approval is suspended until they are revalidated.'
+              : ` Only the changed ${changedFn.length === 1 ? 'area' : 'areas'} need revalidating before the release decision can be confirmed.`);
+
+        const blast = [
+          { l: 'Services affected', v: services.length ? String(services.length) : '—', sub: services.length ? services.slice(0, 3).join(', ') : 'None identifiable from paths', warn: services.length > 0 },
+          { l: 'Infrastructure', v: g('infra') ? 'Changed' : 'Unaffected', warn: g('infra') },
+          { l: 'Kubernetes', v: g('k8s') ? 'Changed' : 'Unaffected', warn: g('k8s') },
+          { l: 'Secrets', v: g('secrets') ? 'Changed' : 'Unaffected', warn: g('secrets') },
+          { l: 'Deployment policy', v: cx.blockers.length ? 'Review required' : 'No policy changes', warn: cx.blockers.length > 0 },
+          { l: 'Rollback', v: g('db') ? 'Re-verify — migrations changed' : 'Unaffected', warn: g('db') },
+        ];
+
         return (
           <div className={`card !p-4 border ${st.tone}`}>
+            {/* header */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
                 <p className={`text-sm font-bold flex items-center gap-1.5 ${st.title}`}><Icon size={15} className={st.icon} />{st.heading}</p>
                 <span className={`chip text-[10px] ${st.chipCls}`}>{st.chip}</span>
               </div>
-              <button onClick={reanalyze} className="btn-primary text-xs shrink-0"><Shield size={13} />Re-assess</button>
+              <button onClick={reanalyze} className="btn-primary text-xs shrink-0"><Shield size={13} />{btnLabel}</button>
             </div>
 
-            <p className="text-[13px] text-gray-700 mt-1.5">
-              <span className="font-medium">{commitCount || 'New'} commit{commitCount === 1 ? '' : 's'} · {fileCount} file{fileCount === 1 ? '' : 's'}</span> since the last verified assessment. {st.line}
-            </p>
+            {/* prior decision → new status + confidence delta */}
+            <div className="mt-3 grid gap-2 sm:grid-cols-3 rounded-lg border border-gray-200/70 bg-white/70 p-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-gray-400">Last assessed decision</div>
+                <div className="text-sm font-bold text-navy-900 mt-0.5">{prevRec.verdict || 'Assessed'}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-gray-400">Status now</div>
+                <div className={`text-sm font-bold mt-0.5 ${newStatus.c}`}>{newStatus.t}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-gray-400 flex items-center gap-1">Deployment confidence<InfoHint text="The confidence from your last assessment, discounted while the changed areas remain unvalidated. The penalty is a fixed weighting of what changed — not live telemetry — and is restored when you revalidate." align="right" /></div>
+                {prevConf != null ? (
+                  penalty > 0
+                    ? <div className="text-sm font-bold mt-0.5"><span className="text-gray-400">{prevConf}%</span> <ArrowRight size={11} className="inline text-gray-300" /> <span className={newStatus.c}>{nowConf}%</span></div>
+                    : <div className="text-sm font-bold text-[#0f7a3c] mt-0.5">{prevConf}% · unchanged</div>
+                ) : <div className="text-sm font-bold text-gray-400 mt-0.5">—</div>}
+              </div>
+            </div>
 
-            {/* meta + category counts, one compact row */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-[11px] text-gray-500">
+            {/* AI narrative */}
+            <div className="mt-3 flex items-start gap-2">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100"><Sparkles size={12} className="text-brand-600" /></span>
+              <p className="text-[13px] text-navy-800 leading-relaxed"><span className="font-semibold text-brand-700">LytHouse assessment:</span> {narrative}</p>
+            </div>
+
+            {/* meta line */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[11px] text-gray-500">
+              <span className="inline-flex items-center gap-1 font-medium text-navy-700">{commitCount || 'New'} commit{commitCount === 1 ? '' : 's'} · {fileCount} file{fileCount === 1 ? '' : 's'}</span>
               {stale.since && <span className="inline-flex items-center gap-1"><Clock size={11} />Verified {timeAgo(stale.since)}</span>}
               {latest && <span className="inline-flex items-center gap-1"><GitBranch size={11} />Latest {timeAgo(latest)}</span>}
-              <span className="text-gray-300">·</span>
-              {cx.grouped.map((g) => (
-                <span key={g.key} className="inline-flex items-center gap-1 text-navy-700"><span className="font-medium">{g.label}</span><span className="text-gray-400">{g.files.length}</span></span>
+            </div>
+
+            {/* evidence freshness grid — what's still trustworthy vs stale */}
+            <div className="mt-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Evidence freshness</p>
+              <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                {freshness.map((a) => (
+                  <div key={a.key} className={`rounded-lg border px-2.5 py-1.5 ${a.touched ? 'border-[#f9c777] bg-[#fff7e9]' : 'border-[#9adcb4] bg-[#e3f7ea]'}`}>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-medium text-navy-800">{a.label}</span>
+                      {a.touched ? <AlertTriangle size={11} className="text-[#e07600] shrink-0" /> : <CheckCircle2 size={11} className="text-[#0f9a4c] shrink-0" />}
+                    </div>
+                    <div className={`text-[10px] mt-0.5 ${a.touched ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>
+                      {a.touched ? `Changed ${latest ? timeAgo(latest) : 'recently'} · revalidate` : `Verified ${stale.since ? timeAgo(stale.since) : 'earlier'}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* explained review scopes */}
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {cx.scopeImpact.map((s) => (
+                <div key={s.key} className={`rounded-lg border px-3 py-2 ${s.touched ? 'border-[#f9c777] bg-[#fff7e9]' : 'border-[#9adcb4] bg-[#e3f7ea]'}`}>
+                  <div className={`text-xs font-semibold flex items-center gap-1 ${s.touched ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>{s.touched ? <AlertTriangle size={11} /> : <CheckCircle2 size={11} />}{s.scope}: {s.touched ? 'revalidate' : 'still valid'}</div>
+                  <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{s.reason}</p>
+                </div>
               ))}
+            </div>
+
+            {/* blast radius */}
+            <div className="mt-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 flex items-center gap-1"><Server size={11} />Estimated blast radius</p>
+              <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 rounded-lg border border-gray-200/70 bg-white/60 p-2.5">
+                {blast.map((b) => (
+                  <div key={b.l}>
+                    <div className="text-[10px] uppercase tracking-wide text-gray-400">{b.l}</div>
+                    <div className={`text-xs font-semibold mt-0.5 ${b.warn ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>{b.v}</div>
+                    {b.sub && <div className="text-[10px] text-gray-400 truncate">{b.sub}</div>}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* immediate-blocker reasons */}
             {cx.blockers.length > 0 && (
-              <div className="mt-2.5 rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/60 px-3 py-1.5">
+              <div className="mt-3 rounded-lg border border-[#f5a3a3] bg-[#fde3e3]/60 px-3 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#b3261e] mb-1">Why approval is suspended</p>
                 <ul className="flex flex-wrap gap-x-4 gap-y-0.5">
                   {cx.blockers.map((b, i) => <li key={i} className="flex items-center gap-1.5 text-xs text-[#8a1f1a]"><XCircle size={12} className="shrink-0" />{b.label}</li>)}
                 </ul>
               </div>
             )}
 
-            {/* validation-scope impact — single compact row of pills */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-              {cx.scopeImpact.map((s) => (
-                <span key={s.scope} className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${s.touched ? 'border-[#f9c777] bg-[#fff7e9] text-[#b06a00]' : 'border-[#9adcb4] bg-[#e3f7ea] text-[#0f7a3c]'}`}>
-                  {s.touched ? <AlertTriangle size={10} /> : <CheckCircle2 size={10} />}{scopeShort[s.scope]}: {s.touched ? 'revalidate' : 'valid'}
-                </span>
-              ))}
-            </div>
-
             {/* review-changes drawer */}
-            <details className="group mt-2.5">
+            <details className="group mt-3">
               <summary className="flex items-center gap-1.5 cursor-pointer list-none text-xs font-medium text-brand-700">
-                <ArrowRight size={13} className="group-open:rotate-90 transition-transform" />Review changes
+                <ArrowRight size={13} className="group-open:rotate-90 transition-transform" />Commits &amp; files
                 {stale.permalink && <a href={stale.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 text-gray-400 hover:text-brand-700 hover:underline">Full diff on GitHub →</a>}
               </summary>
               <div className="mt-2 pt-2 border-t border-gray-200/70 grid gap-4 lg:grid-cols-2">
