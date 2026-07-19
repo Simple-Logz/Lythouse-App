@@ -252,15 +252,11 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
 
         {/* Release Header — always visible */}
         <div className={`sticky top-0 z-20 border-b px-6 py-4 ${isBlocked?'bg-red-50 border-red-200':readiness!==null&&readiness>=80?'bg-green-50 border-green-200':'bg-white border-gray-100'}`}>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4 min-w-0">
-              <div>
-                <div className="flex items-center gap-2.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <h1 className="text-base font-bold text-navy-900 truncate">{project.name}</h1>
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${isBlocked?'text-red-700 bg-red-100 border-red-300':readiness!==null&&readiness>=80?'text-green-700 bg-green-100 border-green-300':'text-amber-700 bg-amber-100 border-amber-300'}`}>
-                    {isBlocked?'⛔ BLOCKED':readiness!==null&&readiness>=80?'✅ READY':'⚠ REVIEW'}
-                  </span>
-                  {readiness!==null&&<span className={`text-sm font-bold ${readiness>=80?'text-green-600':readiness>=60?'text-amber-600':'text-red-600'}`}>{readiness}% confidence</span>}
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                   <span className="flex items-center gap-1"><GitBranch size={10}/>{project.git_branch||'main'}</span>
