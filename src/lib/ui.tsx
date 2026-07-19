@@ -35,16 +35,20 @@ const m:Record<string,{label:string;cls:string}>={open:{label:'Open',cls:'bg-red
 const s=m[status]??m.open;return<span className={'chip '+s.cls}>{s.label}</span>;
 }
 export function RiskGauge({score,size=130}:{score:number|null;size?:number}){
-if(score===null)return<div className="flex flex-col items-center justify-center" style={{width:size,height:size}}><span className="text-xs font-medium uppercase tracking-wide text-gray-400">No score</span></div>;
-const c=Math.max(0,Math.min(100,score)),st=Math.max(4,size*0.05),r=size/2-st-4,cir=2*Math.PI*r,o=cir-(c/100)*cir;
-const col=c>=75?'#322c66':c>=50?'#6252b3':c>=25?'#4f45ab':'#423a8c';
+// No score → a clean neutral ring with a dash, legible at any size.
+if(score===null)return<div className="flex shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-300" style={{width:size,height:size}} title="No score — validation didn't complete"><span className="font-bold leading-none" style={{fontSize:Math.max(12,size*0.3)}}>–</span></div>;
+const c=Math.max(0,Math.min(100,score)),st=Math.max(3,size*0.09),r=size/2-st-2,cir=2*Math.PI*r,o=cir-(c/100)*cir;
+// Semantic traffic-light colors (explicit hex so the theme remap can't flatten them).
+const col=c>=75?'#dc2626':c>=50?'#ea580c':c>=25?'#f59e0b':'#12a150';
 const lbl=c>=75?'Critical':c>=50?'Elevated':c>=25?'Moderate':'Low';
-const fs=Math.max(11,size*0.22);
-return<div className="relative flex shrink-0 items-center justify-center" style={{width:size,height:size}}>
-<svg width={size} height={size} className="-rotate-90"><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#f3f4f6" strokeWidth={st}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={st} strokeLinecap="round" strokeDasharray={cir} strokeDashoffset={o} style={{transition:'stroke-dashoffset 1s ease,stroke 0.4s'}}/></svg>
-<div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden">
+// Only show the text label when the gauge is big enough for it to fit.
+const showLabel=size>=72;
+const fs=showLabel?size*0.3:size*0.42;
+return<div className="relative flex shrink-0 items-center justify-center" style={{width:size,height:size}} title={`Risk ${c}/100 · ${lbl}`}>
+<svg width={size} height={size} className="-rotate-90"><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#eef0f2" strokeWidth={st}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={st} strokeLinecap="round" strokeDasharray={cir} strokeDashoffset={o} style={{transition:'stroke-dashoffset 1s ease,stroke 0.4s'}}/></svg>
+<div className="absolute inset-0 flex flex-col items-center justify-center">
 <span className="font-bold tabular-nums leading-none" style={{color:col,fontSize:fs}}>{c}</span>
-<span className="mt-1 font-medium uppercase tracking-wide text-gray-500" style={{fontSize:Math.max(8,size*0.085)}}>{lbl}</span></div></div>;
+{showLabel&&<span className="mt-1 font-semibold uppercase tracking-wide text-gray-500" style={{fontSize:Math.max(9,size*0.09)}}>{lbl}</span>}</div></div>;
 }
 export function StepIcon({status,icon}:{status:StepStatus;icon:ReactNode}){
 const b='flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2';
