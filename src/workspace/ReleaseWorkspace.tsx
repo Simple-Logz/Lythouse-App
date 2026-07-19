@@ -18,7 +18,7 @@ import{RepoDiscovery}from'./RepoDiscovery';
 import{ValidationReport}from'./ValidationReport';
 import{FileBrowser}from'./FileBrowser';
 import{WorkspaceSettings}from'./WorkspaceSettings';
-import{loadSettings}from'./workspaceSettings';
+import{loadSettings}from'./releaseSettings';
 
 function timeAgo(iso:string):string{
   const ms=Date.now()-new Date(iso).getTime();

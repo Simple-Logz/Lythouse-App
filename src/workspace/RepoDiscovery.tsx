@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
 import { DetailedFindings } from './DetailedFindings';
 import { getTree, getFile, ERROR_TEXT, loadReport, saveReport, clearReport, getHeadSha, getCompare } from './repoCache';
-import { loadSettings } from './workspaceSettings';
+import { loadSettings } from './releaseSettings';
 
 // Resolve a commit author to a REGISTERED LytHouse team member only. A raw git
 // identity is never surfaced — unknown authors are shown as a neutral generic

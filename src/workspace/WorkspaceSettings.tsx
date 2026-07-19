@@ -5,7 +5,7 @@ import {
   Loader as Loader2, ExternalLink, Info,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { loadSettings, saveSettings } from './workspaceSettings';
+import { loadSettings, saveSettings } from './releaseSettings';
 import { clearReport } from './repoCache';
 import { PROVIDERS, isConnected } from '../lib/integrations';
 import { Link } from '../lib/router';
