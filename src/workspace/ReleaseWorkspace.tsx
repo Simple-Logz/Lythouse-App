@@ -240,9 +240,9 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
           );
         })}
 
-        <div className="mt-auto px-1 space-y-1.5 pt-4 border-t border-gray-200">
-          <button onClick={()=>setFileBrowserOpen(true)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold w-full bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-colors">
-            <FolderOpen size={15}/>Browse &amp; Edit Files
+        <div className="mt-auto px-1 space-y-1 pt-4 border-t border-gray-200">
+          <button onClick={()=>setFileBrowserOpen(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60">
+            <FolderOpen size={13}/>Files
           </button>
           <button className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60`} onClick={()=>window.location.href=`/projects/${projectId}/settings`}>
             <Settings size={13}/>Settings
@@ -274,6 +274,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <button onClick={()=>setFileBrowserOpen(true)} className="btn-primary text-xs flex items-center gap-1.5"><FolderOpen size={12}/>Edit Files</button>
               <button onClick={load} className="btn-secondary text-xs flex items-center gap-1.5"><RefreshCw size={12}/>Refresh</button>
               <button onClick={runValidation} disabled={running} className="btn-secondary text-xs flex items-center gap-1.5">
                 {running?<><Loader2 size={12} className="animate-spin"/>Scanning…</>:<><Shield size={12}/>Revalidate</>}

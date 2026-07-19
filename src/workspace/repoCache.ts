@@ -27,7 +27,7 @@ export async function getTree(project) {
     if (r.status === 404) result = { error: 'not-found' };
     else if (r.status === 403) result = { error: 'rate-limit' };
     else if (!r.ok) result = { error: 'error', status: r.status };
-    else { const d = await r.json(); result = { paths: (d.tree || []).filter((t) => t.type === 'blob').map((t) => t.path), parsed, branch }; }
+    else { const d = await r.json(); const blobs = (d.tree || []).filter((t) => t.type === 'blob'); result = { paths: blobs.map((t) => t.path), blobs: Object.fromEntries(blobs.map((t) => [t.path, t.sha])), parsed, branch }; }
   } catch { result = { error: 'network' }; }
   if (!result.error) trees.set(key, result); // only cache successes; errors can be retried
   return result;
