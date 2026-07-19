@@ -358,6 +358,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   const [nonce, setNonce] = useState(0);
   const [stale, setStale] = useState(null);
   const [changeOpen, setChangeOpen] = useState(false);
+  const [decisionOpen, setDecisionOpen] = useState(false);
   const [memberMap, setMemberMap] = useState({});
   const timer = useRef(null);
 
@@ -645,18 +646,36 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         );
       })()}
 
-      {/* ── RELEASE DECISION (facts, no storytelling) ────────────────────── */}
-      <div className={`card border ${recBg}`}>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Release Decision</p>
-            <div className={`text-2xl font-bold ${recTone} mt-0.5`}>{r.recommendation.verdict}</div>
-            <p className="text-xs text-gray-500 mt-0.5">Release candidate · {r.appType}</p>
+      {/* ── RELEASE DECISION (foldable; teaser visible when collapsed) ─────── */}
+      <div className={`card !p-0 border ${recBg} overflow-hidden`}>
+        {/* collapsed header — always visible, click to expand */}
+        <button onClick={() => setDecisionOpen((v) => !v)} className="w-full text-left p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Release Decision</p>
+              <div className={`text-2xl font-bold ${recTone} mt-0.5`}>{r.recommendation.verdict}</div>
+              <p className="text-xs text-gray-500 mt-0.5">Release candidate · {r.appType}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={`chip text-xs font-bold ${r.recommendation.tone === 'red' ? SEV.high : r.recommendation.tone === 'amber' ? SEV.medium : SEV.low}`}>{r.recommendation.status}</span>
+              <ChevronDown size={18} className={`text-gray-400 transition-transform ${decisionOpen ? 'rotate-180' : ''}`} />
+            </div>
           </div>
-          <span className={`chip text-xs font-bold ${r.recommendation.tone === 'red' ? SEV.high : r.recommendation.tone === 'amber' ? SEV.medium : SEV.low}`}>{r.recommendation.status}</span>
-        </div>
+          {/* teaser row — what to expect without unfolding */}
+          {!decisionOpen && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+              <span><span className={`font-bold ${scoreColor(r.overall)}`}>{r.overall}%</span> <span className="text-gray-500">ready</span></span>
+              <span><span className={`font-bold ${scoreColor(r.prediction.successProb)}`}>{r.prediction.successProb}%</span> <span className="text-gray-500">confidence</span></span>
+              <span><span className={`font-bold ${r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]'}`}>{r.summary.blockers}</span> <span className="text-gray-500">blocker{r.summary.blockers === 1 ? '' : 's'}</span></span>
+              {r.timeToReady ? <span><span className="font-bold text-navy-800">{r.timeToReady} min</span> <span className="text-gray-500">to ready</span></span> : null}
+              <span className="text-brand-600 font-medium ml-auto">Details</span>
+            </div>
+          )}
+        </button>
 
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mt-4">
+        {decisionOpen && (<div className="px-4 sm:px-5 pb-5">
+
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
           {[
             { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall), hint: 'A 0–100 score of how ready this release is to ship, averaged across architecture, security, deployment automation, observability, disaster recovery and operational readiness.' },
             { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb), hint: 'Estimated probability the deployment succeeds without needing a rollback, based on readiness and the number of open blockers.' },
@@ -702,6 +721,8 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           {r.infra === 'Terraform' && onConnect && <button onClick={onConnect} className="btn-secondary text-sm"><Cloud size={13} />Verify {r.cloud[0] || 'cloud'} infra</button>}
           <button onClick={reanalyze} className="btn-ghost text-xs ml-auto" title="Re-read the repository and recompute">Re-analyze</button>
         </div>
+
+        </div>)}
       </div>
 
       {/* ── PLATFORM INTELLIGENCE (terse) ────────────────────────────────── */}
