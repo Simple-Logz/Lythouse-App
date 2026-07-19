@@ -1,5 +1,6 @@
 import{RouterProvider,useRouter}from'./lib/router';
 import{AppShell,usePlanId}from'./pages/AppShell';
+import type{PlanId}from'./lib/supabase';
 import{AuthPage}from'./pages/AuthPage';
 import{ProjectsPage}from'./pages/ProjectsPage';
 import{ProjectWorkspace}from'./workspace/ProjectWorkspace';
