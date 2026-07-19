@@ -66,6 +66,28 @@ export function clearReport(kind, project) {
   try { localStorage.removeItem(reportKey(kind, project)); } catch {}
 }
 
+// Latest commit SHA of the branch head (cheap — used for change detection).
+export async function getHeadSha(project) {
+  const parsed = parseGitUrl(project.git_url); if (!parsed) return null;
+  const branch = project.git_branch || 'main';
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (project.github_token) headers.Authorization = 'Bearer ' + project.github_token;
+  try { const r = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/commits/${branch}`, { headers }); if (!r.ok) return null; return (await r.json()).sha; } catch { return null; }
+}
+
+// What changed between two commits (files + count) — the basis for impact.
+export async function getCompare(project, base, head) {
+  const parsed = parseGitUrl(project.git_url); if (!parsed || !base || !head) return null;
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (project.github_token) headers.Authorization = 'Bearer ' + project.github_token;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/compare/${base}...${head}`, { headers });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return { ahead: d.ahead_by || 0, files: (d.files || []).map((f) => f.filename), commits: (d.commits || []).length };
+  } catch { return null; }
+}
+
 export const ERROR_TEXT = {
   'not-github': 'Live analysis currently supports GitHub repositories only. This project uses a different provider (GitLab, Bitbucket, Azure, or a non-GitHub URL), so the report can’t be generated yet.',
   'not-found': 'The repository or branch couldn’t be reached. Private repositories need a token (import them with one), and the branch must exist.',

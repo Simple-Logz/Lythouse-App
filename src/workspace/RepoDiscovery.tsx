@@ -7,7 +7,7 @@ import {
 import { InfoHint } from '../lib/ui';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
 import { DetailedFindings } from './DetailedFindings';
-import { getTree, getFile, ERROR_TEXT, loadReport, saveReport, clearReport } from './repoCache';
+import { getTree, getFile, ERROR_TEXT, loadReport, saveReport, clearReport, getHeadSha, getCompare } from './repoCache';
 
 // Structural inventory from the file tree (no content needed).
 function analyze(paths) {
@@ -210,6 +210,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   const [result, setResult] = useState(null);
   const [pr, setPr] = useState({ state: 'idle', url: null, error: null, applied: [] });
   const [nonce, setNonce] = useState(0);
+  const [stale, setStale] = useState(null);
   const timer = useRef(null);
   const reanalyze = () => { clearReport('discovery', project); clearReport('findings', project); clearReport('validation', project); setResult(null); setError(null); setLoading(true); setRevealed(0); setNonce((n) => n + 1); };
 
@@ -217,7 +218,19 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
     let alive = true;
     // Persistent cache: if this project was analyzed before, show it instantly.
     const cached = loadReport('discovery', project);
-    if (cached && cached.data) { setResult(cached.data); setRevealed(STEPS.length); setLoading(false); return () => { alive = false; }; }
+    if (cached && cached.data) {
+      setResult(cached.data); setRevealed(STEPS.length); setLoading(false);
+      // Continuous change detection: compare the analyzed commit to HEAD now.
+      (async () => {
+        const head = await getHeadSha(project);
+        const analyzedSha = cached.data.analyzedSha;
+        if (head && analyzedSha && head !== analyzedSha) {
+          const cmp = await getCompare(project, analyzedSha, head);
+          if (alive) setStale({ head, commits: cmp?.commits || 0, files: cmp?.files || [] });
+        }
+      })();
+      return () => { alive = false; };
+    }
     timer.current = setInterval(() => setRevealed((r) => Math.min(STEPS.length, r + 1)), 320);
     (async () => {
       try {
@@ -233,8 +246,9 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           Promise.all(wPaths.map((p) => getFile(project, p).then((c) => ({ p, c })))),
         ]);
         const insights = deriveInsights(base, dRes.filter((x) => x.c), wRes.filter((x) => x.c), paths);
+        const analyzedSha = await getHeadSha(project);
         if (!alive) return;
-        const full = { ...base, ...insights, allPaths: paths };
+        const full = { ...base, ...insights, allPaths: paths, analyzedSha, analyzedAt: Date.now() };
         setResult(full);
         saveReport('discovery', project, full);
       } catch (e) { if (alive) setError(e.message || 'Could not analyze the repository.'); }
@@ -285,6 +299,31 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
   return (
     <div className="space-y-5">
+      {/* ── CONTINUOUS VALIDATION: new commits detected ──────────────────── */}
+      {stale && (() => {
+        const areas = new Set();
+        stale.files.forEach((f) => {
+          if (/(^|\/)Dockerfile/i.test(f)) areas.add('Containers');
+          else if (/\.tf$/i.test(f)) areas.add('Infrastructure');
+          else if (/\.github\/workflows\/|gitlab-ci|Jenkinsfile/i.test(f)) areas.add('CI/CD');
+          else if (/(k8s|kubernetes|manifest|deploy|overlays|base)\/.*\.ya?ml$/i.test(f)) areas.add('Kubernetes');
+          else if (/\.env|secret/i.test(f)) areas.add('Secrets');
+          else areas.add('Application code');
+        });
+        return (
+          <div className="card border-[#f9c777] bg-[#fff7e9]">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-[#8a5a00] flex items-center gap-1.5"><Loader2 size={14} className="text-[#e07600]" />New changes pushed since last analysis</p>
+                <p className="text-sm text-gray-700 mt-0.5">{stale.commits || 'New'} commit{stale.commits === 1 ? '' : 's'} · {stale.files.length} file{stale.files.length === 1 ? '' : 's'} changed. This assessment is now out of date.</p>
+                {areas.size > 0 && <p className="text-xs text-gray-600 mt-1">Impact areas: <span className="font-medium">{[...areas].join(', ')}</span> — re-analyze to see the updated release decision.</p>}
+              </div>
+              <button onClick={reanalyze} className="btn-primary text-sm shrink-0"><Shield size={14} />Re-analyze</button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── RELEASE DECISION (facts, no storytelling) ────────────────────── */}
       <div className={`card border ${recBg}`}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
