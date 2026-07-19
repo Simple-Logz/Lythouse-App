@@ -1,307 +1,117 @@
-import{useEffect,useState,useCallback,useMemo}from'react';
-import{ReleasePerformanceChart}from'./ReleasePerformanceChart';
-import{supabase,type Project,type Validation,type Finding}from'../lib/supabase';
-import{Spinner}from'../lib/ui';
-import{TrendingUp,TrendingDown,Shield,Clock,CheckCircle2,XCircle,AlertTriangle,BarChart3,Users,Zap,Activity,Target,ArrowRight,Search,X}from'lucide-react';
-import{Link}from'../lib/router';
+// @ts-nocheck
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { PageHeader, Spinner } from '../lib/ui';
+import { useRouter } from '../lib/router';
+import { loadReport } from '../workspace/repoCache';
+import { evaluateProject } from '../workspace/policyEngine';
+import { ShieldCheck, ShieldAlert, ShieldX, TrendingUp, FolderGit2, AlertTriangle } from 'lucide-react';
 
-type TeamRisk={project_name:string;project_id:string;risk_score:number;critical:number;high:number;last_scan:string;};
+const OK = '#0f9a4c', WARN = '#e07600', BAD = '#d61f1f';
+const scoreColor = (s) => (s >= 80 ? OK : s >= 60 ? WARN : BAD);
 
-export function ExecutiveDashboard(){
-  const[loading,setLoading]=useState(true);
-  const[projectSearch,setProjectSearch]=useState('');
-  const[riskFilter,setRiskFilter]=useState<Set<string>>(new Set());
-  const[envFilter,setEnvFilter]=useState<string>('all');
-  const[showFilters,setShowFilters]=useState(false);
-  const[projects,setProjects]=useState<Project[]>([]);
-  const[validations,setValidations]=useState<Validation[]>([]);
-  const[findings,setFindings]=useState<Finding[]>([]);
-  const[workspaces,setWorkspaces]=useState<{id:string;name:string}[]>([]);
-  const[creators,setCreators]=useState<{id:string;name:string}[]>([]);
-  const[wsFilter,setWsFilter]=useState<string>('all');
-  const[ownerFilter,setOwnerFilter]=useState<string>('all');
+export function ExecutiveDashboard() {
+  const { navigate } = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState([]);
 
-  const wsId=()=>localStorage.getItem('sandbox.activeWs');
+  useEffect(() => {
+    (async () => {
+      const wid = localStorage.getItem('sandbox.activeWs') || '';
+      let projects = [];
+      if (wid) { const { data } = await supabase.from('projects').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }); projects = data || []; }
+      else { const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false }); projects = data || []; }
+      const built = projects.map((p) => {
+        const disc = loadReport('discovery', p)?.data;
+        const pol = evaluateProject(p);
+        return {
+          project: p,
+          analyzed: !!disc,
+          readiness: disc?.overall ?? null,
+          status: disc?.recommendation?.status || null,
+          blockers: disc?.summary?.blockers ?? null,
+          concerns: disc?.concerns || [],
+          policyPass: pol.pass, policyFail: pol.fail, policyAnalyzed: pol.analyzed,
+        };
+      });
+      setRows(built); setLoading(false);
+    })();
+  }, []);
 
-  const load=useCallback(async()=>{
-    setLoading(true);
-    const wid=wsId();
-    if(!wid){setLoading(false);return;}
-    const[pr,vl,fn,ws]=await Promise.all([
-      supabase.from('projects').select('*').eq('workspace_id',wid),
-      supabase.from('validations').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(100),
-      supabase.from('findings').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}),
-      supabase.from('workspaces').select('id,name'),
-    ]);
-    setProjects(pr.data??[]);
-    setWorkspaces(ws.data??[]);
-    // Load creator profiles for all projects
-    const creatorIds=[...new Set((pr.data??[]).map((p:any)=>p.created_by).filter(Boolean))];
-    if(creatorIds.length>0){
-      const{data:profiles}=await supabase.from('profiles').select('id,full_name,email').in('id',creatorIds);
-      setCreators((profiles??[]).map((p:any)=>({id:p.id,name:p.full_name||p.email||'Unknown'})));
-    }
-    setValidations(vl.data??[]);
-    setFindings(fn.data??[]);
-    setLoading(false);
-  },[]);
+  if (loading) return <div className="flex justify-center py-24"><Spinner size={28} /></div>;
 
-  useEffect(()=>{load();},[load]);
+  const analyzed = rows.filter((r) => r.analyzed);
+  const blocked = analyzed.filter((r) => r.status === 'BLOCKED').length;
+  const avgReadiness = analyzed.length ? Math.round(analyzed.reduce((s, r) => s + (r.readiness || 0), 0) / analyzed.length) : null;
+  const policyFailures = rows.reduce((s, r) => s + (r.policyFail || 0), 0);
+  const policyTotal = rows.reduce((s, r) => s + (r.policyPass || 0) + (r.policyFail || 0), 0);
+  const compliance = policyTotal ? Math.round(((policyTotal - policyFailures) / policyTotal) * 100) : null;
+  const riskCount = {};
+  analyzed.forEach((r) => r.concerns.forEach((c) => { if (c.sev === 'high' || c.sev === 'medium') riskCount[c.cat] = (riskCount[c.cat] || 0) + 1; }));
+  const topRisks = Object.entries(riskCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
+  const heatColor = (r) => r.readiness == null ? 'bg-gray-100 text-gray-400 border-gray-200' : r.status === 'BLOCKED' ? 'bg-[#fde3e3] text-[#d61f1f] border-[#f5a3a3]' : r.readiness >= 80 ? 'bg-[#e3f7ea] text-[#0f9a4c] border-[#9adcb4]' : 'bg-[#fff0d9] text-[#e07600] border-[#f9c777]';
 
-  // Real computed metrics
-  const completed=validations.filter(v=>v.status==='completed');
-  const failed=validations.filter(v=>v.status==='failed');
-  const successRate=validations.length>0?Math.round((completed.length/validations.length)*100):0;
-  const openCritical=findings.filter(f=>f.status==='open'&&f.severity==='critical');
-  const resolved=findings.filter(f=>f.status==='resolved');
-  const avgRisk=completed.length>0?Math.round(completed.reduce((s,v)=>s+(v.risk_score??0),0)/completed.length):0;
+  return (
+    <div>
+      <PageHeader title="Executive Command Center" description="Release readiness and risk across your entire engineering organization." />
 
-  // Average time to production (time between validation created and completed)
-  const avgTimeMs=completed.filter(v=>v.completed_at).reduce((s,v)=>{
-    const ms=new Date(v.completed_at!).getTime()-new Date(v.created_at).getTime();
-    return s+ms;
-  },0)/(completed.filter(v=>v.completed_at).length||1);
-  const avgTimeSec=Math.round(avgTimeMs/1000);
-  const avgTimeDisplay=avgTimeSec<60?`${avgTimeSec}s`:avgTimeSec<3600?`${Math.round(avgTimeSec/60)}m`:`${Math.round(avgTimeSec/3600)}h`;
-
-  // Deployment trends — last 7 days
-  const now=new Date();
-  const days=Array.from({length:7},(_,i)=>{
-    const d=new Date(now);d.setDate(d.getDate()-i);
-    return d.toISOString().slice(0,10);
-  }).reverse();
-  const trendData=days.map(day=>({
-    day:day.slice(5),
-    scans:validations.filter(v=>v.created_at.slice(0,10)===day).length,
-    passed:validations.filter(v=>v.created_at.slice(0,10)===day&&v.status==='completed'&&(v.critical_count===0)).length,
-    failed:validations.filter(v=>v.created_at.slice(0,10)===day&&(v.status==='failed'||v.critical_count>0)).length,
-  }));
-  const maxScans=Math.max(...trendData.map(d=>d.scans),1);
-
-  // Team/project risk ranking
-  const projectRisks=projects.map(p=>{
-    const pv=completed.filter(v=>v.project_id===p.id);
-    const latest=pv[0];
-    const pf=findings.filter(f=>f.project_id===p.id&&f.status==='open');
-    return{
-      project_name:p.name,project_id:p.id,
-      workspace_id:p.workspace_id,
-      created_by:p.created_by,
-      risk_score:latest?.risk_score??0,
-      critical:pf.filter(f=>f.severity==='critical').length,
-      high:pf.filter(f=>f.severity==='high').length,
-      last_scan:latest?.created_at??p.created_at,
-    };
-  }).sort((a,b)=>b.risk_score-a.risk_score);
-
-  // Resolution rate trend
-  const resolutionRate=findings.length>0?Math.round((resolved.length/findings.length)*100):0;
-
-  return(
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5 mb-6">
         {[
-          {label:'Deployment Success Rate',value:`${successRate}%`,sub:`${completed.length} of ${validations.length} scans passed`,icon:Target,color:'text-green-600',bg:'bg-green-50',border:'border-green-200',trend:successRate>=80?'up':'down'},
-          {label:'Avg Scan Time',value:avgTimeDisplay,sub:'Time to complete validation',icon:Clock,color:'text-blue-600',bg:'bg-blue-50',border:'border-blue-200',trend:'neutral'},
-          {label:'Critical Blockers',value:openCritical.length,sub:`Across ${projects.length} project${projects.length!==1?'s':''}`,icon:AlertTriangle,color:openCritical.length>0?'text-red-600':'text-green-600',bg:openCritical.length>0?'bg-red-50':'bg-green-50',border:openCritical.length>0?'border-red-200':'border-green-200',trend:openCritical.length>0?'down':'up'},
-          {label:'Avg Risk Score',value:`${avgRisk}/100`,sub:`${resolutionRate}% findings resolved`,icon:Shield,color:avgRisk>70?'text-red-600':avgRisk>40?'text-amber-600':'text-green-600',bg:avgRisk>70?'bg-red-50':avgRisk>40?'bg-amber-50':'bg-green-50',border:avgRisk>70?'border-red-200':avgRisk>40?'border-amber-200':'border-green-200',trend:avgRisk<50?'up':'down'},
-        ].map(kpi=>(
-          <div key={kpi.label} className={`card border-2 ${kpi.border} ${kpi.bg}`}>
-            <div className="flex items-start justify-between mb-2">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${kpi.border} bg-white`}>
-                <kpi.icon size={18} className={kpi.color}/>
-              </div>
-              {kpi.trend==='up'?<TrendingUp size={16} className="text-green-500"/>:kpi.trend==='down'?<TrendingDown size={16} className="text-red-400"/>:<Activity size={16} className="text-gray-400"/>}
-            </div>
-            <div className={`text-3xl font-semibold tabular-nums ${kpi.color}`}>{kpi.value}</div>
-            <div className="text-xs font-semibold text-gray-700 mt-1">{kpi.label}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{kpi.sub}</div>
-          </div>
+          { l: 'Active Projects', v: rows.length, c: '#1f2937' },
+          { l: 'Analyzed', v: analyzed.length, c: '#1f2937' },
+          { l: 'Blocked', v: blocked, c: blocked ? BAD : OK },
+          { l: 'Avg Readiness', v: avgReadiness == null ? '—' : `${avgReadiness}%`, c: avgReadiness == null ? '#9ca3af' : scoreColor(avgReadiness) },
+          { l: 'Policy Compliance', v: compliance == null ? '—' : `${compliance}%`, c: compliance == null ? '#9ca3af' : scoreColor(compliance) },
+        ].map((x) => (
+          <div key={x.l} className="card"><div className="text-3xl font-bold" style={{ color: x.c }}>{x.v}</div><div className="text-xs text-gray-500 mt-1">{x.l}</div></div>
         ))}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        {/* Release Performance Trends */}
-      <div className="card overflow-hidden" style={{paddingRight:8}}>
-        <ReleasePerformanceChart validations={validations} projects={projects}/>
-      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><TrendingUp size={15} className="text-brand-600" />Organization Risk Heat Map</h3>
+          {rows.length === 0 ? <div className="card text-sm text-gray-500">No projects yet.</div> : (
+            <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3">
+              {rows.map((r) => (
+                <button key={r.project.id} onClick={() => navigate(`/projects/${r.project.id}`)} className={`rounded-xl border p-3 text-left transition-all hover:shadow-md ${heatColor(r)}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold truncate text-navy-900">{r.project.name}</span>
+                    {r.status === 'BLOCKED' ? <ShieldX size={15} /> : r.readiness >= 80 ? <ShieldCheck size={15} /> : r.readiness != null ? <ShieldAlert size={15} /> : <FolderGit2 size={15} className="text-gray-400" />}
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-2xl font-bold">{r.readiness == null ? '—' : `${r.readiness}%`}</span>
+                    <span className="text-[11px] font-medium">{r.status || 'not analyzed'}</span>
+                  </div>
+                  {r.blockers > 0 && <div className="text-[11px] mt-0.5">{r.blockers} blocker{r.blockers === 1 ? '' : 's'}</div>}
+                </button>
+              ))}
+            </div>
+          )}
+          {rows.some((r) => !r.analyzed) && <p className="text-[11px] text-gray-400 mt-2">Projects marked “not analyzed” haven’t had their Discovery report generated yet — open them once to populate.</p>}
+        </div>
 
-        {/* Findings breakdown */}
-        <div className="card">
-          <h3 className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><Shield size={15} className="text-brand-600"/>Security Posture</h3>
-          <div className="space-y-3">
-            {[
-              {label:'Critical',count:findings.filter(f=>f.severity==='critical'&&f.status==='open').length,total:findings.filter(f=>f.severity==='critical').length,color:'bg-red-500'},
-              {label:'High',count:findings.filter(f=>f.severity==='high'&&f.status==='open').length,total:findings.filter(f=>f.severity==='high').length,color:'bg-amber-500'},
-              {label:'Medium',count:findings.filter(f=>f.severity==='medium'&&f.status==='open').length,total:findings.filter(f=>f.severity==='medium').length,color:'bg-blue-500'},
-              {label:'Low',count:findings.filter(f=>f.severity==='low'&&f.status==='open').length,total:findings.filter(f=>f.severity==='low').length,color:'bg-gray-400'},
-            ].map(s=>(
-              <div key={s.label}>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-medium text-gray-700">{s.label}</span>
-                  <span className="text-gray-500">{s.count} open / {s.total} total</span>
-                </div>
-                <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div className={`h-2 rounded-full ${s.color} transition-all`} style={{width:s.total>0?`${(s.count/s.total)*100}%`:'0%'}}/>
-                </div>
-              </div>
-            ))}
-            <div className="pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-500">Overall resolution rate</span>
-                <span className={`font-bold text-lg ${resolutionRate>=70?'text-green-600':resolutionRate>=40?'text-amber-600':'text-red-600'}`}>{resolutionRate}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-gray-100 mt-1 overflow-hidden">
-                <div className="h-2 rounded-full bg-green-500 transition-all" style={{width:`${resolutionRate}%`}}/>
-              </div>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><AlertTriangle size={15} className="text-[#e07600]" />Top Organizational Risks</h3>
+            <div className="card">
+              {topRisks.length ? (
+                <ul className="space-y-2">
+                  {topRisks.map(([cat, n]) => (
+                    <li key={cat} className="flex items-center justify-between text-sm"><span className="text-navy-800">{cat}</span><span className="chip text-[10px] bg-[#fff0d9] text-[#e07600] border border-[#f9c777]">{n} project{n === 1 ? '' : 's'}</span></li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-gray-400">No risks across analyzed projects.</p>}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Projects by Risk */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4 gap-3">
-          <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-2"><AlertTriangle size={15} className="text-brand-600"/>Projects by Deployment Risk</h3>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-              <input value={projectSearch} onChange={e=>setProjectSearch(e.target.value)} placeholder="Search projects…" className="input pl-8 pr-8 py-1.5 text-sm w-44"/>
-              {projectSearch&&<button onClick={()=>setProjectSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
-            </div>
-            <button onClick={()=>setShowFilters(f=>!f)} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors '+(showFilters||riskFilter.size>0?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 text-gray-600 hover:bg-gray-50')}>
-              <Users size={12}/>Filters{riskFilter.size>0?` (${riskFilter.size})`:''}
+          <div>
+            <h3 className="text-sm font-semibold text-navy-900 mb-2 flex items-center gap-1.5"><ShieldCheck size={15} className="text-brand-600" />Policy Compliance</h3>
+            <button onClick={() => navigate('/policies')} className="card w-full text-left hover:shadow-md transition-all">
+              <div className="flex items-baseline gap-2"><span className="text-3xl font-bold" style={{ color: compliance == null ? '#9ca3af' : scoreColor(compliance) }}>{compliance == null ? '—' : `${compliance}%`}</span><span className="text-xs text-gray-500">across {rows.length} projects</span></div>
+              <div className="text-xs text-gray-500 mt-1">{policyFailures} policy violation{policyFailures === 1 ? '' : 's'} — manage rules in the Policy Studio →</div>
             </button>
-            {(riskFilter.size>0||projectSearch||wsFilter!=='all'||ownerFilter!=='all')&&<button onClick={()=>{setRiskFilter(new Set());setProjectSearch('');setWsFilter('all');setOwnerFilter('all');}} className="text-xs text-gray-400 hover:text-gray-600 underline">Clear all</button>}
           </div>
         </div>
-        {showFilters&&(
-          <div className="mb-4 p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Risk Level (select multiple)</p>
-              <div className="flex flex-wrap gap-2">
-                {[{id:'critical',label:'Critical',color:'bg-red-100 text-red-700 border-red-300'},{id:'high',label:'High',color:'bg-orange-100 text-orange-700 border-orange-300'},{id:'medium',label:'Medium',color:'bg-amber-100 text-amber-700 border-amber-300'},{id:'low',label:'Low',color:'bg-green-100 text-green-700 border-green-300'}].map(r=>(
-                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?r.color+' ring-2 ring-offset-1 ring-current':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
-                    {riskFilter.has(r.id)?'✓ ':''}{r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Has Blockers</p>
-              <div className="flex flex-wrap gap-2">
-                {[{id:'has-critical',label:'Has Critical Issues'},{id:'has-high',label:'Has High Issues'},{id:'no-issues',label:'Clean (No Issues)'}].map(r=>(
-                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
-                    {riskFilter.has(r.id)?'✓ ':''}{r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Scan Status</p>
-              <div className="flex flex-wrap gap-2">
-                {[{id:'never-scanned',label:'Never Scanned'},{id:'scanned-today',label:'Scanned Today'},{id:'stale',label:'Stale (7+ days)'}].map(r=>(
-                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
-                    {riskFilter.has(r.id)?'✓ ':''}{r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Workspace</p>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={()=>setWsFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>All Workspaces</button>
-                {workspaces.map(w=>(
-                  <button key={w.id} onClick={()=>setWsFilter(w.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter===w.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
-                    {wsFilter===w.id?'✓ ':''}{w.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Owner</p>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={()=>setOwnerFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>All Owners</button>
-                {creators.map(c=>(
-                  <button key={c.id} onClick={()=>setOwnerFilter(c.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter===c.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-gray-200 bg-white text-gray-600 hover:bg-gray-100')}>
-                    {ownerFilter===c.id?'✓ ':''}{c.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        {projectRisks.length===0?(
-          <p className="text-sm text-gray-400 py-4 text-center">No projects yet</p>
-        ):(
-          <div className="divide-y divide-gray-100">
-            {projectRisks.filter(p=>{
-  const matchSearch=!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase());
-  if(!matchSearch)return false;
-  if(riskFilter.size===0)return true;
-  const riskChecks=[];
-  if(riskFilter.has('critical'))riskChecks.push(p.critical>0);
-  if(riskFilter.has('high'))riskChecks.push(p.risk_score>70);
-  if(riskFilter.has('medium'))riskChecks.push(p.risk_score>40&&p.risk_score<=70);
-  if(riskFilter.has('low'))riskChecks.push(p.risk_score<=40);
-  if(riskFilter.has('has-critical'))riskChecks.push(p.critical>0);
-  if(riskFilter.has('has-high'))riskChecks.push(p.high>0);
-  if(riskFilter.has('no-issues'))riskChecks.push(p.critical===0&&p.high===0);
-  const now=new Date();const lastScan=new Date(p.last_scan);const daysSince=Math.floor((now.getTime()-lastScan.getTime())/(1000*60*60*24));
-  if(riskFilter.has('never-scanned'))riskChecks.push(p.risk_score===0);
-  if(riskFilter.has('scanned-today'))riskChecks.push(daysSince===0);
-  if(riskFilter.has('stale'))riskChecks.push(daysSince>=7);
-  return riskChecks.some(Boolean);
-  const matchWs=wsFilter==='all'||p.workspace_id===wsFilter;
-  const matchOwner=ownerFilter==='all'||p.created_by===ownerFilter;
-  return matchWs&&matchOwner;
-}).map((p,i)=>(
-              <div key={p.project_id} className="flex items-center gap-4 py-3">
-                <span className="text-sm font-bold text-gray-400 w-5">{i+1}</span>
-                <div className="flex-1 min-w-0">
-                  <Link to={`/projects/${p.project_id}`} className="text-sm font-semibold text-navy-900 hover:text-brand-600 transition-colors">{p.project_name}</Link>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                    {p.critical>0&&<span className="text-red-600 font-semibold">● {p.critical} critical</span>}
-                    {p.high>0&&<span className="text-amber-600 font-semibold">● {p.high} high</span>}
-                    <span>Last scan {new Date(p.last_scan).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-24 h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div className={`h-2 rounded-full transition-all ${p.risk_score>70?'bg-red-500':p.risk_score>40?'bg-amber-500':'bg-green-500'}`} style={{width:`${p.risk_score}%`}}/>
-                  </div>
-                  <span className={`text-sm font-semibold w-12 text-right ${p.risk_score>70?'text-red-600':p.risk_score>40?'text-amber-600':'text-green-600'}`}>{p.risk_score}/100</span>
-                  <Link to={`/projects/${p.project_id}`} className="btn-ghost text-xs p-1.5"><ArrowRight size={14}/></Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="card">
-        <h3 className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><Activity size={15} className="text-brand-600"/>Recent Validation Activity</h3>
-        {validations.length===0?(
-          <p className="text-sm text-gray-400 py-4 text-center">No validations yet</p>
-        ):(
-          <div className="divide-y divide-gray-100">
-            {validations.slice(0,8).map(v=>{
-              const proj=projects.find(p=>p.id===v.project_id);
-              return(
-                <div key={v.id} className="flex items-center gap-3 py-2.5">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${v.status==='completed'&&v.critical_count===0?'bg-green-500':v.status==='completed'?'bg-amber-500':'bg-red-500'}`}/>
-                  <span className="text-sm text-gray-700 flex-1 truncate">{proj?.name||'Unknown project'}</span>
-                  <span className={`text-xs font-semibold ${v.risk_score!==null&&v.risk_score>70?'text-red-600':v.risk_score!==null&&v.risk_score>40?'text-amber-600':'text-green-600'}`}>{v.risk_score!==null?`${v.risk_score}/100`:'—'}</span>
-                  <span className="text-xs text-gray-400">{new Date(v.created_at).toLocaleDateString()}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
