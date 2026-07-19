@@ -2,13 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Loader as Loader2, ChevronRight, ChevronDown, FileCode, AlertTriangle, Check, Copy, Ticket } from 'lucide-react';
 import { linterFor, selectScanTargets } from './fileLinters';
-
-function parseGitUrl(url) { const m = (url || '').match(/github\.com[/:]([^/]+)\/(.+?)(?:\.git)?(?:$|\/)/); return m ? { owner: m[1], repo: m[2] } : null; }
-async function fetchRaw(owner, repo, path, branch, token) {
-  const headers = { Accept: 'application/vnd.github.raw' };
-  if (token) headers.Authorization = 'Bearer ' + token;
-  try { const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${branch}`, { headers }); return r.ok ? await r.text() : null; } catch { return null; }
-}
+import { getFile } from './repoCache';
 
 const SEV = {
   high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]',
@@ -27,13 +21,11 @@ export function DetailedFindings({ project, paths, onTicket }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const parsed = parseGitUrl(project.git_url);
-      if (!parsed || !paths?.length) { setLoading(false); return; }
-      const branch = project.git_branch || 'main';
+      if (!paths?.length) { setLoading(false); return; }
       const targets = selectScanTargets(paths);
       const groups = []; let failures = 0;
       const results = await Promise.all(targets.map(async (p) => {
-        const content = await fetchRaw(parsed.owner, parsed.repo, p, branch, project.github_token);
+        const content = await getFile(project, p);
         if (content == null) { failures++; return null; }
         const linter = linterFor(p);
         const findings = linter ? linter(content, p) : [];

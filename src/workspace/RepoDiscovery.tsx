@@ -7,22 +7,7 @@ import {
 import { InfoHint } from '../lib/ui';
 import { buildFixPlan, guidedFrom, createFixPR } from './remediation';
 import { DetailedFindings } from './DetailedFindings';
-
-function parseGitUrl(url) {
-  if (!url) return null;
-  const m = url.match(/github\.com[/:]([^/]+)\/(.+?)(?:\.git)?(?:$|\/)/);
-  return m ? { owner: m[1], repo: m[2] } : null;
-}
-
-async function fetchRaw(owner, repo, path, branch, token) {
-  const headers = { Accept: 'application/vnd.github.raw' };
-  if (token) headers.Authorization = 'Bearer ' + token;
-  try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${branch}`, { headers });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch { return null; }
-}
+import { getTree, getFile, ERROR_TEXT } from './repoCache';
 
 // Structural inventory from the file tree (no content needed).
 function analyze(paths) {
@@ -231,22 +216,16 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
     timer.current = setInterval(() => setRevealed((r) => Math.min(STEPS.length, r + 1)), 320);
     (async () => {
       try {
-        const parsed = parseGitUrl(project.git_url);
-        if (!parsed) throw new Error('This project has no GitHub repository URL to analyze.');
-        const headers = { Accept: 'application/vnd.github+json' };
-        if (project.github_token) headers.Authorization = 'Bearer ' + project.github_token;
-        const branch = project.git_branch || 'main';
-        const res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${branch}?recursive=1`, { headers });
-        if (!res.ok) throw new Error(res.status === 404 ? 'Repository or branch not found (private repos need a token).' : res.status === 403 ? 'GitHub rate limit reached — try again shortly.' : `GitHub returned ${res.status}.`);
-        const data = await res.json();
-        const paths = (data.tree || []).filter((t) => t.type === 'blob').map((t) => t.path);
+        const tree = await getTree(project);
+        if (tree.error) { if (alive) setError(ERROR_TEXT[tree.error]); return; }
+        const paths = tree.paths;
         const base = analyze(paths);
         // Read a sample of Dockerfiles + workflows for real opinions
         const dPaths = paths.filter((p) => /(^|\/)Dockerfile/i.test(p)).slice(0, 6);
         const wPaths = paths.filter((p) => /\.github\/workflows\/[^/]+\.ya?ml$/.test(p)).slice(0, 4);
         const [dRes, wRes] = await Promise.all([
-          Promise.all(dPaths.map((p) => fetchRaw(parsed.owner, parsed.repo, p, branch, project.github_token).then((c) => ({ p, c })))),
-          Promise.all(wPaths.map((p) => fetchRaw(parsed.owner, parsed.repo, p, branch, project.github_token).then((c) => ({ p, c })))),
+          Promise.all(dPaths.map((p) => getFile(project, p).then((c) => ({ p, c })))),
+          Promise.all(wPaths.map((p) => getFile(project, p).then((c) => ({ p, c })))),
         ]);
         const insights = deriveInsights(base, dRes.filter((x) => x.c), wRes.filter((x) => x.c), paths);
         if (!alive) return;

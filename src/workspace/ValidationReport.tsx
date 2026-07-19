@@ -5,13 +5,7 @@ import {
   Clock, Rocket, Server, Boxes, Lock, Layers, Zap, Package, ShieldCheck,
 } from 'lucide-react';
 import { linterFor, selectScanTargets } from './fileLinters';
-
-function parseGitUrl(url) { const m = (url || '').match(/github\.com[/:]([^/]+)\/(.+?)(?:\.git)?(?:$|\/)/); return m ? { owner: m[1], repo: m[2] } : null; }
-async function fetchRaw(owner, repo, path, branch, token) {
-  const headers = { Accept: 'application/vnd.github.raw' };
-  if (token) headers.Authorization = 'Bearer ' + token;
-  try { const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${branch}`, { headers }); return r.ok ? await r.text() : null; } catch { return null; }
-}
+import { getTree, getFile, ERROR_TEXT } from './repoCache';
 
 const OK = 'text-[#0f9a4c]', WARN = 'text-[#e07600]', BAD = 'text-[#d61f1f]';
 const SEVCLS = { high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]', medium: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]', low: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]' };
@@ -41,18 +35,15 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
   useEffect(() => {
     let alive = true;
     (async () => {
-      const parsed = parseGitUrl(project.git_url);
-      if (!parsed) { setLoading(false); return; }
-      const branch = project.git_branch || 'main';
-      const treeRes = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${branch}?recursive=1`, { headers: project.github_token ? { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + project.github_token } : { Accept: 'application/vnd.github+json' } });
-      if (!treeRes.ok) { if (alive) { setData({ error: treeRes.status === 403 ? 'GitHub rate limit reached — try again shortly.' : 'Could not read repository.' }); setLoading(false); } return; }
-      const paths = ((await treeRes.json()).tree || []).filter((t) => t.type === 'blob').map((t) => t.path);
+      const tree = await getTree(project);
+      if (tree.error) { if (alive) { setData({ error: ERROR_TEXT[tree.error] }); setLoading(false); } return; }
+      const paths = tree.paths;
       const targets = selectScanTargets(paths);
       // run linters
       const all = [];
       const typeCounts = { Containers: 0, Infrastructure: 0, Governance: 0, Kubernetes: 0 };
       await Promise.all(targets.map(async (p) => {
-        const c = await fetchRaw(parsed.owner, parsed.repo, p, branch, project.github_token);
+        const c = await getFile(project, p);
         if (c == null) return;
         if (/(^|\/)Dockerfile/i.test(p)) typeCounts.Containers++;
         else if (/\.tf$/i.test(p)) typeCounts.Infrastructure++;
@@ -65,7 +56,7 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
       const pkgs = paths.filter((p) => /(^|\/)package\.json$/.test(p)).slice(0, 3);
       let depChecks = 0;
       await Promise.all(pkgs.map(async (p) => {
-        const c = await fetchRaw(parsed.owner, parsed.repo, p, branch, project.github_token);
+        const c = await getFile(project, p);
         if (!c) return; depChecks += Object.keys(VULN).length;
         try { const j = JSON.parse(c); const deps = { ...j.dependencies, ...j.devDependencies };
           for (const [name, sev] of Object.entries(VULN)) if (deps[name]) all.push({ file: p, line: 1, type: 'commission', severity: sev, title: `Vulnerable dependency: ${name}`, detail: `${name} ${deps[name]} has known vulnerabilities — upgrade.` });

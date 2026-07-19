@@ -1,0 +1,56 @@
+// @ts-nocheck
+// Shared, per-session in-memory cache for GitHub reads. Discovery, Validation
+// and DetailedFindings all go through here, so a project's tree and files are
+// fetched ONCE and reused — which avoids exhausting GitHub's 60/hour anonymous
+// rate limit when opening several projects or switching stages.
+
+const trees = new Map();
+const files = new Map();
+
+export function parseGitUrl(url) {
+  const m = (url || '').match(/github\.com[/:]([^/]+)\/(.+?)(?:\.git)?(?:$|\/)/);
+  return m ? { owner: m[1], repo: m[2] } : null;
+}
+
+// Returns { paths, parsed, branch } or { error: 'not-github'|'not-found'|'rate-limit'|'error'|'network' }
+export async function getTree(project) {
+  const parsed = parseGitUrl(project.git_url);
+  if (!parsed) return { error: 'not-github' };
+  const branch = project.git_branch || 'main';
+  const key = `${parsed.owner}/${parsed.repo}#${branch}`;
+  if (trees.has(key)) return trees.get(key);
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (project.github_token) headers.Authorization = 'Bearer ' + project.github_token;
+  let result;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${branch}?recursive=1`, { headers });
+    if (r.status === 404) result = { error: 'not-found' };
+    else if (r.status === 403) result = { error: 'rate-limit' };
+    else if (!r.ok) result = { error: 'error', status: r.status };
+    else { const d = await r.json(); result = { paths: (d.tree || []).filter((t) => t.type === 'blob').map((t) => t.path), parsed, branch }; }
+  } catch { result = { error: 'network' }; }
+  if (!result.error) trees.set(key, result); // only cache successes; errors can be retried
+  return result;
+}
+
+export async function getFile(project, path) {
+  const parsed = parseGitUrl(project.git_url);
+  if (!parsed) return null;
+  const branch = project.git_branch || 'main';
+  const key = `${parsed.owner}/${parsed.repo}#${branch}#${path}`;
+  if (files.has(key)) return files.get(key);
+  const headers = { Accept: 'application/vnd.github.raw' };
+  if (project.github_token) headers.Authorization = 'Bearer ' + project.github_token;
+  let content = null;
+  try { const r = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${branch}`, { headers }); content = r.ok ? await r.text() : null; } catch { content = null; }
+  if (content != null) files.set(key, content);
+  return content;
+}
+
+export const ERROR_TEXT = {
+  'not-github': 'Live analysis currently supports GitHub repositories only. This project uses a different provider (GitLab, Bitbucket, Azure, or a non-GitHub URL), so the report can’t be generated yet.',
+  'not-found': 'The repository or branch couldn’t be reached. Private repositories need a token (import them with one), and the branch must exist.',
+  'rate-limit': 'GitHub’s hourly rate limit was hit (public repos are limited to 60 requests/hour without a token). Reopen this project in a little while, or connect a token to raise the limit.',
+  'error': 'GitHub returned an unexpected error reading this repository.',
+  'network': 'Couldn’t reach GitHub to analyze this repository.',
+};
