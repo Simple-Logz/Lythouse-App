@@ -185,7 +185,7 @@ export function MobileApp({ renderPage }) {
             <span className="font-semibold text-navy-900 truncate">{(MENU.find((m) => path.startsWith(m.to))?.label) || 'Details'}</span>
             <button onClick={() => setMenuOpen(true)} className="ml-auto p-2 -mr-1 text-gray-500"><Menu size={20} /></button>
           </header>
-          <div className="flex-1 overflow-y-auto px-3 py-4">
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden ${path.startsWith('/projects/') && path.split('/').filter(Boolean).length >= 2 ? '' : 'px-3 py-4'}`}>
             {renderPage ? renderPage(path) : <p className="text-sm text-gray-500">Page unavailable.</p>}
           </div>
         </div>

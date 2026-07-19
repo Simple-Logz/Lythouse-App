@@ -18,6 +18,11 @@
 .tab-active{@apply border-brand-500 text-brand-700;}
 .tab-inactive{@apply border-transparent text-gray-500 hover:border-gray-300 hover:text-navy-700;}
 }
+/* Hide scrollbars on horizontal tab/stage strips (mobile) */
+.no-scrollbar{scrollbar-width:none;-ms-overflow-style:none;}
+.no-scrollbar::-webkit-scrollbar{display:none;}
+/* Prevent horizontal page shift / cutoffs on phones */
+@media (max-width:820px){html,body{overflow-x:hidden;}}
 /* ─── Enterprise Dark Theme ─────────────────────────────────────── */
 :root {
   --bg-base: #ffffff;

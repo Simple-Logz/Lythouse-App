@@ -30,13 +30,15 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
 
   return(
     <div className="flex flex-col h-full">
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 bg-white shrink-0">
-        <Link to="/projects" className="text-gray-400 hover:text-gray-600 transition-colors"><ArrowLeft size={16}/></Link>
-        <Link to="/projects" className="text-sm text-gray-400 hover:text-gray-600">Projects</Link>
-        <ChevronRight size={14} className="text-gray-300"/>
-        <span className="text-sm font-semibold text-navy-900">{project.name}</span>
-        <div className="ml-auto flex items-center gap-1">
+      {/* Top bar — stacks on mobile; tabs scroll horizontally without moving the page */}
+      <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 border-b border-gray-100 bg-white shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link to="/projects" className="text-gray-400 hover:text-gray-600 transition-colors shrink-0"><ArrowLeft size={16}/></Link>
+          <Link to="/projects" className="text-sm text-gray-400 hover:text-gray-600 shrink-0 hidden sm:inline">Projects</Link>
+          <ChevronRight size={14} className="text-gray-300 shrink-0 hidden sm:inline"/>
+          <span className="text-sm font-semibold text-navy-900 truncate">{project.name}</span>
+        </div>
+        <div className="sm:ml-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
           {[
             {id:'workspace',label:'AI Release Review'},
             {id:'topology',label:'Topology',icon:Network},
@@ -44,7 +46,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
             {id:'policies',label:'Policies'},
             {id:'settings',label:'Settings',icon:Settings},
           ].map(v=>(
-            <button key={v.id} onClick={()=>setView(v.id as any)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${view===v.id?'bg-brand-50 text-brand-700 border border-brand-200':'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>
+            <button key={v.id} onClick={()=>setView(v.id as any)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 whitespace-nowrap ${view===v.id?'bg-brand-50 text-brand-700 border border-brand-200':'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-transparent'}`}>
               {v.icon&&<v.icon size={12}/>}{v.label}
             </button>
           ))}
