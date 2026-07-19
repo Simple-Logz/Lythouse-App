@@ -1,24 +1,22 @@
 /** @type {import('tailwindcss').Config} */
 
-// ── Fresh green design system (Formstack-inspired) ─────────────────────────
-// Clean white surfaces, a friendly medium-green brand accent, calm slate text,
-// and natural amber/red for warning & danger. Every accent token is remapped
-// here so existing classes (bg-blue-600, text-purple-700, etc.) resolve to the
-// green family automatically — no need to edit dozens of pages.
+// ── Premium violet-indigo design system ────────────────────────────────────
+// Rich, glossy violet brand on clean white, cool near-black slate text, and
+// natural amber/red for warning & danger. Every accent token is remapped here
+// so existing classes resolve to the new family automatically.
 
-// Primary / brand: friendly medium green (the 400 is the Formstack accent).
-const green = {
-  50: '#eff8f3', 100: '#d7efe1', 200: '#b2e0c6', 300: '#83cca6',
-  400: '#54b483', 500: '#37a06a', 600: '#2c8657', 700: '#256c48',
-  800: '#22563b', 900: '#1d4732', 950: '#0c2a1c',
+// Primary / brand: vibrant, premium violet-indigo.
+const violet = {
+  50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd',
+  400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9',
+  800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065',
 };
 
-// Neutral text/UI (replaces "navy"): calm cool slate so headings and body copy
-// stay clean and readable on white.
+// Neutral text/UI (replaces "navy"): cool near-black slate.
 const slate = {
-  50: '#f6f7f9', 100: '#eceef1', 200: '#d4d9e0', 300: '#aeb6c2',
-  400: '#818b9c', 500: '#5f6a7d', 600: '#4a5364', 700: '#3c4453',
-  800: '#333a46', 900: '#1f2530', 950: '#12161d',
+  50: '#f8f9fc', 100: '#f0f1f7', 200: '#e1e3ee', 300: '#c8ccdd',
+  400: '#98a0b8', 500: '#697091', 600: '#4c5372', 700: '#3a4058',
+  800: '#282c3e', 900: '#171a26', 950: '#0d0f18',
 };
 
 // Warning tone: natural amber.
@@ -40,21 +38,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary green
-        brand: green,
-        green: green,
-        emerald: green,
-        lime: green,
-        teal: green,
-        // Cool accents also read as green so the app stays one family
-        indigo: green,
-        violet: green,
-        purple: green,
-        blue: green,
-        sky: green,
-        cyan: green,
-        fuchsia: green,
-        pink: green,
+        // Primary violet-indigo
+        brand: violet,
+        indigo: violet,
+        violet: violet,
+        purple: violet,
+        blue: violet,
+        sky: violet,
+        cyan: violet,
+        fuchsia: violet,
+        pink: violet,
+        // Greens also read as brand so the app stays one family
+        green: violet,
+        emerald: violet,
+        lime: violet,
+        teal: violet,
 
         // Neutral text/surfaces
         navy: slate,
@@ -70,6 +68,11 @@ export default {
         danger: red,
       },
       fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+      boxShadow: {
+        glossy: '0 1px 0 0 rgba(255,255,255,.35) inset, 0 8px 20px -6px rgba(124,58,237,.45)',
+        soft: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -12px rgba(16,24,40,.18)',
+        lift: '0 8px 16px rgba(16,24,40,.08), 0 24px 44px -18px rgba(124,58,237,.28)',
+      },
       animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'scale-in': 'scaleIn 0.2s ease-out' },
       keyframes: {
         fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },

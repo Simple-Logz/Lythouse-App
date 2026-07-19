@@ -133,7 +133,7 @@ export function MobileApp({ renderPage }) {
           <div className="px-5 py-24 text-center text-sm text-gray-500">No workspace found. Open LytHouse on desktop to create one.</div>
         ) : (
           <>
-            {tab === 'home' && <HomeScreen statuses={statuses} stale={stale} onOpen={(p) => setSelected(p)} />}
+            {tab === 'home' && <HomeScreen statuses={statuses} stale={stale} onOpen={(p) => setSelected(p)} name={profile?.full_name || user?.email} />}
             {tab === 'approvals' && <ApprovalsScreen approvals={approvals} onApprove={approve} />}
             {tab === 'alerts' && <AlertsScreen statuses={statuses} stale={stale} onOpen={(p) => setSelected(p)} />}
             {tab === 'account' && <AccountScreen user={user} profile={profile} signOut={signOut} />}
@@ -201,10 +201,10 @@ export function MobileApp({ renderPage }) {
         ].map((t) => {
           const active = tab === t.id;
           return (
-            <button key={t.id} onClick={() => { setTab(t.id); setSelected(null); setBrowsing(false); }} className={`relative flex flex-col items-center justify-center gap-0.5 ${active ? 'text-brand-600' : 'text-gray-400'}`}>
-              <t.icon size={20} />
-              <span className="text-[10px] font-medium">{t.label}</span>
-              {t.badge > 0 && <span className="absolute top-2 right-[22%] min-w-4 h-4 px-1 rounded-full bg-[#dc2626] text-white text-[9px] font-bold flex items-center justify-center">{t.badge}</span>}
+            <button key={t.id} onClick={() => { setTab(t.id); setSelected(null); setBrowsing(false); }} className="relative flex flex-col items-center justify-center gap-1 pt-1.5">
+              <span className={`flex items-center justify-center h-8 w-14 rounded-full transition-all ${active ? 'bg-brand-100 text-brand-700' : 'text-gray-400'}`}><t.icon size={21} strokeWidth={active ? 2.4 : 2} /></span>
+              <span className={`text-[10px] font-semibold ${active ? 'text-brand-700' : 'text-gray-400'}`}>{t.label}</span>
+              {t.badge > 0 && <span className="absolute top-0.5 right-[24%] min-w-4 h-4 px-1 rounded-full bg-[#dc2626] text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">{t.badge}</span>}
             </button>
           );
         })}
@@ -215,45 +215,65 @@ export function MobileApp({ renderPage }) {
 
 function StatusPill({ tone, children }) {
   const t = TONE[tone] || TONE.gray;
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${t.bg} ${t.text} border ${t.border}`}><span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />{children}</span>;
+  return <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${t.bg} ${t.text} border ${t.border} shrink-0`}><span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />{children}</span>;
 }
 
-function HomeScreen({ statuses, stale, onOpen }) {
+function HomeScreen({ statuses, stale, onOpen, name }) {
   const counts = statuses.reduce((a, { s }) => { a[s.tone] = (a[s.tone] || 0) + 1; return a; }, {});
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+  const first = (name || '').split(/[@ ]/)[0];
   return (
-    <div className="px-4 py-4 space-y-4">
-      <div>
-        <h1 className="text-lg font-bold text-navy-900">Your releases</h1>
-        <p className="text-xs text-gray-500 mt-0.5">{statuses.length} project{statuses.length === 1 ? '' : 's'} · tap one to see its decision</p>
+    <div className="pb-4">
+      {/* glossy gradient hero */}
+      <div className="relative overflow-hidden px-5 pt-6 pb-16 text-white" style={{ background: 'linear-gradient(135deg,#6d28d9 0%,#7c3aed 45%,#a78bfa 100%)' }}>
+        <div className="absolute -top-16 -right-10 h-56 w-56 rounded-full bg-white/15 blur-2xl" />
+        <div className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-black/10 blur-2xl" />
+        <p className="relative text-sm text-white/80">{greet}{first ? `, ${first}` : ''}</p>
+        <h1 className="relative text-2xl font-bold tracking-tight mt-1">Your releases</h1>
+        <p className="relative text-sm text-white/75 mt-1">{statuses.length} project{statuses.length === 1 ? '' : 's'} in this workspace</p>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {[{ l: 'Cleared', n: counts.green || 0, tone: 'green' }, { l: 'Review', n: counts.amber || 0, tone: 'amber' }, { l: 'Blocked', n: counts.red || 0, tone: 'red' }].map((x) => (
-          <div key={x.l} className={`rounded-xl border ${TONE[x.tone].border} ${TONE[x.tone].bg} px-3 py-2.5 text-center`}>
-            <div className={`text-2xl font-bold ${TONE[x.tone].text}`}>{x.n}</div>
-            <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-0.5">{x.l}</div>
-          </div>
-        ))}
-      </div>
-      {statuses.length === 0 ? (
-        <div className="text-center py-16 text-sm text-gray-500">No projects yet. Add one on desktop to see it here.</div>
-      ) : (
-        <div className="space-y-2.5">
-          {statuses.map(({ p, s }) => (
-            <button key={p.id} onClick={() => onOpen(p)} className="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 active:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-navy-900 truncate">{p.name}</span>
-                <StatusPill tone={s.tone}>{s.verdict}</StatusPill>
-              </div>
-              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500">
-                <span className="inline-flex items-center gap-1"><GitBranch size={11} />{p.git_branch || 'main'}</span>
-                {s.readiness != null && <span>Readiness <span className="font-semibold text-navy-700">{s.readiness}%</span></span>}
-                {s.crit.length + s.high.length > 0 && <span className="text-[#dc2626] font-medium">{s.crit.length + s.high.length} to fix</span>}
-                {stale[p.id] && <span className="inline-flex items-center gap-1 text-[#e07600] font-medium"><Bell size={10} />changes</span>}
-              </div>
-            </button>
+
+      {/* summary cards floating over the hero */}
+      <div className="px-4 -mt-10 relative z-10">
+        <div className="grid grid-cols-3 gap-2.5">
+          {[{ l: 'Cleared', n: counts.green || 0, tone: 'green' }, { l: 'Review', n: counts.amber || 0, tone: 'amber' }, { l: 'Blocked', n: counts.red || 0, tone: 'red' }].map((x) => (
+            <div key={x.l} className="rounded-2xl bg-white shadow-lift border border-gray-100 px-3 py-3 text-center">
+              <div className={`text-3xl font-extrabold ${TONE[x.tone].text}`}>{x.n}</div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 mt-0.5">{x.l}</div>
+            </div>
           ))}
         </div>
-      )}
+      </div>
+
+      {/* project list */}
+      <div className="px-4 mt-5 space-y-3">
+        <p className="text-sm font-bold text-navy-900 px-1">Projects</p>
+        {statuses.length === 0 ? (
+          <div className="text-center py-16 text-sm text-gray-500">No projects yet. Add one from the menu to see it here.</div>
+        ) : statuses.map(({ p, s }) => {
+          const t = TONE[s.tone];
+          return (
+            <button key={p.id} onClick={() => onOpen(p)} className="w-full text-left rounded-2xl border border-gray-100 bg-white p-4 shadow-soft active:scale-[0.99] transition-transform">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-base font-bold text-navy-900 truncate">{p.name}</span>
+                <StatusPill tone={s.tone}>{s.verdict}</StatusPill>
+              </div>
+              <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 flex-wrap">
+                <span className="inline-flex items-center gap-1"><GitBranch size={12} />{p.git_branch || 'main'}</span>
+                {s.readiness != null && <span>Readiness <span className="font-bold text-navy-800">{s.readiness}%</span></span>}
+                {s.crit.length + s.high.length > 0 && <span className="text-[#dc2626] font-semibold">{s.crit.length + s.high.length} to fix</span>}
+                {stale[p.id] && <span className="inline-flex items-center gap-1 text-[#e07600] font-semibold"><Bell size={11} />new changes</span>}
+              </div>
+              {s.readiness != null && (
+                <div className="mt-2.5 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${s.readiness}%`, background: s.tone === 'red' ? '#dc2626' : s.tone === 'amber' ? '#e07600' : '#12a150' }} />
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -277,18 +297,18 @@ function ProjectDetail({ project, status: s, stale, approvals, onApprove, onClos
         )}
 
         {/* decision */}
-        <div className={`rounded-2xl border ${t.border} ${t.bg} p-4`}>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">Release Decision</p>
-          <div className={`text-2xl font-bold ${t.text} mt-0.5`}>{s.verdict}</div>
-          <div className="grid grid-cols-3 gap-2 mt-3">
+        <div className={`rounded-3xl border ${t.border} ${t.bg} p-5 shadow-soft`}>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Release Decision</p>
+          <div className={`text-3xl font-extrabold ${t.text} mt-1 tracking-tight`}>{s.verdict}</div>
+          <div className="grid grid-cols-3 gap-2.5 mt-4">
             {[
               { l: 'Readiness', v: s.readiness != null ? `${s.readiness}%` : '—' },
               { l: 'Blockers', v: String(s.crit.length) },
               { l: 'To review', v: String(s.high.length) },
             ].map((x) => (
-              <div key={x.l} className="rounded-lg bg-white/70 px-2 py-1.5 text-center">
-                <div className="text-lg font-bold text-navy-900">{x.v}</div>
-                <div className="text-[10px] uppercase tracking-wide text-gray-500">{x.l}</div>
+              <div key={x.l} className="rounded-2xl bg-white/80 px-2 py-2.5 text-center shadow-sm">
+                <div className="text-xl font-extrabold text-navy-900">{x.v}</div>
+                <div className="text-[10px] uppercase tracking-wide text-gray-500 mt-0.5">{x.l}</div>
               </div>
             ))}
           </div>
