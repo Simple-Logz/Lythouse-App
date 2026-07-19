@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Loader as Loader2, ChevronRight, ChevronDown, FileCode, AlertTriangle, Check, Copy, Ticket } from 'lucide-react';
 import { linterFor, selectScanTargets } from './fileLinters';
 import { getFile, loadReport, saveReport } from './repoCache';
+import { TicketModal } from './TicketModal';
 
 const SEV = {
   high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]',
@@ -17,6 +18,7 @@ export function DetailedFindings({ project, paths, onTicket }) {
   const [open, setOpen] = useState({});
   const [partial, setPartial] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [ticket, setTicket] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -87,7 +89,7 @@ export function DetailedFindings({ project, paths, onTicket }) {
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button onClick={() => copyTicket(f)} title="Copy as ticket" className="btn-ghost !px-2 !py-1 text-xs">{copied === f.file + f.line + f.title ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}</button>
-                        {onTicket && <button onClick={() => onTicket(f)} title="Create ticket" className="btn-ghost !px-2 !py-1 text-xs"><Ticket size={13} /></button>}
+                        <button onClick={() => setTicket(f)} title="Create ticket (Jira/Slack/ServiceNow/Linear)" className="btn-ghost !px-2 !py-1 text-xs"><Ticket size={13} /></button>
                       </div>
                     </div>
                   ))}
@@ -97,6 +99,7 @@ export function DetailedFindings({ project, paths, onTicket }) {
           );
         })}
       </div>
+      {ticket && <TicketModal finding={ticket} project={project} onClose={() => setTicket(null)} />}
     </div>
   );
 }

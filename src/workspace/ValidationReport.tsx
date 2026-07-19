@@ -2,10 +2,11 @@
 import { useEffect, useState } from 'react';
 import {
   Loader as Loader2, Check, X, AlertTriangle, ArrowRight, Shield, ChevronDown, ChevronRight,
-  Clock, Rocket, Server, Boxes, Lock, Layers, Zap, Package, ShieldCheck,
+  Clock, Rocket, Server, Boxes, Lock, Layers, Zap, Package, ShieldCheck, Ticket,
 } from 'lucide-react';
 import { linterFor, selectScanTargets } from './fileLinters';
 import { getTree, getFile, ERROR_TEXT, loadReport, saveReport } from './repoCache';
+import { TicketModal } from './TicketModal';
 
 const OK = 'text-[#0f9a4c]', WARN = 'text-[#e07600]', BAD = 'text-[#d61f1f]';
 const SEVCLS = { high: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]', medium: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]', low: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]' };
@@ -31,6 +32,7 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
   const [data, setData] = useState(null);
   const [openCat, setOpenCat] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [ticket, setTicket] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -185,7 +187,10 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
                     <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-3 flex-wrap"><span className="font-mono truncate">{b.file}:{b.line}</span><span className="flex items-center gap-1"><Clock size={11} />~{b.eta} min</span><span>Owner: <span className="text-navy-700 font-medium">{b.owner}</span></span></div>
                   </div>
                 </div>
-                <button onClick={onRemediate} className="btn-primary text-xs shrink-0"><ArrowRight size={13} />Fix Now</button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => setTicket({ ...b, impact: undefined })} className="btn-secondary text-xs"><Ticket size={13} />Ticket</button>
+                  <button onClick={onRemediate} className="btn-primary text-xs"><ArrowRight size={13} />Fix Now</button>
+                </div>
               </div>
             ))}
           </div>
@@ -235,6 +240,7 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
           </div>
         </details>
       )}
+      {ticket && <TicketModal finding={ticket} project={project} onClose={() => setTicket(null)} />}
     </div>
   );
 }
