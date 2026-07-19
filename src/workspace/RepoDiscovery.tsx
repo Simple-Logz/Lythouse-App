@@ -548,58 +548,36 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             {changeOpen && (<div className="mt-3 space-y-3">
 
             {/* prior decision → new status + confidence delta */}
-            <div className="mt-3 grid gap-2 sm:grid-cols-3 rounded-lg border border-gray-200/70 bg-white/70 p-3">
+            <div className="grid gap-2 sm:grid-cols-3 rounded-lg border border-gray-200/70 bg-white/70 px-3 py-2">
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gray-400">Last assessed decision</div>
-                <div className="text-sm font-bold text-navy-900 mt-0.5">{prevRec.verdict || 'Assessed'}</div>
+                <div className="text-sm font-bold text-navy-900">{prevRec.verdict || 'Assessed'}</div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gray-400">Status now</div>
-                <div className={`text-sm font-bold mt-0.5 ${newStatus.c}`}>{newStatus.t}</div>
+                <div className={`text-sm font-bold ${newStatus.c}`}>{newStatus.t}</div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gray-400 flex items-center gap-1">Deployment confidence<InfoHint text="The confidence from your last assessment, discounted while the changed areas remain unvalidated. The penalty is a fixed weighting of what changed — not live telemetry — and is restored when you revalidate." align="right" /></div>
                 {prevConf != null ? (
                   penalty > 0
-                    ? <div className="text-sm font-bold mt-0.5"><span className="text-gray-400">{prevConf}%</span> <ArrowRight size={11} className="inline text-gray-300" /> <span className={newStatus.c}>{nowConf}%</span></div>
-                    : <div className="text-sm font-bold text-[#0f7a3c] mt-0.5">{prevConf}% · unchanged</div>
-                ) : <div className="text-sm font-bold text-gray-400 mt-0.5">—</div>}
+                    ? <div className="text-sm font-bold"><span className="text-gray-400">{prevConf}%</span> <ArrowRight size={11} className="inline text-gray-300" /> <span className={newStatus.c}>{nowConf}%</span></div>
+                    : <div className="text-sm font-bold text-[#0f7a3c]">{prevConf}% · unchanged</div>
+                ) : <div className="text-sm font-bold text-gray-400">—</div>}
               </div>
             </div>
 
-            {/* AI narrative */}
-            <div className="mt-3 flex items-start gap-2">
+            {/* AI narrative + verified/latest inline */}
+            <div className="flex items-start gap-2">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100"><Sparkles size={12} className="text-brand-600" /></span>
-              <p className="text-[13px] text-navy-800 leading-relaxed"><span className="font-semibold text-brand-700">LytHouse assessment:</span> {narrative}</p>
+              <p className="text-[13px] text-navy-800 leading-relaxed">
+                <span className="font-semibold text-brand-700">LytHouse assessment:</span> {narrative}
+                <span className="text-[11px] text-gray-400"> · Verified {timeAgo(stale.since)} · latest change {timeAgo(latest)}</span>
+              </p>
             </div>
 
-            {/* meta line */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[11px] text-gray-500">
-              <span className="inline-flex items-center gap-1 font-medium text-navy-700">{commitCount || 'New'} commit{commitCount === 1 ? '' : 's'} · {fileCount} file{fileCount === 1 ? '' : 's'}</span>
-              {stale.since && <span className="inline-flex items-center gap-1"><Clock size={11} />Verified {timeAgo(stale.since)}</span>}
-              {latest && <span className="inline-flex items-center gap-1"><GitBranch size={11} />Latest {timeAgo(latest)}</span>}
-            </div>
-
-            {/* evidence freshness grid — what's still trustworthy vs stale */}
-            <div className="mt-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Evidence freshness</p>
-              <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-                {freshness.map((a) => (
-                  <div key={a.key} className={`rounded-lg border px-2.5 py-1.5 ${a.touched ? 'border-[#f9c777] bg-[#fff7e9]' : 'border-[#9adcb4] bg-[#e3f7ea]'}`}>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-medium text-navy-800">{a.label}</span>
-                      {a.touched ? <AlertTriangle size={11} className="text-[#e07600] shrink-0" /> : <CheckCircle2 size={11} className="text-[#0f9a4c] shrink-0" />}
-                    </div>
-                    <div className={`text-[10px] mt-0.5 ${a.touched ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>
-                      {a.touched ? `Changed ${latest ? timeAgo(latest) : 'recently'} · revalidate` : `Verified ${stale.since ? timeAgo(stale.since) : 'earlier'}`}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* explained review scopes */}
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {/* explained review scopes — the freshness signal, in one row */}
+            <div className="grid gap-2 sm:grid-cols-3">
               {cx.scopeImpact.map((s) => (
                 <div key={s.key} className={`rounded-lg border px-3 py-2 ${s.touched ? 'border-[#f9c777] bg-[#fff7e9]' : 'border-[#9adcb4] bg-[#e3f7ea]'}`}>
                   <div className={`text-xs font-semibold flex items-center gap-1 ${s.touched ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>{s.touched ? <AlertTriangle size={11} /> : <CheckCircle2 size={11} />}{s.scope}: {s.touched ? 'revalidate' : 'still valid'}</div>
@@ -608,18 +586,12 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
               ))}
             </div>
 
-            {/* blast radius */}
-            <div className="mt-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5 flex items-center gap-1"><Server size={11} />Estimated blast radius</p>
-              <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 rounded-lg border border-gray-200/70 bg-white/60 p-2.5">
-                {blast.map((b) => (
-                  <div key={b.l}>
-                    <div className="text-[10px] uppercase tracking-wide text-gray-400">{b.l}</div>
-                    <div className={`text-xs font-semibold mt-0.5 ${b.warn ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>{b.v}</div>
-                    {b.sub && <div className="text-[10px] text-gray-400 truncate">{b.sub}</div>}
-                  </div>
-                ))}
-              </div>
+            {/* blast radius — compact inline pills */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+              <span className="uppercase tracking-wide text-gray-400 flex items-center gap-1"><Server size={11} />Blast radius:</span>
+              {blast.map((b) => (
+                <span key={b.l} className="inline-flex items-center gap-1"><span className="text-gray-400">{b.l}</span><span className={`font-semibold ${b.warn ? 'text-[#b06a00]' : 'text-[#0f7a3c]'}`}>{b.v}</span></span>
+              ))}
             </div>
 
             {/* immediate-blocker reasons */}
