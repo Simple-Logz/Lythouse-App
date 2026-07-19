@@ -35,9 +35,9 @@ import{WorkspaceDetailPage}from'./pages/WorkspaceDetailPage';
 import{Spinner}from'./lib/ui';
 import type{ReactNode}from'react';
 
-function Routes(){
-const{path}=useRouter();
-const planId=usePlanId();
+// Shared route → page mapping, used by both the desktop shell and the mobile app
+// so every feature on the web is reachable on mobile too (no missing screens).
+export function pageForPath(path:string,planId:PlanId):ReactNode{
 const seg=path.split('/').filter(Boolean);
 let c:ReactNode;
 if(!seg.length||seg[0]==='dashboard')c=<DashboardPage/>;
@@ -68,7 +68,13 @@ else if(seg[0]==='server-validation'){
   else c=<EnvDetailPage envId={seg[1]} planId={planId}/>;
 }
 else c=<DashboardPage/>;
-return<AppShell>{c}</AppShell>;
+return c;
+}
+
+function Routes(){
+const{path}=useRouter();
+const planId=usePlanId();
+return<AppShell>{pageForPath(path,planId)}</AppShell>;
 }
 
 function AuthGate(){
@@ -91,7 +97,8 @@ if(!session){
   return<LandingPage/>;
 }
 // Phones get the dedicated mobile app; desktop keeps the full workspace.
-if(isMobile)return<MobileApp/>;
+// renderPage lets the mobile app open any real page too (full feature parity).
+if(isMobile)return<MobileApp renderPage={(p:string)=>pageForPath(p,'free')}/>;
 return<Routes/>;
 }
 

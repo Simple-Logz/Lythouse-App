@@ -7,12 +7,28 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   House, ShieldCheck, Bell, User, ChevronLeft, ChevronRight, CheckCircle2,
   XCircle, AlertTriangle, GitBranch, Loader as Loader2, LogOut, Shield, Check,
-  Clock, RefreshCw, Monitor,
+  Clock, RefreshCw, Monitor, Menu, X, LayoutDashboard, ChartBar, FolderGit2,
+  Webhook, Boxes, Users, Sparkles, Settings as SettingsIcon,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { useRouter } from '../lib/router';
 import { Logo } from '../lib/ui';
 import { getHeadSha } from '../workspace/repoCache';
+
+// Same sections the desktop sidebar exposes — so nothing on the web is missing
+// on mobile. Selecting one renders the real page inside the mobile chrome.
+const MENU = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/executive', label: 'Executive View', icon: ChartBar },
+  { to: '/projects', label: 'Projects', icon: FolderGit2 },
+  { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
+  { to: '/integrations', label: 'Integrations', icon: Webhook },
+  { to: '/workspaces', label: 'Workspaces', icon: Boxes },
+  { to: '/team', label: 'Team', icon: Users },
+  { to: '/plans', label: 'Plans', icon: Sparkles },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+];
 
 const TONE = {
   red: { text: 'text-[#dc2626]', bg: 'bg-[#fde3e3]', border: 'border-[#f5a3a3]', dot: 'bg-[#dc2626]' },
@@ -39,9 +55,12 @@ function projectStatus(project, validations, findings) {
   return { verdict, tone, readiness, crit, high, open, latest };
 }
 
-export function MobileApp() {
+export function MobileApp({ renderPage }) {
   const { user, profile, signOut } = useAuth();
+  const { path, navigate } = useRouter();
   const [tab, setTab] = useState('home');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [browsing, setBrowsing] = useState(false); // true = showing a real desktop page
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
   const [validations, setValidations] = useState([]);
@@ -101,9 +120,10 @@ export function MobileApp() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* top bar */}
-      <header className="sticky top-0 z-20 bg-white border-b border-gray-100 h-14 flex items-center justify-between px-4">
+      <header className="sticky top-0 z-20 bg-white border-b border-gray-100 h-14 flex items-center justify-between px-3">
+        <button onClick={() => setMenuOpen(true)} className="p-2 -ml-1 text-gray-500 active:text-brand-600"><Menu size={20} /></button>
         <Logo size={22} />
-        <button onClick={load} className="p-2 -mr-2 text-gray-400 active:text-brand-600"><RefreshCw size={16} /></button>
+        <button onClick={load} className="p-2 -mr-1 text-gray-400 active:text-brand-600"><RefreshCw size={16} /></button>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-20">
@@ -133,6 +153,44 @@ export function MobileApp() {
         />
       )}
 
+      {/* full menu drawer — every desktop section */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="w-72 max-w-[80%] h-full bg-white shadow-2xl flex flex-col animate-fade-in">
+            <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100">
+              <Logo size={22} />
+              <button onClick={() => setMenuOpen(false)} className="p-2 -mr-1 text-gray-400"><X size={18} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2">
+              <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">All features</p>
+              {MENU.map((m) => (
+                <button key={m.to} onClick={() => { navigate(m.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-navy-800 active:bg-gray-50">
+                  <m.icon size={17} className="text-gray-400" />{m.label}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-gray-100 p-3">
+              <button onClick={() => { setBrowsing(false); setMenuOpen(false); setTab('home'); }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-brand-50 text-brand-700 text-sm font-semibold"><House size={16} />Back to release view</button>
+            </div>
+          </div>
+          <div className="flex-1 bg-black/30" onClick={() => setMenuOpen(false)} />
+        </div>
+      )}
+
+      {/* browsing a real desktop page inside the mobile chrome */}
+      {browsing && (
+        <div className="fixed inset-0 z-40 bg-gray-50 flex flex-col">
+          <header className="sticky top-0 bg-white border-b border-gray-100 h-14 flex items-center gap-2 px-3 shrink-0">
+            <button onClick={() => setBrowsing(false)} className="p-2 -ml-1 text-gray-500 active:text-brand-600"><ChevronLeft size={20} /></button>
+            <span className="font-semibold text-navy-900 truncate">{(MENU.find((m) => path.startsWith(m.to))?.label) || 'Details'}</span>
+            <button onClick={() => setMenuOpen(true)} className="ml-auto p-2 -mr-1 text-gray-500"><Menu size={20} /></button>
+          </header>
+          <div className="flex-1 overflow-y-auto px-3 py-4">
+            {renderPage ? renderPage(path) : <p className="text-sm text-gray-500">Page unavailable.</p>}
+          </div>
+        </div>
+      )}
+
       {/* bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-100 h-16 grid grid-cols-4 pb-[env(safe-area-inset-bottom)]">
         {[
@@ -143,7 +201,7 @@ export function MobileApp() {
         ].map((t) => {
           const active = tab === t.id;
           return (
-            <button key={t.id} onClick={() => { setTab(t.id); setSelected(null); }} className={`relative flex flex-col items-center justify-center gap-0.5 ${active ? 'text-brand-600' : 'text-gray-400'}`}>
+            <button key={t.id} onClick={() => { setTab(t.id); setSelected(null); setBrowsing(false); }} className={`relative flex flex-col items-center justify-center gap-0.5 ${active ? 'text-brand-600' : 'text-gray-400'}`}>
               <t.icon size={20} />
               <span className="text-[10px] font-medium">{t.label}</span>
               {t.badge > 0 && <span className="absolute top-2 right-[22%] min-w-4 h-4 px-1 rounded-full bg-[#dc2626] text-white text-[9px] font-bold flex items-center justify-center">{t.badge}</span>}
