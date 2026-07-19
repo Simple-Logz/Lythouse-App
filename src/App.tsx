@@ -25,6 +25,7 @@ import{LoadTestingPage}from'./pages/LoadTestingPage';
 import{ApiTestingPage}from'./pages/ApiTestingPage';
 import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
 import{useAuth}from'./lib/auth';
+import{LandingPage}from'./pages/LandingPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
 import{ExecutiveDashboard}from'./pages/ExecutiveDashboard';
@@ -79,7 +80,13 @@ if(loading)return(
     </div>
   </div>
 );
-if(!session)return<AuthPage/>;
+if(!session){
+  // Unauthenticated: the marketing cover page is the front door. The auth form
+  // only appears when the visitor explicitly heads to sign in / sign up.
+  const authPaths=['/signin','/signup','/auth','/login'];
+  if(authPaths.includes(path))return<AuthPage initialMode={path==='/signup'?'signup':'signin'}/>;
+  return<LandingPage/>;
+}
 return<Routes/>;
 }
 

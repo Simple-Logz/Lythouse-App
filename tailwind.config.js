@@ -1,40 +1,38 @@
 /** @type {import('tailwindcss').Config} */
 
-// ── Deep-indigo design system ─────────────────────────────────────────────
-// The whole app is unified to one indigo / blue-violet family (inspired by the
-// deep indigo wall). Instead of editing dozens of pages, we remap every accent
-// color token here so existing classes like `bg-amber-500`, `text-blue-600`,
-// `bg-purple-600`, etc. all resolve to indigo shades automatically.
+// ── Fresh green design system (Formstack-inspired) ─────────────────────────
+// Clean white surfaces, a friendly medium-green brand accent, calm slate text,
+// and natural amber/red for warning & danger. Every accent token is remapped
+// here so existing classes (bg-blue-600, text-purple-700, etc.) resolve to the
+// green family automatically — no need to edit dozens of pages.
 
-// Primary / brand: rich, vivid indigo (~the wall tone at 700).
-const indigo = {
-  50: '#f1f1fb', 100: '#e4e3f8', 200: '#cbc9f1', 300: '#a8a4e6',
-  400: '#837dd6', 500: '#635ac4', 600: '#4f45ab', 700: '#423a8c',
-  800: '#383172', 900: '#2f2a5d', 950: '#1d1a38',
+// Primary / brand: friendly medium green (the 400 is the Formstack accent).
+const green = {
+  50: '#eff8f3', 100: '#d7efe1', 200: '#b2e0c6', 300: '#83cca6',
+  400: '#54b483', 500: '#37a06a', 600: '#2c8657', 700: '#256c48',
+  800: '#22563b', 900: '#1d4732', 950: '#0c2a1c',
 };
 
-// Neutral text/UI (replaces "navy"): a dark indigo-tinted gray so headings and
-// body copy stay in-family but remain calm and readable.
-const indigoGray = {
-  50: '#f5f5f8', 100: '#e9e8ef', 200: '#d1d0dd', 300: '#adaac1',
-  400: '#817d9e', 500: '#605c7a', 600: '#4b4762', 700: '#3d3a50',
-  800: '#333145', 900: '#2b2a3a', 950: '#181725',
+// Neutral text/UI (replaces "navy"): calm cool slate so headings and body copy
+// stay clean and readable on white.
+const slate = {
+  50: '#f6f7f9', 100: '#eceef1', 200: '#d4d9e0', 300: '#aeb6c2',
+  400: '#818b9c', 500: '#5f6a7d', 600: '#4a5364', 700: '#3c4453',
+  800: '#333a46', 900: '#1f2530', 950: '#12161d',
 };
 
-// Warning tone: a lighter, brighter periwinkle-violet so "review / caution"
-// states read a touch warmer without leaving the family.
-const periwinkle = {
-  50: '#f3f2fc', 100: '#e6e4f9', 200: '#d0ccf3', 300: '#b1a9ea',
-  400: '#9184de', 500: '#7768cf', 600: '#6252b3', 700: '#514391',
-  800: '#443a75', 900: '#3a3360', 950: '#221d3a',
+// Warning tone: natural amber.
+const amber = {
+  50: '#fff8eb', 100: '#feefc7', 200: '#fddf8a', 300: '#fbca4d',
+  400: '#f9b224', 500: '#f3970b', 600: '#d77406', 700: '#b25309',
+  800: '#90400e', 900: '#76350f', 950: '#441a03',
 };
 
-// Alert / error tone: a deeper, darker indigo so "failed / danger" still reads
-// as heavier and more serious — differentiated by depth, not by hue.
-const deepIndigo = {
-  50: '#edecf5', 100: '#d5d3e9', 200: '#aeabd2', 300: '#837eb8',
-  400: '#5b549c', 500: '#3f387f', 600: '#322c66', 700: '#2a2553',
-  800: '#241f45', 900: '#1f1b3a', 950: '#100e20',
+// Alert / error tone: natural red.
+const red = {
+  50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5',
+  400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c',
+  800: '#991b1b', 900: '#7f1d1d', 950: '#450a0a',
 };
 
 export default {
@@ -42,34 +40,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary indigo
-        brand: indigo,
-        indigo: indigo,
-        violet: indigo,
-        purple: indigo,
-        blue: indigo,
-        sky: indigo,
-        cyan: indigo,
-        fuchsia: indigo,
-        pink: indigo,
-        // Former green tokens now also read as indigo
-        green: indigo,
-        emerald: indigo,
-        lime: indigo,
-        teal: indigo,
+        // Primary green
+        brand: green,
+        green: green,
+        emerald: green,
+        lime: green,
+        teal: green,
+        // Cool accents also read as green so the app stays one family
+        indigo: green,
+        violet: green,
+        purple: green,
+        blue: green,
+        sky: green,
+        cyan: green,
+        fuchsia: green,
+        pink: green,
 
-        // Neutral text/surfaces (formerly blue-navy)
-        navy: indigoGray,
+        // Neutral text/surfaces
+        navy: slate,
 
-        // Warnings → lighter periwinkle-violet
-        amber: periwinkle,
-        yellow: periwinkle,
-        orange: periwinkle,
+        // Warnings → natural amber
+        amber: amber,
+        yellow: amber,
+        orange: amber,
 
-        // Errors / danger → deep indigo
-        red: deepIndigo,
-        rose: deepIndigo,
-        danger: deepIndigo,
+        // Errors / danger → natural red
+        red: red,
+        rose: red,
+        danger: red,
       },
       fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
       animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'scale-in': 'scaleIn 0.2s ease-out' },

@@ -1,11 +1,13 @@
 import{useState,type FormEvent}from'react';
 import{useAuth}from'../lib/auth';
+import{useRouter}from'../lib/router';
 import{Logo,Spinner}from'../lib/ui';
 import{ShieldCheck,GitBranch,ScanLine,AlertTriangle,ArrowRight,CheckCircle2,Eye,EyeOff}from'lucide-react';
 
-export function AuthPage(){
+export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}={}){
   const{signIn,signUp}=useAuth();
-  const[mode,setMode]=useState<'signin'|'signup'>('signin');
+  const{navigate}=useRouter();
+  const[mode,setMode]=useState<'signin'|'signup'>(initialMode);
   const[email,setEmail]=useState('');
   const[password,setPassword]=useState('');
   const[fullName,setFullName]=useState('');
@@ -49,7 +51,7 @@ export function AuthPage(){
       {/* Nav */}
       <header className="bg-white border-b border-gray-200">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Logo size={28}/>
+          <button onClick={()=>navigate('/')} className="flex items-center gap-2" title="Back to home"><Logo size={28}/></button>
           <div className="text-sm text-gray-500">
             {mode==='signin'
               ?<>No account? <button onClick={()=>switchMode('signup')} className="font-semibold text-brand-600 hover:text-brand-700">Sign up free</button></>
