@@ -240,15 +240,15 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         {STAGES.map((s,i)=>{
           const st=stageStatus[s.id];
           return(
-            <button key={s.id} onClick={()=>setStage(s.id)} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${stage===s.id?'bg-white text-navy-900 shadow-sm border border-gray-200':'text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
-              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${st==='done'?'bg-green-500 text-white':stage===s.id?'bg-brand-600 text-white':'bg-gray-200 text-gray-500'}`}>
-                {st==='done'?<Check size={11}/>:i+1}
+            <button key={s.id} onClick={()=>setStage(s.id)} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left border ${stage===s.id?'bg-[#fff7e9] text-[#8a5a00] border-[#f9c777] shadow-sm':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
+              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-[#e8890c] text-white ring-2 ring-[#f9c777]':st==='done'?'bg-green-500 text-white':'bg-gray-200 text-gray-500'}`}>
+                {stage===s.id?i+1:st==='done'?<Check size={11}/>:i+1}
               </div>
               <span className="min-w-0 flex-1">
                 <span className="block leading-tight">{s.label}</span>
-                <span className="block text-[10px] font-normal text-gray-400 leading-tight">{s.sub}</span>
+                <span className={`block text-[10px] font-normal leading-tight ${stage===s.id?'text-[#b06a00]':'text-gray-400'}`}>{s.sub}</span>
               </span>
-              {st==='active'&&stage!==s.id&&<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>}
+              {stage===s.id?<span className="w-1.5 h-1.5 rounded-full bg-[#e8890c] shrink-0"/>:st==='active'?<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
             </button>
           );
         })}
@@ -685,6 +685,28 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 </div>
                 {approvals.length===0&&<button onClick={createRelease} className="btn-primary text-sm shrink-0"><Users size={13}/>Request Approval</button>}
               </div>
+
+              {/* what this stage is for */}
+              <div className="card border-brand-200 bg-brand-50/50">
+                <p className="text-sm font-semibold text-navy-900 flex items-center gap-1.5"><Users size={14} className="text-brand-600"/>Why this stage exists</p>
+                <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                  Validation proves the release is <em>technically</em> safe; Governance is the <span className="font-medium text-navy-800">human sign-off</span> that it's a business-approved decision. Before code ships to production, the accountable teams each confirm the release is ready from their angle — so no single person can push to prod alone, and there's an auditable record of who approved what and when.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-3 mt-3">
+                  {[
+                    {t:'Platform Engineering',d:'Confirms infrastructure, capacity and the deployment path are ready.'},
+                    {t:'Security Team',d:'Confirms no unresolved security or compliance risk is shipping.'},
+                    {t:'Product Management',d:'Confirms the change is the right thing to release to customers now.'},
+                  ].map(x=>(
+                    <div key={x.t} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                      <p className="text-xs font-semibold text-navy-800">{x.t}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{x.d}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-gray-500 mt-3">How it works: request approval to open a sign-off record, each team presses <span className="font-medium text-navy-700">Approve</span> (logged with their name and timestamp) or rejects with a reason. Once all three approve, the release is cleared and Deployment unlocks. You can make an approval mandatory to deploy in <span className="font-medium text-navy-700">Settings → Deployment policy</span>.</p>
+              </div>
+
               {approvals.length===0?(
                 <div className="card text-center py-10">
                   <Users size={28} className="mx-auto text-gray-200 mb-3"/>
