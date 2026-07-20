@@ -26,3 +26,8 @@ dist-ssr
 # back here and run `git rm --cached .env` to stop committing it.
 .env.local
 .env.*.local
+
+# Added by Lythouse — do not commit secrets
+.env
+.env.*
+*.env
