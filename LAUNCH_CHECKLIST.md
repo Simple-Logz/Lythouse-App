@@ -9,8 +9,9 @@ Legend: ✅ done in repo · 🟡 in progress · ⬜ to do (code) · 👤 your ac
 
 ## 1. Security & tenant isolation  ← FOUNDATION
 - ✅ Tenant-scoped RLS migration written (`supabase/migrations/20260720000000_reenable_tenant_rls.sql`) — replaces the wide-open `anon USING(true)` policies with authenticated, workspace-membership-scoped ones.
-- ✅ `.env` removed from git tracking; `.gitignore` + `.env.example` added.
-- 👤 **Rotate the Supabase service-role key** (it was committed to git history — treat as compromised).
+- 🟡 Secret hygiene — `.env.example` added, but `.env` is STILL committed for now because the Vercel build reads it. Correct sequence: (1) set the `VITE_*` vars in the Vercel dashboard → (2) confirm a deploy works → (3) `git rm --cached .env` + gitignore it → (4) rotate keys.
+- 👤 **Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_STRIPE_PUBLISHABLE_KEY`, `VITE_GITHUB_CLIENT_ID` in Vercel** (Settings → Environment Variables, Production + Preview) — these are public values, safe to store there.
+- 👤 **Rotate the Supabase service-role key** (it's in git history — treat as compromised) — do this once the app no longer depends on the committed `.env`.
 - 👤 Apply the RLS migration to a **staging** Supabase branch, run the isolation test (two users / two workspaces can't see each other), then production.
 - ⬜ Add RLS to remaining enterprise tables (compliance_scans, incidents, integrations, server_*) — templates in the migration.
 - ⬜ Move integration tokens to **encrypted** storage (Edge Function encrypt/decrypt with `ENCRYPTION_KEY`); never return tokens to the browser.
