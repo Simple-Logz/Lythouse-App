@@ -32,6 +32,7 @@ import{MobilePreview}from'./mobile/MobilePreview';
 import{DecisionPreview}from'./workspace/DecisionPreview';
 import{LandingPage}from'./pages/LandingPage';
 import{ResetPasswordPage}from'./pages/ResetPasswordPage';
+import{LegalPage,LEGAL_ROUTES}from'./pages/LegalPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
 import{ExecutiveDashboard}from'./pages/ExecutiveDashboard';
@@ -91,6 +92,8 @@ if(path==='/__dpreview'){const D=DecisionPreview;return<D/>;}
 // Password recovery lands here (with a temporary recovery session) — render
 // regardless of auth state.
 if(path==='/reset-password')return<ResetPasswordPage/>;
+// Public legal/trust pages (accessible signed-in or out).
+{const seg0=path.split('/').filter(Boolean)[0];if(LEGAL_ROUTES.includes(seg0))return<LegalPage doc={seg0}/>;}
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">

@@ -175,7 +175,10 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl px-5 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Logo size={24} />
           <p className="text-xs text-navy-400">© {2026} LytHouse. Ship with confidence.</p>
-          <div className="flex items-center gap-5 text-xs text-navy-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-navy-500">
+            <button onClick={go('/terms')} className="hover:text-brand-700">Terms</button>
+            <button onClick={go('/privacy')} className="hover:text-brand-700">Privacy</button>
+            <button onClick={go('/security')} className="hover:text-brand-700">Security</button>
             <button onClick={go('/signin')} className="hover:text-brand-700">Sign in</button>
             <button onClick={go('/signup')} className="hover:text-brand-700">Get started</button>
           </div>

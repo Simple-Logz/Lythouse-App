@@ -3,6 +3,7 @@ import{createRoot}from'react-dom/client';
 import'./index.css';
 import{App}from'./App';
 import{AuthProvider}from'./lib/auth';
+import{ErrorBoundary}from'./lib/ErrorBoundary';
 
 // Block pinch-zoom / rotate gestures on touch devices (iOS Safari ignores the
 // viewport user-scalable=no flag, so we stop the gestures directly).
@@ -14,8 +15,10 @@ if(typeof window!=='undefined'){
 }
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <App/>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <App/>
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>
 );

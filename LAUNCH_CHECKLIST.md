@@ -36,8 +36,9 @@ Legend: ✅ done in repo · 🟡 in progress · ⬜ to do (code) · 👤 your ac
 - 👤 Stripe account: live keys, products/prices (monthly/annual), trial rules, tax settings, live webhook endpoint.
 
 ## 4. Legal / trust + observability
-- ⬜ Pages: Terms of Service, Privacy Policy, Cookie notice, Acceptable Use, Security, Data-deletion, Subprocessors, Support contact.
-- ⬜ Sentry (or similar) error tracking wired behind `VITE_SENTRY_DSN`.
+- ✅ Pages: Terms, Privacy, Security, Acceptable Use, Cookies, Data-deletion, Subprocessors — public routes (`/terms`, `/privacy`, …), tailored to a code-connected tool, with a counsel-review banner. Linked from the landing footer + signup. **Have counsel review before relying on them.**
+- ✅ App-wide ErrorBoundary — crashes show a recovery screen (Reload / Go home) instead of a blank page; `window.__errorReporter` hook ready for Sentry.
+- ⬜ Wire an actual Sentry DSN (`window.__errorReporter`) when you have an account.
 - ⬜ Enterprise data-handling answers (what's collected, retention, token encryption, deletion on GitHub disconnect, AI-training stance).
 - 👤 Transactional email provider (Resend/Postmark) + SPF/DKIM/DMARC DNS.
 - 👤 Uptime/status page, alert routing.

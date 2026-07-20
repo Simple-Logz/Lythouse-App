@@ -174,7 +174,7 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
 
                     {mode==='signup'&&(
                       <p className="mt-5 text-center text-xs text-gray-400">
-                        By creating an account you agree to the <span className="text-gray-600 underline cursor-pointer">Terms of Service</span> and <span className="text-gray-600 underline cursor-pointer">Privacy Policy</span>.
+                        By creating an account you agree to the <button type="button" onClick={()=>navigate('/terms')} className="text-brand-600 underline">Terms of Service</button> and <button type="button" onClick={()=>navigate('/privacy')} className="text-brand-600 underline">Privacy Policy</button>.
                       </p>
                     )}
                   </>
