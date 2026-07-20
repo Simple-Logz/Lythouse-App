@@ -13,6 +13,9 @@ type AuthContextValue = {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  resendVerification: (email: string) => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -124,9 +127,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session?.user) await loadProfile(session.user.id);
   };
 
+  const resetPassword: AuthContextValue['resetPassword'] = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error: error?.message ?? null };
+  };
+
+  const updatePassword: AuthContextValue['updatePassword'] = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error?.message ?? null };
+  };
+
+  const resendVerification: AuthContextValue['resendVerification'] = async (email) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    return { error: error?.message ?? null };
+  };
+
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile }}
+      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile, resetPassword, updatePassword, resendVerification }}
     >
       {children}
     </AuthContext.Provider>

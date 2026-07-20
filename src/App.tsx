@@ -31,6 +31,7 @@ import{MobileApp}from'./mobile/MobileApp';
 import{MobilePreview}from'./mobile/MobilePreview';
 import{DecisionPreview}from'./workspace/DecisionPreview';
 import{LandingPage}from'./pages/LandingPage';
+import{ResetPasswordPage}from'./pages/ResetPasswordPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
 import{ExecutiveDashboard}from'./pages/ExecutiveDashboard';
@@ -87,6 +88,9 @@ const isMobile=useIsMobile();
 // TEMP: design previews without auth.
 if(path==='/__mpreview')return<MobilePreview/>;
 if(path==='/__dpreview'){const D=DecisionPreview;return<D/>;}
+// Password recovery lands here (with a temporary recovery session) — render
+// regardless of auth state.
+if(path==='/reset-password')return<ResetPasswordPage/>;
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">

@@ -5,9 +5,9 @@ import{Logo,Spinner}from'../lib/ui';
 import{ShieldCheck,GitBranch,ScanLine,AlertTriangle,ArrowRight,CheckCircle2,Eye,EyeOff}from'lucide-react';
 
 export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}={}){
-  const{signIn,signUp}=useAuth();
+  const{signIn,signUp,resetPassword}=useAuth();
   const{navigate}=useRouter();
-  const[mode,setMode]=useState<'signin'|'signup'>(initialMode);
+  const[mode,setMode]=useState<'signin'|'signup'|'forgot'>(initialMode);
   const[email,setEmail]=useState('');
   const[password,setPassword]=useState('');
   const[fullName,setFullName]=useState('');
@@ -15,11 +15,19 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
   const[error,setError]=useState<string|null>(null);
   const[busy,setBusy]=useState(false);
   const[done,setDone]=useState(false);
+  const[doneKind,setDoneKind]=useState<'signup'|'reset'>('signup');
 
   async function onSubmit(e:FormEvent){
     e.preventDefault();
     setError(null);
     setBusy(true);
+    if(mode==='forgot'){
+      const res=await resetPassword(email);
+      setBusy(false);
+      if(res.error){setError(res.error);return;}
+      setDoneKind('reset');setDone(true);
+      return;
+    }
     try{
       const res=mode==='signin'?await signIn(email,password):await signUp(email,password,fullName);
       setBusy(false);
@@ -29,14 +37,14 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
         else if(typeof res.error==='object'&&res.error!==null){
           msg=(res.error as any).message||(res.error as any).error_description||JSON.stringify(res.error);
         }
-        if(msg==='EMAIL_CONFIRMATION_REQUIRED'){setDone(true);return;}
+        if(msg==='EMAIL_CONFIRMATION_REQUIRED'){setDoneKind('signup');setDone(true);return;}
         if(msg.includes('Invalid login credentials')||msg.includes('invalid_credentials')) msg='Incorrect email or password. Please try again.';
         else if(msg.includes('already registered')||msg.includes('already exists')) msg='An account with this email already exists. Try signing in instead.';
         else if(msg.toLowerCase().includes('password')) msg='Password must be at least 6 characters.';
         else if(msg==='{}'||msg.length<3) msg='Authentication error. Please try again.';
         setError(msg);
       } else if(mode==='signup'){
-        setDone(true);
+        setDoneKind('signup');setDone(true);
       }
     }catch(err:any){
       setBusy(false);
@@ -44,7 +52,7 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
     }
   }
 
-  const switchMode=(m:'signin'|'signup')=>{setMode(m);setError(null);setDone(false);setEmail('');setPassword('');setFullName('');};
+  const switchMode=(m:'signin'|'signup'|'forgot')=>{setMode(m);setError(null);setDone(false);setPassword('');setFullName('');};
 
   return(
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -107,17 +115,19 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
                       <CheckCircle2 size={28} className="text-green-600"/>
                     </div>
                     <h2 className="text-lg font-bold text-navy-900">Check your email</h2>
-                    <p className="mt-2 text-sm text-gray-500">We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</p>
-                    <button onClick={()=>switchMode('signin')} className="mt-6 btn-primary w-full">Back to sign in</button>
+                    <p className="mt-2 text-sm text-gray-500">{doneKind==='reset'
+                      ?<>We sent a password-reset link to <strong>{email}</strong>. Click it to choose a new password.</>
+                      :<>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</>}</p>
+                    <button onClick={()=>switchMode('signin')} className="mt-6 btn-primary w-full justify-center">Back to sign in</button>
                   </div>
                 ):(
                   <>
                     <div className="mb-6">
                       <h2 className="text-xl font-bold text-navy-900">
-                        {mode==='signin'?'Welcome back':'Create your account'}
+                        {mode==='signin'?'Welcome back':mode==='forgot'?'Reset your password':'Create your account'}
                       </h2>
                       <p className="mt-1 text-sm text-gray-500">
-                        {mode==='signin'?'Sign in to your LytHouse workspace.':'Start catching deployment risks in minutes.'}
+                        {mode==='signin'?'Sign in to your LytHouse workspace.':mode==='forgot'?"Enter your email and we'll send you a reset link.":'Start catching deployment risks in minutes.'}
                       </p>
                     </div>
 
@@ -130,12 +140,13 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
                       )}
                       <div>
                         <label className="label" htmlFor="email">Work email</label>
-                        <input id="email" className="input" type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@company.com" autoFocus={mode==='signin'}/>
+                        <input id="email" className="input" type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@company.com" autoFocus={mode!=='signup'}/>
                       </div>
+                      {mode!=='forgot'&&(
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="label mb-0" htmlFor="password">Password</label>
-                          {mode==='signin'&&<button type="button" className="text-xs text-brand-600 hover:underline">Forgot password?</button>}
+                          {mode==='signin'&&<button type="button" onClick={()=>switchMode('forgot')} className="text-xs text-brand-600 hover:underline">Forgot password?</button>}
                         </div>
                         <div className="relative">
                           <input id="password" className="input pr-10" type={showPassword?'text':'password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} placeholder={mode==='signup'?'At least 6 characters':'Your password'}/>
@@ -144,6 +155,7 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
                           </button>
                         </div>
                       </div>
+                      )}
 
                       {error&&(
                         <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-danger-600">
@@ -152,11 +164,12 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
                         </div>
                       )}
 
-                      <button type="submit" className="btn-primary w-full py-2.5" disabled={busy}>
+                      <button type="submit" className="btn-primary w-full py-2.5 justify-center" disabled={busy}>
                         {busy?<Spinner size={16}/>:null}
-                        {mode==='signin'?'Sign in':'Create account'}
+                        {mode==='signin'?'Sign in':mode==='forgot'?'Send reset link':'Create account'}
                         {!busy&&<ArrowRight size={15}/>}
                       </button>
+                      {mode==='forgot'&&<button type="button" onClick={()=>switchMode('signin')} className="text-xs text-brand-600 hover:underline block mx-auto">Back to sign in</button>}
                     </form>
 
                     {mode==='signup'&&(

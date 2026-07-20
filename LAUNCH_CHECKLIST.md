@@ -18,8 +18,9 @@ Legend: ✅ done in repo · 🟡 in progress · ⬜ to do (code) · 👤 your ac
 
 ## 2. Authentication lifecycle
 - ✅ Login / signup / logout (existing).
-- ⬜ Password reset (request + reset pages).
-- ⬜ Email verification handling + resend.
+- ✅ Password reset — "Forgot password?" flow + `/reset-password` page (auth.tsx `resetPassword`/`updatePassword`).
+- ✅ Resend-verification helper in auth layer (`resendVerification`).
+- ⬜ Wire resend-verification button into the "check your email" screen.
 - ⬜ Workspace invitations: send, accept/decline, remove member.
 - ⬜ Role-based authorization (Owner/Admin/Developer/Approver/Viewer) enforced in UI **and** RLS.
 - ⬜ Account deletion + data export.
