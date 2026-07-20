@@ -8,7 +8,7 @@ import {
   House, ShieldCheck, Bell, User, ChevronLeft, ChevronRight, CheckCircle2,
   XCircle, AlertTriangle, GitBranch, Loader as Loader2, LogOut, Shield, Check,
   Clock, RefreshCw, Monitor, Menu, X, LayoutDashboard, ChartBar, FolderGit2,
-  Webhook, Boxes, Users, Sparkles, Settings as SettingsIcon,
+  Webhook, Boxes, Users, Sparkles, Settings as SettingsIcon, Server,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -22,6 +22,7 @@ const MENU = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/executive', label: 'Executive View', icon: ChartBar },
   { to: '/projects', label: 'Projects', icon: FolderGit2 },
+  { to: '/environment', label: 'Environment', icon: Server },
   { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
   { to: '/integrations', label: 'Integrations', icon: Webhook },
   { to: '/workspaces', label: 'Workspaces', icon: Boxes },

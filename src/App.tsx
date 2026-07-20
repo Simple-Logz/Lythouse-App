@@ -33,6 +33,7 @@ import{DecisionPreview}from'./workspace/DecisionPreview';
 import{LandingPage}from'./pages/LandingPage';
 import{ResetPasswordPage}from'./pages/ResetPasswordPage';
 import{LegalPage,LEGAL_ROUTES}from'./pages/LegalPage';
+import{EnvironmentValidationPage}from'./pages/EnvironmentValidationPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
 import{CommandCenter}from'./pages/CommandCenter';
 import{ExecutiveDashboard}from'./pages/ExecutiveDashboard';
@@ -57,6 +58,7 @@ else if(seg[0]==='plans')c=<PlansPage/>;
 else if(seg[0]==='compliance')c=<CompliancePage/>;
 else if(seg[0]==='incidents')c=<IncidentPage/>;
 else if(seg[0]==='integrations')c=<IntegrationsPage/>;
+else if(seg[0]==='environment')c=<EnvironmentValidationPage/>;
 else if(seg[0]==='settings')c=<SettingsPage/>;
 else if(seg[0]==='workspaces')c=seg[1]?<WorkspaceDetailPage workspaceId={seg[1]}/>:<WorkspacesPage/>;
 else if(seg[0]==='executive')c=<ExecutiveDashboard/>;
@@ -89,6 +91,7 @@ const isMobile=useIsMobile();
 // TEMP: design previews without auth.
 if(path==='/__mpreview')return<MobilePreview/>;
 if(path==='/__dpreview'){const D=DecisionPreview;return<D/>;}
+if(path==='/__envpreview')return<div className="min-h-screen bg-gray-50"><div className="mx-auto max-w-7xl px-4 py-8"><EnvironmentValidationPage/></div></div>;
 // Password recovery lands here (with a temporary recovery session) — render
 // regardless of auth state.
 if(path==='/reset-password')return<ResetPasswordPage/>;
