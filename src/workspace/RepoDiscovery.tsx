@@ -665,7 +665,6 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           {!decisionOpen && (
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
               <span><span className={`font-bold ${scoreColor(r.overall)}`}>{r.overall}%</span> <span className="text-gray-500">ready</span></span>
-              <span><span className={`font-bold ${scoreColor(r.prediction.successProb)}`}>{r.prediction.successProb}%</span> <span className="text-gray-500">confidence</span></span>
               <span><span className={`font-bold ${r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]'}`}>{r.summary.blockers}</span> <span className="text-gray-500">blocker{r.summary.blockers === 1 ? '' : 's'}</span></span>
               {r.timeToReady ? <span><span className="font-bold text-navy-800">{r.timeToReady} min</span> <span className="text-gray-500">to ready</span></span> : null}
               <span className="text-brand-600 font-medium ml-auto">Details</span>
@@ -675,10 +674,9 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
         {decisionOpen && (<div className="px-4 sm:px-5 pb-4">
 
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+        <div className="grid gap-2 grid-cols-3">
           {[
             { l: 'Release Readiness', v: `${r.overall}%`, c: scoreColor(r.overall), hint: 'A 0–100 score of how ready this release is to ship, averaged across architecture, security, deployment automation, observability, disaster recovery and operational readiness.' },
-            { l: 'Deployment Confidence', v: `${r.prediction.successProb}%`, c: scoreColor(r.prediction.successProb), hint: 'Estimated probability the deployment succeeds without needing a rollback, based on readiness and the number of open blockers.' },
             { l: 'Blocking Issues', v: String(r.summary.blockers), c: r.summary.blockers ? 'text-[#d61f1f]' : 'text-[#0f9a4c]', hint: 'Findings serious enough that the release should not be promoted to production until they are resolved.' },
             { l: 'Est. Time to Ready', v: r.timeToReady ? `${r.timeToReady} min` : '—', c: 'text-navy-900', hint: 'Estimated total hands-on time to fix all blocking issues before this release can be approved.' },
           ].map((x) => (
@@ -723,6 +721,65 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
         </div>)}
       </div>
+
+      {/* ── FIX IT — the primary action when a release is blocked ─────────── */}
+      {(() => {
+        const fixes = buildFixPlan(r.concerns);
+        const guided = guidedFrom(r.concerns);
+        if (!fixes.length && !guided.length) return null;
+        return (
+          <div className="card border-brand-200 bg-brand-50/40">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-1.5"><Shield size={14} className="text-brand-600" />AI Auto-Remediation<InfoHint text="Lythouse generates safe, additive fixes and opens a pull request on your repository. Risky in-place edits are left as guided recommendations for a human to own." /></h3>
+                <p className="text-sm text-gray-600 mt-0.5">{fixes.length ? `${fixes.length} finding${fixes.length === 1 ? '' : 's'} can be fixed automatically in a pull request.` : 'No auto-fixable findings — the items below need a human decision.'}</p>
+              </div>
+              {fixes.length > 0 && pr.state !== 'done' && (
+                <button
+                  disabled={pr.state === 'running'}
+                  onClick={async () => {
+                    setPr({ state: 'running', url: null, error: null, applied: [] });
+                    try { const res = await createFixPR({ project, fixes }); setPr({ state: 'done', url: res.url, applied: res.applied, error: null }); }
+                    catch (e) { setPr({ state: 'error', url: null, applied: [], error: e.message }); }
+                  }}
+                  className="btn-primary text-sm shrink-0">
+                  {pr.state === 'running' ? <><Loader2 size={14} className="animate-spin" />Opening PR…</> : <><ArrowRight size={14} />Generate Fix PR</>}
+                </button>
+              )}
+            </div>
+            {fixes.length > 0 && (
+              <ul className="mt-3 space-y-1.5">
+                {fixes.map((f) => (
+                  <li key={f.cat} className="flex items-start gap-2 text-sm"><Check size={15} className="text-green-500 shrink-0 mt-0.5" /><span><span className="font-medium text-navy-800">{f.label}</span> <span className="text-gray-500">— {f.desc}</span></span></li>
+                ))}
+              </ul>
+            )}
+            {pr.state === 'done' && (
+              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm">
+                <span className="font-medium text-green-800">Pull request opened.</span> <a href={pr.url} target="_blank" rel="noreferrer" className="text-brand-700 font-semibold hover:underline">Review PR →</a>
+                <span className="block text-xs text-gray-500 mt-0.5">Changed: {pr.applied.join(', ')}</span>
+              </div>
+            )}
+            {pr.state === 'error' && <div className="mt-3 rounded-lg border border-[#f5a3a3] bg-[#fde3e3] px-3 py-2.5 text-sm text-[#c0392b]">{pr.error}</div>}
+            {guided.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-gray-200/60">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1.5">Guided — needs a human decision</p>
+                <ul className="space-y-1">
+                  {guided.map((g, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-600"><ArrowRight size={13} className="text-gray-300 shrink-0 mt-0.5" /><span><span className="font-medium text-navy-700">{g.label}</span> — {g.hint}</span></li>))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── FULL ANALYSIS (collapsed — supporting detail, one toggle) ─────── */}
+      <details className="group">
+        <summary className="card !py-3.5 flex items-center justify-between cursor-pointer list-none hover:bg-gray-50/60">
+          <span className="text-sm font-semibold text-navy-900 flex items-center gap-1.5"><TrendingUp size={14} className="text-brand-600" />Full analysis — platform, forecast, maturity &amp; evidence</span>
+          <ChevronDown size={16} className="text-gray-400 group-open:rotate-180 transition-transform" />
+        </summary>
+        <div className="mt-4 space-y-5">
 
       {/* ── PLATFORM INTELLIGENCE (terse) ────────────────────────────────── */}
       <div>
@@ -794,60 +851,6 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 
       {/* ── DETAILED FINDINGS (per-file drill-down) ──────────────────────── */}
       {r.allPaths && <DetailedFindings project={project} paths={r.allPaths} />}
-
-      {/* ── AI AUTO-REMEDIATION ──────────────────────────────────────────── */}
-      {(() => {
-        const fixes = buildFixPlan(r.concerns);
-        const guided = guidedFrom(r.concerns);
-        if (!fixes.length && !guided.length) return null;
-        return (
-          <div className="card border-brand-200 bg-brand-50/40">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <h3 className="text-sm font-semibold text-navy-900 flex items-center gap-1.5"><Shield size={14} className="text-brand-600" />AI Auto-Remediation<InfoHint text="Lythouse generates safe, additive fixes and opens a pull request on your repository. Risky in-place edits are left as guided recommendations for a human to own." /></h3>
-                <p className="text-sm text-gray-600 mt-0.5">{fixes.length ? `${fixes.length} finding${fixes.length === 1 ? '' : 's'} can be fixed automatically in a pull request.` : 'No auto-fixable findings — the items below need a human decision.'}</p>
-              </div>
-              {fixes.length > 0 && pr.state !== 'done' && (
-                <button
-                  disabled={pr.state === 'running'}
-                  onClick={async () => {
-                    setPr({ state: 'running', url: null, error: null, applied: [] });
-                    try { const res = await createFixPR({ project, fixes }); setPr({ state: 'done', url: res.url, applied: res.applied, error: null }); }
-                    catch (e) { setPr({ state: 'error', url: null, applied: [], error: e.message }); }
-                  }}
-                  className="btn-primary text-sm shrink-0">
-                  {pr.state === 'running' ? <><Loader2 size={14} className="animate-spin" />Opening PR…</> : <><ArrowRight size={14} />Generate Fix PR</>}
-                </button>
-              )}
-            </div>
-
-            {fixes.length > 0 && (
-              <ul className="mt-3 space-y-1.5">
-                {fixes.map((f) => (
-                  <li key={f.cat} className="flex items-start gap-2 text-sm"><Check size={15} className="text-green-500 shrink-0 mt-0.5" /><span><span className="font-medium text-navy-800">{f.label}</span> <span className="text-gray-500">— {f.desc}</span></span></li>
-                ))}
-              </ul>
-            )}
-
-            {pr.state === 'done' && (
-              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm">
-                <span className="font-medium text-green-800">Pull request opened.</span> <a href={pr.url} target="_blank" rel="noreferrer" className="text-brand-700 font-semibold hover:underline">Review PR →</a>
-                <span className="block text-xs text-gray-500 mt-0.5">Changed: {pr.applied.join(', ')}</span>
-              </div>
-            )}
-            {pr.state === 'error' && <div className="mt-3 rounded-lg border border-[#f5a3a3] bg-[#fde3e3] px-3 py-2.5 text-sm text-[#c0392b]">{pr.error}</div>}
-
-            {guided.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-200/60">
-                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1.5">Guided — needs a human decision</p>
-                <ul className="space-y-1">
-                  {guided.map((g, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-600"><ArrowRight size={13} className="text-gray-300 shrink-0 mt-0.5" /><span><span className="font-medium text-navy-700">{g.label}</span> — {g.hint}</span></li>))}
-                </ul>
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {/* ── PRIORITIZED QUICK WINS + IMPACT PROJECTION ───────────────────── */}
       {r.concerns.length > 0 && (
@@ -931,6 +934,9 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
               <div className="flex justify-between text-sm pt-1 border-t border-gray-100"><span className="text-gray-500">Deployment-relevant / total</span><span className="font-semibold text-brand-700 tabular-nums">{r.inventory.relevant.toLocaleString()} / {r.inventory.total.toLocaleString()}</span></div>
             </div>
           </div>
+        </div>
+      </details>
+
         </div>
       </details>
 
