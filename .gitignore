@@ -20,9 +20,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env
 
-# Environment secrets — never commit
-.env
+# NOTE: .env is intentionally still tracked for now because the Vercel build
+# reads it. Once the VITE_* vars are set in the Vercel dashboard, add `.env`
+# back here and run `git rm --cached .env` to stop committing it.
 .env.local
 .env.*.local
