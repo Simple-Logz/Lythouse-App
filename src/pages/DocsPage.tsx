@@ -12,7 +12,7 @@ import { Link } from '../lib/router';
 const STEPS = [
   { icon: GitBranch, title: 'Connect a repository', body: 'Point LytHouse at your GitHub repo. Discovery reads it and understands your application before any release decision is made.', to: '/projects', cta: 'Open Projects' },
   { icon: Cloud, title: 'Connect an environment', body: 'Run the read-only collector where your cloud credentials already live. LytHouse pulls the live components — your keys never leave your side.', to: '/environment', cta: 'Open Environment' },
-  { icon: Gauge, title: 'Get a release decision', body: 'Deterministic checks find the facts; the AI explains them, ties them to your change, and gives a clear go / delay call.', to: '/projects', cta: 'See a decision' },
+  { icon: Gauge, title: 'Get a release decision', body: 'Deterministic checks find the facts; the AI explains them, ties them to your change, and gives a clear go / delay call.', to: '/dashboard', cta: 'See a decision' },
   { icon: ShieldCheck, title: 'Enforce a policy gate', body: 'Policy Studio turns rules like "2 approvals + zero criticals" into gates that actually block a release until they pass.', to: '/policies', cta: 'Open Policy Studio' },
   { icon: Wand2, title: 'Auto-remediate', body: 'The AI writes the fix for a finding — from a misconfigured IAM policy to an open port — and opens a pull request.', to: '/projects', cta: 'Try remediation' },
   { icon: FileCheck, title: 'Prove it', body: 'Every decision, approval, and gate lands in the audit log and exports as evidence auditors accept.', to: '/audit', cta: 'View audit log' },
