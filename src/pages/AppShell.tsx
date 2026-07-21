@@ -110,7 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 
   return (
-    <div className="min-h-screen bg-[#f4f3f0]">
+    <div className="min-h-screen bg-[#f6f5f2]">
       <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 border-r border-gray-200 bg-white lg:block">{Sidebar}</aside>
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setMobileOpen(false)} />}
       <aside className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-gray-200 bg-white transition-transform lg:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>{Sidebar}</aside>

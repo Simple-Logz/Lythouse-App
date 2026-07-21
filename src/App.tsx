@@ -93,7 +93,7 @@ const isMobile=useIsMobile();
 // TEMP: design previews without auth.
 if(path==='/__mpreview')return<MobilePreview/>;
 if(path==='/__dpreview'){const D=DecisionPreview;return<D/>;}
-if(path==='/__envpreview')return<div className="min-h-screen bg-[#f4f3f0]"><div className="mx-auto max-w-7xl px-4 py-8"><EnvironmentValidationPage/></div></div>;
+if(path==='/__envpreview')return<div className="min-h-screen bg-[#f6f5f2]"><div className="mx-auto max-w-7xl px-4 py-8"><EnvironmentValidationPage/></div></div>;
 // Password recovery lands here (with a temporary recovery session) — render
 // regardless of auth state.
 if(path==='/reset-password')return<ResetPasswordPage/>;

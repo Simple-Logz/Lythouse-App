@@ -1,23 +1,23 @@
 /** @type {import('tailwindcss').Config} */
 
-// ── "Porcelain & Ink" design system ────────────────────────────────────────
-// Ultra-clean, near-monochrome: warm porcelain surfaces, true-neutral ink text,
-// solid ink-black primary actions, with a single refined indigo accent for
-// links, active states and focus. Natural amber/red kept for warning & danger.
+// ── "Slate & Gold" design system ───────────────────────────────────────────
+// Warm, editorial, high-end: warm charcoal ink on soft light surfaces, a
+// refined gold accent for links, active states and focus, and cream-on-charcoal
+// primary actions. Natural amber/red kept for warning & danger.
 // Every accent token is remapped here so existing classes resolve automatically.
 
-// Accent spark: one refined indigo (links, active nav, focus rings).
+// Accent: refined gold (links, active nav, focus rings, key numbers).
 const violet = {
-  50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
-  400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
-  800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
+  50: '#fbf7ec', 100: '#f6ebcb', 200: '#ecd79a', 300: '#e0bd63',
+  400: '#d4a53c', 500: '#c08a2d', 600: '#a67322', 700: '#835820',
+  800: '#6c4820', 900: '#5c3d1f', 950: '#35220e',
 };
 
-// Neutral text/UI (kept under "navy"): true-neutral ink, no blue cast.
+// Neutral text/UI (kept under "navy"): warm charcoal, no blue cast.
 const slate = {
-  50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8',
-  400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46',
-  800: '#27272a', 900: '#18181b', 950: '#09090b',
+  50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1',
+  400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c',
+  800: '#292524', 900: '#1c1917', 950: '#0c0a09',
 };
 
 // Warning tone: natural amber.
@@ -70,9 +70,9 @@ export default {
       },
       fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
       boxShadow: {
-        glossy: '0 1px 0 0 rgba(255,255,255,.3) inset, 0 8px 20px -6px rgba(16,24,40,.20)',
-        soft: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -12px rgba(16,24,40,.16)',
-        lift: '0 8px 16px rgba(16,24,40,.08), 0 24px 44px -18px rgba(16,24,40,.20)',
+        glossy: '0 1px 0 0 rgba(255,255,255,.3) inset, 0 8px 20px -6px rgba(40,32,16,.20)',
+        soft: '0 1px 2px rgba(40,32,16,.05), 0 12px 28px -12px rgba(40,32,16,.16)',
+        lift: '0 8px 16px rgba(40,32,16,.08), 0 24px 44px -18px rgba(40,32,16,.20)',
       },
       animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'scale-in': 'scaleIn 0.2s ease-out' },
       keyframes: {
