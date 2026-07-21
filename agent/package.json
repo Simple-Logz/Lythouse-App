@@ -1,0 +1,17 @@
+{
+  "name": "@lythouse/collector",
+  "version": "0.1.0",
+  "description": "Read-only environment collector for LytHouse — pulls live cloud/on-prem inventory using your existing CLIs and pushes it for validation. Never transmits credentials.",
+  "type": "module",
+  "bin": {
+    "lythouse-collector": "./lythouse-collector.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "lythouse-collector.mjs",
+    "README.md"
+  ],
+  "license": "UNLICENSED"
+}
