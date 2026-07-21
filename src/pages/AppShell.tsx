@@ -15,7 +15,7 @@ type NavSection = { section: string; items: NavLeaf[] }
 // use daily sit up top, the things you configure once sink to the bottom.
 const NAV: NavSection[] = [
   { section: 'Getting Started', items: [
-    { label: 'How LytHouse Works', to: '/docs', icon: BookOpen },
+    { label: 'Documentation', to: '/docs', icon: BookOpen },
   ] },
   { section: 'Overview', items: [
     { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
