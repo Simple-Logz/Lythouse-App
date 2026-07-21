@@ -4,12 +4,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @layer base{
   html{font-size:16.5px;}
-  body{@apply text-navy-900 antialiased;background-color:#f6f5f2;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
+  body{@apply text-navy-900 antialiased;background-color:#f4f3f0;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
 }
 @layer components{
 .card{@apply rounded-2xl border border-gray-200/80 bg-white p-5 shadow-soft;}
-.btn-primary{@apply inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50;background-color:#1c1917;color:#f4ecd9;box-shadow:0 1px 2px rgba(0,0,0,.16),0 8px 18px -8px rgba(40,32,16,.45);}
-.btn-primary:hover{background-color:#0c0a09;}
+.btn-primary{@apply inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50;background-color:#18181b;box-shadow:0 1px 2px rgba(0,0,0,.16),0 6px 16px -8px rgba(0,0,0,.4);}
+.btn-primary:hover{background-color:#000000;}
 .btn-secondary{@apply inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-navy-700 transition-all hover:bg-gray-50 active:scale-[0.98] shadow-sm;}
 .btn-ghost{@apply inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-navy-600 transition-all hover:bg-gray-100;}
 .input{@apply w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-navy-900 placeholder:text-gray-400 transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100;}
