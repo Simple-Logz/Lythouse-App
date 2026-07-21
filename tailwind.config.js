@@ -1,22 +1,23 @@
 /** @type {import('tailwindcss').Config} */
 
-// ── Premium violet-indigo design system ────────────────────────────────────
-// Rich, glossy violet brand on clean white, cool near-black slate text, and
-// natural amber/red for warning & danger. Every accent token is remapped here
-// so existing classes resolve to the new family automatically.
+// ── "Porcelain & Ink" design system ────────────────────────────────────────
+// Ultra-clean, near-monochrome: warm porcelain surfaces, true-neutral ink text,
+// solid ink-black primary actions, with a single refined indigo accent for
+// links, active states and focus. Natural amber/red kept for warning & danger.
+// Every accent token is remapped here so existing classes resolve automatically.
 
-// Primary / brand: vibrant, premium violet-indigo.
+// Accent spark: one refined indigo (links, active nav, focus rings).
 const violet = {
-  50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd',
-  400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9',
-  800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065',
+  50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+  400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+  800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
 };
 
-// Neutral text/UI (replaces "navy"): cool near-black slate.
+// Neutral text/UI (kept under "navy"): true-neutral ink, no blue cast.
 const slate = {
-  50: '#f8f9fc', 100: '#f0f1f7', 200: '#e1e3ee', 300: '#c8ccdd',
-  400: '#98a0b8', 500: '#697091', 600: '#4c5372', 700: '#3a4058',
-  800: '#282c3e', 900: '#171a26', 950: '#0d0f18',
+  50: '#fafafa', 100: '#f4f4f5', 200: '#e4e4e7', 300: '#d4d4d8',
+  400: '#a1a1aa', 500: '#71717a', 600: '#52525b', 700: '#3f3f46',
+  800: '#27272a', 900: '#18181b', 950: '#09090b',
 };
 
 // Warning tone: natural amber.
@@ -69,9 +70,9 @@ export default {
       },
       fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
       boxShadow: {
-        glossy: '0 1px 0 0 rgba(255,255,255,.35) inset, 0 8px 20px -6px rgba(124,58,237,.45)',
-        soft: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -12px rgba(16,24,40,.18)',
-        lift: '0 8px 16px rgba(16,24,40,.08), 0 24px 44px -18px rgba(124,58,237,.28)',
+        glossy: '0 1px 0 0 rgba(255,255,255,.3) inset, 0 8px 20px -6px rgba(16,24,40,.20)',
+        soft: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -12px rgba(16,24,40,.16)',
+        lift: '0 8px 16px rgba(16,24,40,.08), 0 24px 44px -18px rgba(16,24,40,.20)',
       },
       animation: { 'fade-in': 'fadeIn 0.3s ease-out', 'scale-in': 'scaleIn 0.2s ease-out' },
       keyframes: {

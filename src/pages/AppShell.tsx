@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode, createContext, useContext } from 'react'
-import { LayoutDashboard, FolderGit2, Rocket, FlaskConical, ChartBar as BarChart3, Shield, Users, ScrollText, Settings, Boxes, ChevronDown, Menu, Sparkles, ShieldCheck, ShieldAlert, OctagonAlert as AlertOctagon, Webhook, Network, Scale, Server, Lock, Search, FileCheck, CirclePlay as PlayCircle, Activity, Zap, LogOut } from 'lucide-react'
+import { LayoutDashboard, FolderGit2, Rocket, FlaskConical, ChartBar as BarChart3, Shield, Users, ScrollText, Settings, Boxes, ChevronDown, Menu, Sparkles, ShieldCheck, ShieldAlert, OctagonAlert as AlertOctagon, Webhook, Network, Scale, Server, Lock, Search, FileCheck, CirclePlay as PlayCircle, Activity, Zap, LogOut, BookOpen } from 'lucide-react'
 import { supabase, type Workspace, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { useRouter, Link } from '../lib/router'
 import { useAuth } from '../lib/auth'
@@ -9,21 +9,32 @@ const PlanContext = createContext<PlanId>('free')
 export function usePlanId(): PlanId { return useContext(PlanContext) }
 
 type NavLeaf = { label: string; to: string; icon: typeof LayoutDashboard }
-type NavGroup = { label: string; icon: typeof LayoutDashboard; children: NavLeaf[] }
-type NavItem = NavLeaf | NavGroup
-function isGroup(n: NavItem): n is NavGroup { return (n as NavGroup).children !== undefined }
+type NavSection = { section: string; items: NavLeaf[] }
 
-const NAV: NavItem[] = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { label: 'Executive View', to: '/executive', icon: BarChart3 },
-  { label: 'Projects', to: '/projects', icon: FolderGit2 },
-  { label: 'Environment', to: '/environment', icon: Server },
-  { label: 'Policy Studio', to: '/policies', icon: ShieldCheck },
-  { label: 'Integrations', to: '/integrations', icon: Webhook },
-  { label: 'Workspaces', to: '/workspaces', icon: Boxes },
-  { label: 'Team', to: '/team', icon: Users },
-  { label: 'Plans', to: '/plans', icon: Sparkles },
-  { label: 'Settings', to: '/settings', icon: Settings },
+// Grouped, intent-based navigation (Infisical-style sections): the things you
+// use daily sit up top, the things you configure once sink to the bottom.
+const NAV: NavSection[] = [
+  { section: 'Getting Started', items: [
+    { label: 'How LytHouse Works', to: '/docs', icon: BookOpen },
+  ] },
+  { section: 'Overview', items: [
+    { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+    { label: 'Executive View', to: '/executive', icon: BarChart3 },
+  ] },
+  { section: 'Release Intelligence', items: [
+    { label: 'Projects', to: '/projects', icon: FolderGit2 },
+    { label: 'Policy Studio', to: '/policies', icon: ShieldCheck },
+  ] },
+  { section: 'Environment', items: [
+    { label: 'Environment', to: '/environment', icon: Server },
+    { label: 'Integrations', to: '/integrations', icon: Webhook },
+  ] },
+  { section: 'Workspace', items: [
+    { label: 'Workspaces', to: '/workspaces', icon: Boxes },
+    { label: 'Team', to: '/team', icon: Users },
+    { label: 'Plans', to: '/plans', icon: Sparkles },
+    { label: 'Settings', to: '/settings', icon: Settings },
+  ] },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -32,13 +43,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [activeWs, setActiveWs] = useState<Workspace | null>(null)
   const [plan, setPlan] = useState<WorkspacePlan | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    const groups: Record<string, boolean> = {}
-    for (const n of NAV) {
-      if (isGroup(n) && n.children.some(c => path === c.to || path.startsWith(c.to + '/'))) groups[n.label] = true
-    }
-    return groups
-  })
 
   useEffect(() => {
     supabase.from('workspaces').select('*').order('created_at').then(({ data }) => {
@@ -63,32 +67,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const Sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center border-b border-gray-200 px-5"><Logo /></div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-        {NAV.map((n) => {
-          if (isGroup(n)) {
-            const isOpen = openGroups[n.label] ?? false
-            const hasActive = n.children.some(c => isPathActive(c.to))
-            return (
-              <div key={n.label}>
-                <button onClick={() => setOpenGroups(p => ({ ...p, [n.label]: !isOpen }))} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${hasActive ? 'text-brand-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <n.icon size={16} /> {n.label}
-                  {n.label === 'Server Validation' && planId === 'free' && <Lock size={12} className="text-gray-400" />}
-                  <ChevronDown size={14} className={`ml-auto transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {isOpen && (
-                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-gray-200 pl-3">
-                    {n.children.map(c => {
-                      const active = isPathActive(c.to)
-                      return <Link key={c.to} to={c.to} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setMobileOpen(false)}><c.icon size={15} /> {c.label}</Link>
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          }
-          const active = isPathActive(n.to)
-          return <Link key={n.to} to={n.to} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setMobileOpen(false)}><n.icon size={16} /> {n.label}</Link>
-        })}
+      <nav className="flex-1 overflow-y-auto px-3 py-3">
+        {NAV.map((sec) => (
+          <div key={sec.section} className="pt-4 first:pt-0">
+            <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">{sec.section}</div>
+            <div className="space-y-0.5">
+              {sec.items.map((n) => {
+                const active = isPathActive(n.to)
+                return <Link key={n.to} to={n.to} className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`} onClick={() => setMobileOpen(false)}><n.icon size={16} /> {n.label}</Link>
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="border-t border-gray-200 p-3 space-y-2">
         {activeWs && (
@@ -120,7 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f4f3f0]">
       <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 border-r border-gray-200 bg-white lg:block">{Sidebar}</aside>
       {mobileOpen && <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setMobileOpen(false)} />}
       <aside className={`fixed left-0 top-0 z-50 h-screen w-64 border-r border-gray-200 bg-white transition-transform lg:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>{Sidebar}</aside>
