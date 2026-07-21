@@ -4,6 +4,7 @@ import {
   Plus, X, ShieldCheck, ShieldAlert, ShieldX, CircleCheck as CheckCircle2,
   Upload, Trash2, RefreshCw, Search, Layers, Cloud, Server, Link2,
   Copy, Check, ArrowRight, Radio, CircleAlert as AlertCircle,
+  Sparkles, Wand as Wand2, MessageSquareText,
 } from 'lucide-react';
 import { PageHeader } from '../lib/ui';
 import { COMPONENT_TYPES, typeOf, validateComponent, loadComponents, saveComponents } from '../workspace/envValidation';
@@ -11,6 +12,7 @@ import {
   PROVIDERS, providerOf, loadConnections, saveConnections, newConnection,
   collectorCommand, syncConnection,
 } from '../workspace/envConnections';
+import { analyzePosture, explainFinding, generateFix } from '../workspace/envAI';
 
 const SEV = {
   critical: { t: 'text-[#b3261e]', b: 'bg-[#fde3e3] border-[#f5a3a3]', d: 'bg-[#dc2626]', label: 'Critical' },
@@ -139,6 +141,9 @@ export function EnvironmentValidationPage() {
         </div>
       )}
 
+      {/* AI posture analysis — grounded on the deterministic findings */}
+      {items.length > 0 && <AiPostureCard items={items} />}
+
       {/* connected sources */}
       {conns.length > 0 && (
         <div className="mb-8">
@@ -241,4 +246,299 @@ export function EnvironmentValidationPage() {
       </p>
 
       {connecting && <ConnectDrawer initial={typeof connecting === 'string' ? connecting : null} onClose={() => setConnecting(false)} onCreate={createConnection} />}
-      {openConn && <ConnectionDrawer conn={openConn} count={items.filter((i) => i.connectionId === openConn.id).length} syncing={syncing === openConn.id} onSync={() => sync(openConn)} onClose={() => setOpenConn(null)} onRemove=
+      {openConn && <ConnectionDrawer conn={openConn} count={items.filter((i) => i.connectionId === openConn.id).length} syncing={syncing === openConn.id} onSync={() => sync(openConn)} onClose={() => setOpenConn(null)} onRemove={removeConnection} />}
+      {adding && <AddDrawer onClose={() => setAdding(false)} onAdd={addComponent} />}
+      {selected && <DetailDrawer comp={selected} onClose={() => setSelected(null)} onRevalidate={revalidate} onRemove={remove} />}
+    </div>
+  );
+}
+
+// ── AI posture analysis ──────────────────────────────────────────────────────
+// Sends ONLY the deterministic findings to Claude and asks it to assess,
+// prioritise, and give a deploy call. It never detects — it reasons on top.
+function AiPostureCard({ items }) {
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const run = async () => { setLoading(true); setText(''); const r = await analyzePosture(items); setText(r); setLoading(false); };
+  return (
+    <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-[#f7f5ff] to-white p-5 mb-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shrink-0"><Sparkles size={17} /></span>
+          <div className="min-w-0">
+            <div className="font-bold text-navy-900">AI environment analysis</div>
+            <div className="text-xs text-gray-500">Reasons over your validated components — what to fix first, and whether it's safe to deploy.</div>
+          </div>
+        </div>
+        <button onClick={run} disabled={loading} className="btn-primary text-sm shrink-0">{loading ? <><RefreshCw size={14} className="animate-spin" />Analyzing…</> : <><Sparkles size={14} />{text ? 'Re-analyze' : 'Analyze'}</>}</button>
+      </div>
+      {text && (
+        <div className="mt-4 rounded-xl bg-white border border-gray-200 p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{text}</div>
+      )}
+      {!text && !loading && (
+        <p className="mt-3 text-[11px] text-gray-400">The AI only sees findings already detected by LytHouse's checks — it explains and prioritises them, it does not invent new ones.</p>
+      )}
+    </div>
+  );
+}
+
+// ── Connect a source ─────────────────────────────────────────────────────────
+function ConnectDrawer({ initial, onClose, onCreate }) {
+  const [provider, setProvider] = useState(initial || 'aws');
+  const [name, setName] = useState('');
+  const P = providerOf(provider);
+  const Icon = P.icon;
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/30" onClick={onClose} />
+      <div className="w-full max-w-lg h-full bg-white shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between h-16 px-5 border-b border-gray-100 shrink-0">
+          <h2 className="text-base font-bold text-navy-900">Connect a source</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <div>
+            <p className="label">Where does this environment run?</p>
+            <div className="grid grid-cols-2 gap-2">
+              {PROVIDERS.map((p) => {
+                const PIcon = p.icon; const on = provider === p.id;
+                return (
+                  <button key={p.id} onClick={() => setProvider(p.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${on ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-100' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: `${p.accent}1a`, color: p.accent }}><PIcon size={16} /></span>
+                    <span className="min-w-0"><span className="block text-sm font-semibold text-navy-900">{p.short}</span><span className="block text-[11px] text-gray-500 leading-tight">{p.label}</span></span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 p-4">
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: `${P.accent}1a`, color: P.accent }}><Icon size={16} /></span>
+              <div><div className="text-sm font-semibold text-navy-900">{P.label}</div><div className="text-[11px] text-gray-500">What LytHouse pulls</div></div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {P.pulls.map((x) => <span key={x} className="chip border border-gray-200 bg-gray-50 text-[11px] text-gray-600">{x}</span>)}
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Name this connection</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder={`e.g. Production ${P.short}`} />
+          </div>
+
+          <div className="rounded-xl bg-[#f6f5ff] border border-brand-100 p-3.5">
+            <p className="text-xs font-semibold text-brand-700 mb-1.5">How the connection works</p>
+            <ol className="space-y-1.5">
+              {P.setup.map((s, i) => (
+                <li key={i} className="flex gap-2 text-[12px] text-gray-600 leading-snug">
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white text-[9px] font-bold mt-0.5">{i + 1}</span>{s}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+        <div className="border-t border-gray-100 p-4 flex items-center justify-end gap-2 shrink-0">
+          <button onClick={onClose} className="btn-ghost text-sm">Cancel</button>
+          <button onClick={() => onCreate(provider, name)} className="btn-primary text-sm"><Link2 size={14} />Create connection</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Connection detail (token + collector command + sync) ─────────────────────
+function ConnectionDrawer({ conn, count, syncing, onSync, onClose, onRemove }) {
+  const P = providerOf(conn.provider); const Icon = P.icon;
+  const cs = CONN_STATUS[conn.status] || CONN_STATUS.awaiting;
+  const cmd = collectorCommand(conn);
+  const [copied, setCopied] = useState(false);
+  const copy = () => { try { navigator.clipboard?.writeText(cmd); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {} };
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/30" onClick={onClose} />
+      <div className="w-full max-w-xl h-full bg-white shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between h-16 px-5 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0" style={{ backgroundColor: `${P.accent}1a`, color: P.accent }}><Icon size={17} /></span>
+            <div className="min-w-0"><div className="font-bold text-navy-900 truncate">{conn.name}</div><div className="text-xs text-gray-400">{P.label}</div></div>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className={`rounded-2xl border p-4 flex items-center justify-between ${cs.b}`}>
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-gray-500">Status</div>
+              <div className={`text-lg font-bold ${cs.t}`}>{cs.label}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-navy-900">{count}</div>
+              <div className="text-[10px] uppercase tracking-wide text-gray-400">components</div>
+            </div>
+          </div>
+
+          {conn.status === 'error' && conn.error && (
+            <div className="rounded-xl border border-[#f5a3a3] bg-[#fde3e3] p-3 text-sm text-[#b3261e] flex items-start gap-2"><AlertCircle size={15} className="mt-0.5 shrink-0" />{conn.error} — this is expected until the collector has run and the ingest backend is deployed.</div>
+          )}
+
+          {conn.status === 'awaiting' && (
+            <div className="rounded-xl border border-[#f9c777] bg-[#fff7e9] p-3 text-[12px] text-[#8a5a00] leading-snug">
+              No sync yet. Run the collector command below from a machine that already has read-only access to this environment. It pulls the live inventory and pushes it here — then hit “Check for sync”.
+            </div>
+          )}
+
+          <div>
+            <p className="label">Run the collector</p>
+            <div className="rounded-xl bg-[#0f1222] p-3.5 font-mono text-[11px] text-gray-100 leading-relaxed relative">
+              <button onClick={copy} className="absolute top-2.5 right-2.5 rounded-md bg-white/10 hover:bg-white/20 p-1.5 text-gray-200 transition">{copied ? <Check size={13} /> : <Copy size={13} />}</button>
+              <span className="text-gray-500 select-none">$ </span>{cmd}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1.5">The token identifies this connection — it is not a cloud credential. Your AWS/GCP/Azure keys stay on the machine running the collector.</p>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 p-4">
+            <p className="text-xs font-semibold text-navy-900 mb-2">This connection validates</p>
+            <div className="flex flex-wrap gap-1.5">
+              {P.pulls.map((x) => <span key={x} className="chip border border-gray-200 bg-gray-50 text-[11px] text-gray-600">{x}</span>)}
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-gray-100 p-4 flex items-center justify-between shrink-0">
+          <button onClick={() => onRemove(conn.id)} className="btn-ghost text-sm text-[#dc2626]"><Trash2 size={14} />Disconnect</button>
+          <button onClick={onSync} disabled={syncing} className="btn-primary text-sm">{syncing ? <><RefreshCw size={14} className="animate-spin" />Checking…</> : <><RefreshCw size={14} />Check for sync</>}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Manual add (secondary path) ──────────────────────────────────────────────
+function AddDrawer({ onClose, onAdd }) {
+  const [type, setType] = useState('kubernetes');
+  const [name, setName] = useState('');
+  const [content, setContent] = useState('');
+  const T = typeOf(type);
+  const onFile = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => { setContent(String(r.result || '')); if (!name) setName(f.name); }; r.readAsText(f);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/30" onClick={onClose} />
+      <div className="w-full max-w-lg h-full bg-white shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between h-16 px-5 border-b border-gray-100 shrink-0">
+          <div><h2 className="text-base font-bold text-navy-900">Add a component manually</h2><p className="text-[11px] text-gray-400">Check a single config file offline — no connection needed.</p></div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <div>
+            <p className="label">Component type</p>
+            <div className="grid grid-cols-2 gap-2">
+              {COMPONENT_TYPES.map((t) => {
+                const Icon = t.icon; const on = type === t.id;
+                return (
+                  <button key={t.id} onClick={() => setType(t.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${on ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-100' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <span className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${on ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500'}`}><Icon size={16} /></span>
+                    <span className="min-w-0"><span className="block text-sm font-semibold text-navy-900">{t.label}</span><span className="block text-[11px] text-gray-500 leading-tight">{t.hint}</span></span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="label">Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder={`e.g. production ${T.label.toLowerCase()}`} />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="label mb-0">Configuration</label>
+              <label className="text-xs text-brand-600 hover:underline cursor-pointer inline-flex items-center gap-1"><Upload size={12} />Upload file<input type="file" className="hidden" onChange={onFile} /></label>
+            </div>
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={12} className="input font-mono text-xs leading-relaxed" placeholder={`Paste your ${T.label} config here…\n\n${T.sample}`} />
+          </div>
+        </div>
+        <div className="border-t border-gray-100 p-4 flex items-center justify-end gap-2 shrink-0">
+          <button onClick={onClose} className="btn-ghost text-sm">Cancel</button>
+          <button onClick={() => onAdd({ type, name: name.trim() || `${T.label}`, content })} disabled={!content.trim()} className="btn-primary text-sm"><ShieldCheck size={14} />Validate component</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── A single finding, with grounded AI explain / fix ─────────────────────────
+function FindingRow({ comp, finding: f }) {
+  const sv = SEV[f.severity] || SEV.low;
+  const [explain, setExplain] = useState('');
+  const [fix, setFix] = useState('');
+  const [busy, setBusy] = useState('');
+  const doExplain = async () => { setBusy('explain'); setExplain(await explainFinding(comp, f)); setBusy(''); };
+  const doFix = async () => { setBusy('fix'); setFix(await generateFix(comp, f)); setBusy(''); };
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-3">
+      <div className="flex items-center gap-2">
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${sv.b} ${sv.t}`}><span className={`w-1.5 h-1.5 rounded-full ${sv.d}`} />{sv.label}</span>
+        <span className="text-sm font-semibold text-navy-900">{f.title}</span>
+        {f.line ? <span className="text-[11px] text-gray-400 ml-auto font-mono">line {f.line}</span> : null}
+      </div>
+      <p className="text-xs text-gray-600 mt-1.5 leading-snug">{f.detail}</p>
+      <div className="flex items-center gap-2 mt-2.5">
+        <button onClick={doExplain} disabled={!!busy} className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50">
+          {busy === 'explain' ? <RefreshCw size={11} className="animate-spin" /> : <MessageSquareText size={11} />}Explain
+        </button>
+        <button onClick={doFix} disabled={!!busy} className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50">
+          {busy === 'fix' ? <RefreshCw size={11} className="animate-spin" /> : <Wand2 size={11} />}Generate fix
+        </button>
+      </div>
+      {explain && <div className="mt-2 rounded-lg bg-[#f7f5ff] border border-brand-100 p-2.5 text-[12px] text-gray-700 leading-relaxed whitespace-pre-wrap"><span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-brand-600 mb-1"><Sparkles size={10} />AI explanation</span><br />{explain}</div>}
+      {fix && <div className="mt-2 rounded-lg bg-[#0f1222] p-2.5 text-[11px] text-gray-100 leading-relaxed whitespace-pre-wrap font-mono"><span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-brand-300 mb-1"><Wand2 size={10} />AI-generated fix</span><br />{fix}</div>}
+    </div>
+  );
+}
+
+// ── Component detail ─────────────────────────────────────────────────────────
+function DetailDrawer({ comp, onClose, onRevalidate, onRemove }) {
+  const T = typeOf(comp.type); const st = STATUS[comp.status]; const Icon = T.icon;
+  const src = comp.source && comp.source !== 'manual' ? providerOf(comp.source) : null;
+  const order = { critical: 0, high: 1, medium: 2, low: 3 };
+  const findings = [...comp.findings].sort((a, b) => (order[a.severity] ?? 4) - (order[b.severity] ?? 4));
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/30" onClick={onClose} />
+      <div className="w-full max-w-xl h-full bg-white shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between h-16 px-5 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600 shrink-0"><Icon size={17} /></span>
+            <div className="min-w-0"><div className="font-bold text-navy-900 truncate">{comp.name}</div><div className="flex items-center gap-1.5 text-xs text-gray-400">{src ? <span className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium" style={{ backgroundColor: `${src.accent}14`, color: src.accent }}>{src.short}</span> : <span>Manual</span>}<span>·</span>{T.label}</div></div>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className={`rounded-2xl border p-4 flex items-center justify-between ${st.b}`}>
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-gray-500">Validation status</div>
+              <div className={`text-xl font-bold ${st.t}`}>{st.label}</div>
+            </div>
+            <div className="text-right"><div className={`text-3xl font-bold ${scoreColor(comp.score)}`}>{comp.score}</div><div className="text-[10px] uppercase tracking-wide text-gray-400">posture / 100</div></div>
+          </div>
+
+          {findings.length === 0 ? (
+            <div className="rounded-xl border border-[#9adcb4] bg-[#e3f7ea] p-4 flex items-center gap-2 text-sm text-[#0f7a3c]"><CheckCircle2 size={16} />No issues detected — this component passed all checks.</div>
+          ) : (
+            <div>
+              <p className="text-sm font-semibold text-navy-900 mb-2">{findings.length} finding{findings.length === 1 ? '' : 's'}</p>
+              <div className="space-y-2">
+                {findings.map((f, i) => <FindingRow key={i} comp={comp} finding={f} />)}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="border-t border-gray-100 p-4 flex items-center justify-between shrink-0">
+          <button onClick={() => onRemove(comp.id)} className="btn-ghost text-sm text-[#dc2626]"><Trash2 size={14} />Remove</button>
+          <button onClick={() => onRevalidate(comp)} className="btn-primary text-sm"><RefreshCw size={14} />Re-validate</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+export default EnvironmentValidationPage;
