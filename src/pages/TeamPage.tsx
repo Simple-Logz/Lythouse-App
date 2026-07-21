@@ -1,32 +1,24 @@
 import{useEffect,useState,useCallback}from'react';
-import{supabase,type WorkspaceMember}from'../lib/supabase';
+import{supabase,type WorkspaceMember,type WorkspaceInvitation}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState}from'../lib/ui';
 import{useAuth}from'../lib/auth';
-import{Users,Plus,X,Loader as Loader2,Mail,Shield,UserPlus,Users2,ChevronDown,ChevronRight,Trash2,Edit2,Check,FolderGit2,ShieldCheck,Bell,ArrowLeft,Settings,Activity}from'lucide-react';
+import{useRole}from'../lib/useRole';
+import{type Role,ROLE_CLS,ROLE_DESC,ROLE_LABEL,ASSIGNABLE_ROLES,canManageMember,normalizeRole}from'../lib/roles';
+import{Users,Plus,X,Loader as Loader2,Mail,Shield,UserPlus,Users2,ChevronDown,ChevronRight,Trash2,Edit2,Check,FolderGit2,ShieldCheck,Bell,ArrowLeft,Activity,Clock,Copy,Link2}from'lucide-react';
 
-type Role='owner'|'admin'|'member'|'viewer';
 type MemberRow=WorkspaceMember&{profiles?:{email?:string|null;full_name?:string|null}|null};
 type Group={id:string;workspace_id:string;name:string;description:string|null;created_at:string;};
 type GroupMember={id:string;group_id:string;user_id:string;created_at:string;};
 
-const ROLE_CLS:Record<Role,string>={
-  owner:'bg-brand-50 text-brand-700 border border-brand-200',
-  admin:'bg-blue-50 text-blue-600 border border-blue-200',
-  member:'bg-gray-100 text-gray-600 border border-gray-200',
-  viewer:'bg-gray-50 text-gray-500 border border-gray-200',
-};
-
-const ROLE_DESC:Record<Role,string>={
-  owner:'Full access — can delete workspace',
-  admin:'Manage members and projects',
-  member:'Run validations and view results',
-  viewer:'Read-only access',
-};
+const inviteLink=(token:string)=>`${window.location.origin}/invite/${token}`;
 
 export function TeamPage(){
   const{user}=useAuth();
+  const perms=useRole();
+  const canManage=perms.can('members.manage');
   const[loading,setLoading]=useState(true);
   const[members,setMembers]=useState<MemberRow[]>([]);
+  const[invites,setInvites]=useState<WorkspaceInvitation[]>([]);
   const[groups,setGroups]=useState<Group[]>([]);
   const[groupMembers,setGroupMembers]=useState<GroupMember[]>([]);
   const[tab,setTab]=useState<'members'|'groups'>('members');
@@ -34,10 +26,12 @@ export function TeamPage(){
   // Invite modal
   const[inviting,setInviting]=useState(false);
   const[inviteEmail,setInviteEmail]=useState('');
-  const[inviteRole,setInviteRole]=useState<Role>('member');
+  const[inviteRole,setInviteRole]=useState<Role>('developer');
   const[inviting2,setInviting2]=useState(false);
   const[inviteError,setInviteError]=useState('');
   const[inviteDone,setInviteDone]=useState(false);
+  const[lastLink,setLastLink]=useState<string|null>(null);
+  const[copied,setCopied]=useState<string|null>(null);
 
   // Group modal
   const[creatingGroup,setCreatingGroup]=useState(false);
@@ -59,10 +53,12 @@ export function TeamPage(){
     setLoading(true);
     const wid=wsId();
     if(!wid){setLoading(false);return;}
-    const[mRes,gRes]=await Promise.all([
+    const[mRes,gRes,iRes]=await Promise.all([
       supabase.from('workspace_members').select('*').eq('workspace_id',wid).order('created_at',{ascending:true}),
       supabase.from('workspace_groups').select('*').eq('workspace_id',wid).order('created_at',{ascending:true}),
+      supabase.from('workspace_invitations').select('*').eq('workspace_id',wid).eq('status','pending').order('created_at',{ascending:false}),
     ]);
+    setInvites(iRes.data??[]);
     // Load profiles separately for each member
     const memberData=mRes.data??[];
     if(memberData.length>0){
@@ -87,29 +83,49 @@ export function TeamPage(){
   const invite=async()=>{
     const wid=wsId();
     if(!wid||!inviteEmail.trim())return;
-    setInviting2(true);setInviteError('');
-    const{data:profile,error:pErr}=await supabase.from('profiles').select('id,email,full_name').eq('email',inviteEmail.trim()).maybeSingle();
-    if(pErr||!profile){
-      setInviteError('No LytHouse account found for that email. They need to sign up first.');
+    const email=inviteEmail.trim().toLowerCase();
+    setInviting2(true);setInviteError('');setLastLink(null);
+    // Already a member?
+    const existing=members.find(m=>m.profiles?.email?.toLowerCase()===email);
+    if(existing){setInviteError('This person is already a member of the workspace.');setInviting2(false);return;}
+    const{data,error:iErr}=await supabase.from('workspace_invitations')
+      .insert({workspace_id:wid,email,role:inviteRole})
+      .select('*').single();
+    if(iErr){
+      setInviteError(iErr.message.includes('duplicate')||iErr.code==='23505'
+        ?'There is already a pending invitation for that email.'
+        :(iErr.message||'Could not create the invitation.'));
       setInviting2(false);return;
     }
-    const{data,error:iErr}=await supabase.from('workspace_members').insert({workspace_id:wid,user_id:profile.id,role:inviteRole}).select('*').single();
-    if(iErr){setInviteError(iErr.message.includes('duplicate')?'This person is already a member.':iErr.message);setInviting2(false);return;}
-    setMembers(prev=>[...prev,{...data,profiles:{email:profile.email,full_name:profile.full_name}}]);
-    setInviteEmail('');setInviteRole('member');setInviting(false);setInviteDone(true);
-    setTimeout(()=>setInviteDone(false),3000);
+    setInvites(prev=>[data,...prev]);
+    setLastLink(inviteLink(data.token));
+    setInviteEmail('');setInviteRole('developer');setInviteDone(true);
+    setTimeout(()=>setInviteDone(false),4000);
     setInviting2(false);
+  };
+
+  const revokeInvite=async(id:string)=>{
+    if(!confirm('Revoke this invitation? The link will stop working.'))return;
+    await supabase.from('workspace_invitations').update({status:'revoked'}).eq('id',id);
+    setInvites(prev=>prev.filter(i=>i.id!==id));
+  };
+
+  const copyLink=async(link:string,key:string)=>{
+    try{await navigator.clipboard.writeText(link);}catch{/* clipboard may be blocked */}
+    setCopied(key);setTimeout(()=>setCopied(c=>c===key?null:c),2000);
   };
 
   const removeMember=async(memberId:string,userId:string)=>{
     if(userId===user?.id){alert('You cannot remove yourself from the workspace.');return;}
     if(!confirm('Remove this member from the workspace?'))return;
-    await supabase.from('workspace_members').delete().eq('id',memberId);
+    const{error}=await supabase.from('workspace_members').delete().eq('id',memberId);
+    if(error){alert(error.message);return;}
     setMembers(prev=>prev.filter(m=>m.id!==memberId));
   };
 
   const changeRole=async(memberId:string,newRole:Role)=>{
-    await supabase.from('workspace_members').update({role:newRole}).eq('id',memberId);
+    const{error}=await supabase.from('workspace_members').update({role:newRole}).eq('id',memberId);
+    if(error){alert(error.message);return;}
     setMembers(prev=>prev.map(m=>m.id===memberId?{...m,role:newRole}:m));
   };
 
@@ -276,16 +292,56 @@ export function TeamPage(){
     <div>
       <PageHeader title="Team" description="Manage workspace members and groups."
         actions={
+          canManage?(
           <div className="flex gap-2">
             <button onClick={()=>setCreatingGroup(true)} className="btn-secondary"><Users2 size={15}/>New group</button>
-            <button onClick={()=>setInviting(true)} className="btn-primary"><UserPlus size={15}/>Invite member</button>
+            <button onClick={()=>{setInviting(true);setLastLink(null);setInviteError('');}} className="btn-primary"><UserPlus size={15}/>Invite member</button>
           </div>
+          ):null
         }
       />
 
       {inviteDone&&(
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-          <Check size={15}/>Member added successfully.
+        <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <div className="flex items-center gap-2"><Check size={15}/>Invitation created. Share the link so they can join.</div>
+          {lastLink&&(
+            <div className="mt-2 flex items-center gap-2">
+              <code className="flex-1 truncate rounded-lg border border-green-200 bg-white px-3 py-1.5 text-xs text-navy-800">{lastLink}</code>
+              <button onClick={()=>copyLink(lastLink,'banner')} className="btn-secondary text-xs py-1.5">
+                {copied==='banner'?<><Check size={13}/>Copied</>:<><Copy size={13}/>Copy</>}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pending invitations */}
+      {canManage&&invites.length>0&&(
+        <div className="card mb-5 p-0">
+          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+            <Clock size={15} className="text-amber-500"/>
+            <h2 className="text-sm font-semibold text-navy-900">Pending invitations ({invites.length})</h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {invites.map(inv=>(
+              <div key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600"><Mail size={15}/></div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-navy-900">{inv.email}</p>
+                    <p className="text-xs text-gray-400">Invited as {ROLE_LABEL[inv.role as Role]} · expires {new Date(inv.expires_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`chip ${ROLE_CLS[inv.role as Role]}`}>{ROLE_LABEL[inv.role as Role]}</span>
+                  <button onClick={()=>copyLink(inviteLink(inv.token),inv.id)} className="btn-ghost p-1.5 text-gray-400 hover:text-brand-600" title="Copy invite link">
+                    {copied===inv.id?<Check size={14} className="text-green-600"/>:<Link2 size={14}/>}
+                  </button>
+                  <button onClick={()=>revokeInvite(inv.id)} className="btn-ghost p-1.5 text-gray-400 hover:text-danger-600" title="Revoke invitation"><X size={14}/></button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -312,20 +368,18 @@ export function TeamPage(){
                 <div>
                   <p className="text-sm font-semibold text-navy-900">{m.profiles?.full_name??m.profiles?.email??m.user_id.slice(0,8)}</p>
                   {m.profiles?.email&&<p className="text-xs text-gray-500">{m.profiles.email}</p>}
-                  <p className="text-xs text-gray-400 mt-0.5">{ROLE_DESC[m.role as Role]}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{ROLE_DESC[normalizeRole(m.role)]}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {m.user_id!==user?.id&&m.role!=='owner'?(
-                  <select value={m.role} onChange={e=>changeRole(m.id,e.target.value as Role)} className="input text-xs py-1 h-auto">
-                    <option value="viewer">Viewer</option>
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
+                {canManage&&m.user_id!==user?.id&&canManageMember(perms.role,m.role)?(
+                  <select value={normalizeRole(m.role)} onChange={e=>changeRole(m.id,e.target.value as Role)} className="input text-xs py-1 h-auto">
+                    {ASSIGNABLE_ROLES.map(r=>(<option key={r} value={r}>{ROLE_LABEL[r]}</option>))}
                   </select>
                 ):(
-                  <span className={`chip capitalize ${ROLE_CLS[m.role as Role]}`}>{m.role}</span>
+                  <span className={`chip ${ROLE_CLS[normalizeRole(m.role)]}`}>{ROLE_LABEL[normalizeRole(m.role)]}</span>
                 )}
-                {m.user_id!==user?.id&&m.role!=='owner'&&(
+                {canManage&&m.user_id!==user?.id&&canManageMember(perms.role,m.role)&&(
                   <button onClick={()=>removeMember(m.id,m.user_id)} className="btn-ghost p-1.5 text-gray-400 hover:text-danger-600"><Trash2 size={14}/></button>
                 )}
               </div>
@@ -416,10 +470,25 @@ export function TeamPage(){
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={()=>setInviting(false)}>
           <div className="w-full max-w-md animate-scale-in rounded-xl bg-white p-6 shadow-xl" onClick={e=>e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
-              <div><h2 className="text-lg font-semibold">Invite member</h2><p className="text-sm text-gray-500 mt-0.5">They must have a LytHouse account first.</p></div>
+              <div><h2 className="text-lg font-semibold">Invite member</h2><p className="text-sm text-gray-500 mt-0.5">We'll create a secure invite link you can share. They join once they sign in with this email.</p></div>
               <button onClick={()=>setInviting(false)} className="btn-ghost p-1"><X size={16}/></button>
             </div>
             {inviteError&&<div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger-600">{inviteError}</div>}
+            {lastLink?(
+              <div className="mb-2">
+                <div className="mb-2 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700"><Check size={15}/>Invite link ready.</div>
+                <label className="label">Share this link</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-navy-800">{lastLink}</code>
+                  <button onClick={()=>copyLink(lastLink,'modal')} className="btn-secondary text-xs">
+                    {copied==='modal'?<><Check size={13}/>Copied</>:<><Copy size={13}/>Copy</>}
+                  </button>
+                </div>
+                <div className="mt-5 flex justify-end">
+                  <button onClick={()=>{setInviting(false);setLastLink(null);}} className="btn-primary">Done</button>
+                </div>
+              </div>
+            ):(<>
             <label className="label">Email address</label>
             <div className="relative mb-4">
               <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
@@ -427,11 +496,11 @@ export function TeamPage(){
             </div>
             <label className="label">Role</label>
             <div className="space-y-2 mb-5">
-              {(['viewer','member','admin'] as Role[]).map(r=>(
+              {ASSIGNABLE_ROLES.map(r=>(
                 <label key={r} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${inviteRole===r?'border-brand-300 bg-brand-50':'border-gray-200 hover:bg-gray-50'}`}>
                   <input type="radio" name="role" value={r} checked={inviteRole===r} onChange={()=>setInviteRole(r)} className="mt-0.5"/>
                   <div>
-                    <p className="text-sm font-medium text-navy-900 capitalize">{r}</p>
+                    <p className="text-sm font-medium text-navy-900">{ROLE_LABEL[r]}</p>
                     <p className="text-xs text-gray-500">{ROLE_DESC[r]}</p>
                   </div>
                 </label>
@@ -440,9 +509,10 @@ export function TeamPage(){
             <div className="flex justify-end gap-2">
               <button onClick={()=>setInviting(false)} className="btn-secondary">Cancel</button>
               <button onClick={invite} disabled={inviting2||!inviteEmail.trim()} className="btn-primary">
-                {inviting2?<Loader2 size={15} className="animate-spin"/>:<UserPlus size={15}/>}Send invite
+                {inviting2?<Loader2 size={15} className="animate-spin"/>:<UserPlus size={15}/>}Create invite
               </button>
             </div>
+            </>)}
           </div>
         </div>
       )}

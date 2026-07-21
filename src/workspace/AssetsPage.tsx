@@ -139,11 +139,6 @@ function validateCredentials(source:string,config:Record<string,string>):string|
       if(t.length<20)return'Jira API token appears too short';
       return null;
     }
-    case'github-actions':{
-      const t=val('token');
-      if(!t.startsWith('ghp_'))return'GitHub token must start with ghp_';
-      return null;
-    }
     case'circleci':{
       const o=val('org_slug');
       if(o&&!o.includes('/'))return'Org slug must be in format: github/org-name or bitbucket/org-name';

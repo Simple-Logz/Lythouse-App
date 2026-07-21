@@ -3,10 +3,13 @@ import{useEffect,useState}from'react';
 import{supabase,edgeFunctionUrl,anonKey,type Project}from'../lib/supabase';
 import{PageHeader,EmptyState,Spinner}from'../lib/ui';
 import{useRouter,Link}from'../lib/router';
+import{useRole}from'../lib/useRole';
 import { FolderGit2, Plus, X, GitFork as Github, Loader as Loader2 } from 'lucide-react';
 
 export function ProjectsPage(){
 const{navigate}=useRouter();
+const perms=useRole();
+const canCreate=perms.can('projects.create');
 const[loading,setLoading]=useState(true);
 const[projects,setProjects]=useState<Project[]>([]);
 const[creating,setCreating]=useState(false);
@@ -171,13 +174,13 @@ if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/>
 return<div>
 <PageHeader title="Projects" description="Manage your validation projects." actions={
 <div className="flex items-center gap-2">
-<button onClick={()=>setImporting(true)} className="btn-secondary"><Github size={16}/> Import from GitHub</button>
-<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button>
+{canCreate&&<button onClick={()=>setImporting(true)} className="btn-secondary"><Github size={16}/> Import from GitHub</button>}
+{canCreate&&<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button>}
 </div>
 }/>
 
 {projects.length===0
-?<EmptyState icon={<FolderGit2 size={22}/>} title="No projects yet" description="Create your first project to start running pre-change validations." action={<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button>}/>
+?<EmptyState icon={<FolderGit2 size={22}/>} title="No projects yet" description={canCreate?"Create your first project to start running pre-change validations.":"No projects yet. Ask a workspace admin or developer to add one."} action={canCreate?<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button>:undefined}/>
 :<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 {projects.map(p=>(
 <Link key={p.id} to={`/projects/${p.id}`} className="card group transition-all hover:shadow-md hover:-translate-y-0.5">

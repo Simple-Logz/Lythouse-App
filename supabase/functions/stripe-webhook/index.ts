@@ -13,6 +13,51 @@ const stripe = new Stripe(stripeSecret, {
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+// Map a Stripe price id -> LytHouse plan id. Set these in Edge Function secrets.
+const PRICE_TO_PLAN: Record<string, string> = {};
+const devPrice = Deno.env.get('STRIPE_PRICE_DEVELOPER');
+const entPrice = Deno.env.get('STRIPE_PRICE_ENTERPRISE');
+if (devPrice) PRICE_TO_PLAN[devPrice] = 'developer';
+if (entPrice) PRICE_TO_PLAN[entPrice] = 'enterprise';
+
+// A subscription in one of these Stripe statuses grants the paid plan; anything
+// else falls back to 'free'.
+const ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due']);
+
+// Reflect a Stripe subscription onto the workspace_plans row so the app can gate
+// features. workspace_id is carried on the subscription metadata (set at checkout).
+async function syncWorkspacePlan(subscription: Stripe.Subscription) {
+  const workspaceId = subscription.metadata?.workspace_id;
+  if (!workspaceId) {
+    console.warn('Subscription has no workspace_id metadata; skipping plan sync', subscription.id);
+    return;
+  }
+  const priceId = subscription.items.data[0]?.price?.id ?? '';
+  const mappedPlan = PRICE_TO_PLAN[priceId] ?? 'developer';
+  const isActive = ACTIVE_STATUSES.has(subscription.status);
+  const planId = isActive ? mappedPlan : 'free';
+  const status = subscription.status === 'trialing' ? 'trialing'
+    : isActive ? 'active'
+    : 'cancelled';
+
+  const { error } = await supabase.from('workspace_plans').upsert(
+    {
+      workspace_id: workspaceId,
+      plan_id: planId,
+      status,
+      stripe_subscription_id: subscription.id,
+      current_period_end: subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null,
+      cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'workspace_id' },
+  );
+  if (error) console.error('Failed to sync workspace_plans:', error);
+  else console.info(`workspace ${workspaceId} -> plan ${planId} (${status})`);
+}
+
 Deno.serve(async (req) => {
   try {
     // Handle OPTIONS request for CORS preflight
@@ -183,6 +228,10 @@ async function syncCustomerFromStripe(customerId: string) {
       console.error('Error syncing subscription:', subError);
       throw new Error('Failed to sync subscription in database');
     }
+
+    // Reflect onto the workspace's plan entitlement.
+    await syncWorkspacePlan(subscription);
+
     console.info(`Successfully synced subscription for customer: ${customerId}`);
   } catch (error) {
     console.error(`Failed to sync subscription for customer ${customerId}:`, error);

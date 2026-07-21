@@ -5,9 +5,10 @@ import{Logo,Spinner}from'../lib/ui';
 import{ShieldCheck,GitBranch,ScanLine,AlertTriangle,ArrowRight,CheckCircle2,Eye,EyeOff}from'lucide-react';
 
 export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}={}){
-  const{signIn,signUp,resetPassword}=useAuth();
+  const{signIn,signUp,resetPassword,resendVerification}=useAuth();
   const{navigate}=useRouter();
   const[mode,setMode]=useState<'signin'|'signup'|'forgot'>(initialMode);
+  const[resendState,setResendState]=useState<'idle'|'sending'|'sent'|'error'>('idle');
   const[email,setEmail]=useState('');
   const[password,setPassword]=useState('');
   const[fullName,setFullName]=useState('');
@@ -52,7 +53,13 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
     }
   }
 
-  const switchMode=(m:'signin'|'signup'|'forgot')=>{setMode(m);setError(null);setDone(false);setPassword('');setFullName('');};
+  const switchMode=(m:'signin'|'signup'|'forgot')=>{setMode(m);setError(null);setDone(false);setPassword('');setFullName('');setResendState('idle');};
+
+  async function onResend(){
+    setResendState('sending');
+    const res=await resendVerification(email);
+    setResendState(res.error?'error':'sent');
+  }
 
   return(
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -118,6 +125,17 @@ export function AuthPage({initialMode='signin'}:{initialMode?:'signin'|'signup'}
                     <p className="mt-2 text-sm text-gray-500">{doneKind==='reset'
                       ?<>We sent a password-reset link to <strong>{email}</strong>. Click it to choose a new password.</>
                       :<>We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.</>}</p>
+                    {doneKind==='signup'&&(
+                      <div className="mt-4">
+                        <p className="text-xs text-gray-400">Didn't get it? Check spam, or resend below.</p>
+                        {resendState==='sent'
+                          ?<p className="mt-2 text-sm text-green-600 flex items-center justify-center gap-1.5"><CheckCircle2 size={14}/>Confirmation email resent.</p>
+                          :<button onClick={onResend} disabled={resendState==='sending'} className="mt-2 btn-secondary w-full justify-center">
+                            {resendState==='sending'?<Spinner size={14}/>:null}Resend confirmation email
+                          </button>}
+                        {resendState==='error'&&<p className="mt-2 text-xs text-danger-600">Couldn't resend just now — try again in a moment.</p>}
+                      </div>
+                    )}
                     <button onClick={()=>switchMode('signin')} className="mt-6 btn-primary w-full justify-center">Back to sign in</button>
                   </div>
                 ):(

@@ -1,9 +1,9 @@
 // @ts-nocheck
 import{useEffect,useState}from'react';
-import{supabase}from'../lib/supabase';
+import{supabase,edgeFunctionUrl,anonKey}from'../lib/supabase';
 import{useAuth}from'../lib/auth';
 import{PageHeader,Spinner}from'../lib/ui';
-import{User,Bell,Shield,Globe,Key,Palette,Save,Check,Loader as Loader2,Eye,EyeOff,AlertTriangle,Monitor,Moon,Sun,Camera,Upload}from'lucide-react';
+import{User,Bell,Shield,Globe,Key,Palette,Save,Check,Loader as Loader2,Eye,EyeOff,AlertTriangle,Monitor,Moon,Sun,Camera,Upload,Download,Trash2}from'lucide-react';
 
 type NotifPref={email_validations:boolean;email_critical:boolean;email_digest:boolean;email_deployments:boolean;};
 type AppPref={theme:'light'|'dark'|'system';timezone:string;language:string;};
@@ -138,6 +138,59 @@ export function SettingsPage(){
     applyTheme(theme);
   };
 
+  // Data export — gather everything this user can see and download it as JSON.
+  const[exporting,setExporting]=useState(false);
+  const exportData=async()=>{
+    if(!user)return;
+    setExporting(true);
+    try{
+      const wid=localStorage.getItem('sandbox.activeWs');
+      const bundle:Record<string,unknown>={exported_at:new Date().toISOString(),account:{id:user.id,email:user.email,created_at:user.created_at}};
+      const[{data:profileRow}]=await Promise.all([
+        supabase.from('profiles').select('*').eq('id',user.id).maybeSingle(),
+      ]);
+      bundle.profile=profileRow;
+      const{data:memberships}=await supabase.from('workspace_members').select('*').eq('user_id',user.id);
+      bundle.memberships=memberships;
+      if(wid){
+        const[pr,va,fi,pl]=await Promise.all([
+          supabase.from('projects').select('*').eq('workspace_id',wid),
+          supabase.from('validations').select('*').eq('workspace_id',wid),
+          supabase.from('findings').select('*').eq('workspace_id',wid),
+          supabase.from('workspace_plans').select('*').eq('workspace_id',wid),
+        ]);
+        bundle.active_workspace={id:wid,projects:pr.data,validations:va.data,findings:fi.data,plan:pl.data};
+      }
+      const blob=new Blob([JSON.stringify(bundle,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=`lythouse-export-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+    }catch(e){console.error(e);alert('Export failed. Please try again.');}
+    setExporting(false);
+  };
+
+  // Account deletion — routed through the delete-account edge function.
+  const[deleting,setDeleting]=useState(false);
+  const deleteAccount=async()=>{
+    if(!confirm('This permanently deletes your account and any workspaces you solely own. This cannot be undone. Continue?'))return;
+    const typed=prompt('Type DELETE to confirm.');
+    if(typed!=='DELETE')return;
+    setDeleting(true);
+    try{
+      const{data:{session}}=await supabase.auth.getSession();
+      const res=await fetch(`${edgeFunctionUrl}/delete-account`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json',apikey:anonKey,Authorization:`Bearer ${session?.access_token??anonKey}`},
+        body:JSON.stringify({confirm:'DELETE'}),
+      });
+      const json=await res.json().catch(()=>({}));
+      if(!res.ok){alert(json.error||'Could not delete account.');setDeleting(false);return;}
+      await supabase.auth.signOut();
+      window.location.href='/';
+    }catch(e:any){alert(e.message||'Could not delete account.');setDeleting(false);}
+  };
+
   const changePassword=async()=>{
     setPwError('');setPwSuccess(false);
     if(newPw.length<6){setPwError('Password must be at least 6 characters.');return;}
@@ -206,7 +259,7 @@ export function SettingsPage(){
           <input className="input mb-4" value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Your full name"/>
 
           <label className="label">Email address</label>
-          <input className="input mb-4" value={user?.email||''} disabled className="input mb-4 opacity-60 cursor-not-allowed"/>
+          <input value={user?.email||''} disabled className="input mb-4 opacity-60 cursor-not-allowed"/>
           <p className="text-xs text-gray-400 mb-4">Email changes require verification. Contact support to update your email.</p>
 
           <label className="label">Job title <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -366,11 +419,19 @@ export function SettingsPage(){
           <button onClick={async()=>{await supabase.auth.signOut();}} className="mt-4 text-sm text-danger-600 hover:underline">Sign out of all sessions</button>
         </div>
 
+        <div className="card">
+          <h2 className="text-base font-semibold text-navy-900 mb-1 flex items-center gap-2"><Download size={17} className="text-brand-600"/>Export your data</h2>
+          <p className="text-xs text-gray-500 mb-4">Download a JSON copy of your profile, memberships, and your active workspace's projects, validations, and findings.</p>
+          <button onClick={exportData} disabled={exporting} className="btn-secondary">
+            {exporting?<Loader2 size={15} className="animate-spin"/>:<Download size={15}/>}{exporting?'Preparing…':'Download my data'}
+          </button>
+        </div>
+
         <div className="card border-red-100">
           <h2 className="text-sm font-semibold text-danger-600 mb-1 flex items-center gap-2"><AlertTriangle size={15}/>Danger Zone</h2>
-          <p className="text-xs text-gray-500 mb-3">Permanently delete your account and all associated data. This cannot be undone.</p>
-          <button onClick={()=>alert('Please contact support to delete your account.')} className="px-4 py-2 text-sm font-medium text-danger-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
-            Delete account
+          <p className="text-xs text-gray-500 mb-3">Permanently delete your account and any workspaces you solely own. This cannot be undone. If you own a workspace with other members, transfer or remove them first.</p>
+          <button onClick={deleteAccount} disabled={deleting} className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-danger-600 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50">
+            {deleting?<Loader2 size={15} className="animate-spin"/>:<Trash2 size={15}/>}Delete account
           </button>
         </div>
       </div>

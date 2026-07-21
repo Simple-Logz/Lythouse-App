@@ -43,15 +43,16 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    const { price_id, success_url, cancel_url, mode } = await req.json();
+    const { price_id, success_url, cancel_url, mode, workspace_id } = await req.json();
 
     const error = validateParameters(
-      { price_id, success_url, cancel_url, mode },
+      { price_id, success_url, cancel_url, mode, workspace_id },
       {
         cancel_url: 'string',
         price_id: 'string',
         success_url: 'string',
         mode: { values: ['payment', 'subscription'] },
+        workspace_id: 'string',
       },
     );
 
@@ -72,6 +73,21 @@ Deno.serve(async (req) => {
 
     if (!user) {
       return corsResponse({ error: 'User not found' }, 404);
+    }
+
+    // Authorize: only an owner/admin of the target workspace may start billing for it.
+    const { data: membership, error: memberErr } = await supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', workspace_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (memberErr) {
+      return corsResponse({ error: 'Failed to verify workspace access' }, 500);
+    }
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      return corsResponse({ error: 'You do not have permission to manage billing for this workspace' }, 403);
     }
 
     const { data: customer, error: getCustomerError } = await supabase
@@ -177,7 +193,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // create Checkout Session
+    // create Checkout Session — stamp workspace_id everywhere the webhook can read
+    // it back (session metadata + subscription metadata) so we know which
+    // workspace's plan to update.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -188,6 +206,10 @@ Deno.serve(async (req) => {
         },
       ],
       mode,
+      metadata: { workspace_id, user_id: user.id },
+      ...(mode === 'subscription'
+        ? { subscription_data: { metadata: { workspace_id, user_id: user.id } } }
+        : {}),
       success_url,
       cancel_url,
     });

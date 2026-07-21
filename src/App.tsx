@@ -36,6 +36,7 @@ import{LegalPage,LEGAL_ROUTES}from'./pages/LegalPage';
 import{EnvironmentValidationPage}from'./pages/EnvironmentValidationPage';
 import{DocsPage}from'./pages/DocsPage';
 import{OnboardingPage}from'./pages/OnboardingPage';
+import{AcceptInvitePage,takePendingInvite}from'./pages/AcceptInvitePage';
 import{CommandCenter}from'./pages/CommandCenter';
 import{ExecutiveDashboard}from'./pages/ExecutiveDashboard';
 import{WorkspaceDetailPage}from'./pages/WorkspaceDetailPage';
@@ -107,6 +108,9 @@ if(loading)return(
     </div>
   </div>
 );
+// Invitation acceptance link — works signed-in or out (the page prompts for
+// auth when needed and resumes automatically).
+{const seg=path.split('/').filter(Boolean);if(seg[0]==='invite'&&seg[1])return<AcceptInvitePage token={seg[1]}/>;}
 if(!session){
   // Unauthenticated: the marketing cover page is the front door. The auth form
   // only appears when the visitor explicitly heads to sign in / sign up.
@@ -114,6 +118,8 @@ if(!session){
   if(authPaths.includes(path))return<AuthPage initialMode={path==='/signup'?'signup':'signin'}/>;
   return<LandingPage/>;
 }
+// Just signed in with a pending invite waiting? Resume acceptance.
+{const pending=takePendingInvite();if(pending&&!path.startsWith('/invite/')){window.history.replaceState({},'',`/invite/${pending}`);return<AcceptInvitePage token={pending}/>;}}
 // Phones get the dedicated mobile app; desktop keeps the full workspace.
 // renderPage lets the mobile app open any real page too (full feature parity).
 if(isMobile)return<MobileApp renderPage={(p:string)=>pageForPath(p,'free')}/>;
