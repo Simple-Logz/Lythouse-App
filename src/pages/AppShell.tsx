@@ -317,8 +317,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           even before any org exists so it's always easy to find. */}
       <div className="lh-wswrap">
         <button className="lh-ws lh-ws-org" onClick={() => { setOrgMenuOpen((v) => !v); setWsMenuOpen(false) }} title="Switch organization">
-          <span className="wa"><Building2 size={14} /></span>
-          <span className="wn">Organizations</span>
+          <span className="wa">{activeOrg ? (activeOrg.name || 'O').charAt(0).toUpperCase() : <Building2 size={14} />}</span>
+          <span className="wn">{activeOrg ? activeOrg.name : 'Organizations'}</span>
           <ChevronsUpDown size={14} className="cv" />
         </button>
         {orgMenuOpen && (() => {
@@ -353,47 +353,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           )
         })()}
       </div>
-      {/* Static readout of the organization the user is currently in — no
-          button, no dropdown, just reflects the active tenant. */}
-      <div className="lh-wswrap" style={{ marginTop: -2 }}>
-        <div className="lh-ws lh-ws-current" title={activeOrg ? `You are in ${activeOrg.name}` : 'No organization selected'}>
-          <span className="wa">{activeOrg ? (activeOrg.name || 'O').charAt(0).toUpperCase() : <Building2 size={13} />}</span>
-          <span className="wn">{activeOrg ? activeOrg.name : 'No organization yet'}</span>
-          {activeOrg && <span className="lh-cur-dot" title="Current organization" />}
-        </div>
-      </div>
-      {activeWs && (
-        <div className="lh-wswrap" style={{ marginTop: -2 }}>
-          <button className="lh-ws" onClick={() => { setWsMenuOpen((v) => !v); setOrgMenuOpen(false) }} title="Switch workspace">
-            <span className="wa" style={{ background: 'transparent', border: '1px solid var(--lh-border)', color: 'var(--lh-text3)' }}><Layers size={12} /></span>
-            <span className="wn">{activeWs.name}</span>
-            <span className="lh-chip">{planInfo.name}</span>
-            <ChevronsUpDown size={14} className="cv" />
-          </button>
-          {wsMenuOpen && (
-            <>
-              <div className="lh-wsm-ov" onClick={() => setWsMenuOpen(false)} />
-              <div className="lh-wsm">
-                <div className="lh-wsm-h">{activeOrg ? `Workspaces in ${activeOrg.name}` : 'Workspaces'}</div>
-                {wsList.map((w) => (
-                  <button key={w.id} className="lh-wsm-i" onClick={() => (w.id === activeWs.id ? setWsMenuOpen(false) : switchWorkspace(w.id))}>
-                    <span className="wa" style={{ background: 'transparent', border: '1px solid var(--lh-border)', color: 'var(--lh-text3)' }}><Layers size={12} /></span>
-                    <span className="nm">{w.name}</span>
-                    {w.id === activeWs.id && <Check size={15} style={{ color: 'var(--lh-accent)', flexShrink: 0 }} />}
-                  </button>
-                ))}
-                <div className="lh-wsm-sep" />
-                <button className="lh-wsm-i add" onClick={() => { setWsMenuOpen(false); setModalName(''); setModal('ws') }}>
-                  <span className="ic"><Plus size={13} /></span>Create workspace
-                </button>
-                <button className="lh-wsm-i" onClick={() => { setWsMenuOpen(false); navigate('/workspaces') }}>
-                  <span className="wa" style={{ background: 'transparent', border: '1px solid var(--lh-border)', color: 'var(--lh-text3)' }}><Building2 size={12} /></span>Manage workspaces
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
       <nav className="lh-nav">
         {pins.length > 0 && (() => {
           const open = openSec['pinned'] !== false
