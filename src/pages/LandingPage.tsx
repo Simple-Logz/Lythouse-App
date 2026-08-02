@@ -640,6 +640,16 @@ export function LandingPage() {
 
   return (
     <div className="dark relative min-h-screen overflow-x-hidden text-[#eeecf6]" style={{ background: 'linear-gradient(180deg,#1f1b2c 0%,#171423 100%)' }}>
+      {/* Gentle "light reflecting" pulse on the right-hand glow, opacity+scale
+          only (no blur/backdrop-filter change) — those two properties are
+          compositor-only, so the browser never has to repaint anything to
+          animate them. Cheap on any phone, unlike the backdrop-filter work
+          removed elsewhere on this page. Respects reduced-motion. */}
+      <style>{`
+        @keyframes lh-orb-pulse{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+        .lh-orb-r{animation:lh-orb-pulse 7s ease-in-out infinite}
+        @media (prefers-reduced-motion:reduce){.lh-orb-r{animation:none}}
+      `}</style>
       {/* soft gradient aurora wash behind the whole page */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {/* Smaller blur radius under lg: a 120px blur on 3 full-viewport-fixed
@@ -648,7 +658,7 @@ export function LandingPage() {
             cheaper on mobile GPUs. */}
         <div className="absolute -top-40 left-1/2 h-[560px] w-[880px] -translate-x-1/2 rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(167,139,250,.42), transparent 70%)' }} />
-        <div className="absolute -top-24 right-[6%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
+        <div className="lh-orb-r absolute -top-24 right-[6%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(147,197,253,.40), transparent 70%)' }} />
         <div className="absolute top-24 left-[4%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(240,171,214,.38), transparent 70%)' }} />
@@ -733,7 +743,7 @@ export function LandingPage() {
         )}
 
         {/* hero — text left, isometric validation art right */}
-        <section className="mx-auto max-w-6xl px-5 pt-32 pb-20">
+        <section className="mx-auto max-w-6xl px-5 pt-32 pb-24">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur"><Sparkles size={12} />AI release decisions</span>
@@ -772,25 +782,6 @@ export function LandingPage() {
           <ProductTour />
         </section>
 
-        {/* illustrated capabilities (rho-style stat/feature cards) */}
-        <section className="mx-auto max-w-6xl px-5 pt-4 pb-24">
-          <div className="grid gap-6 sm:grid-cols-3">
-            {CAPS.map((c) => {
-              const Illo = c.illo;
-              return (
-                <div key={c.t} className="rounded-3xl border border-gray-200/80 bg-white/85 p-7 backdrop-blur [box-shadow:0_1px_2px_rgba(16,24,40,.05),0_18px_40px_-24px_rgba(124,92,230,.35)]">
-                  <div className="mb-4 overflow-hidden rounded-2xl"><Illo /></div>
-                  <h3 className="text-2xl font-semibold tracking-tight">{c.t}</h3>
-                  <p className="mt-2 text-sm text-navy-500 leading-relaxed">{c.d}</p>
-                  <button onClick={goTo(c.to)} className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800">
-                    <ExternalLink size={14} /><span className="underline decoration-brand-300 underline-offset-4">Learn more</span>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
         {/* trust strip */}
         <section className="border-y border-gray-100 bg-white/60 backdrop-blur">
           <div className="mx-auto max-w-6xl px-5 py-7 text-center text-sm font-semibold uppercase tracking-wide text-navy-300">
@@ -804,7 +795,7 @@ export function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight">From commit to confident deploy.</h2>
             <p className="mt-3 text-navy-500">Six clear stages take a release from "what changed?" to "shipped and verified" — with a human sign-off in between.</p>
           </div>
-          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { icon: GitBranch, t: 'Discovery', d: 'LytHouse reads your repo and builds a plain-language picture of what the release actually contains.' },
               { icon: ScanLine, t: 'Validation', d: 'Real static checks across containers, Kubernetes, CI, secrets and dependencies — no invented numbers.' },
@@ -823,7 +814,7 @@ export function LandingPage() {
         </section>
 
         {/* product showcase — mockup on top, copy underneath */}
-        <section className="mx-auto max-w-6xl px-5 py-24">
+        <section className="mx-auto max-w-6xl px-5 py-28">
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight">See it in the flow of your work.</h2>
             <p className="mt-3 text-navy-400">From the terminal, to the release decision, to the fix — LytHouse shows up where your team already works.</p>
@@ -904,41 +895,8 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* two-audience split */}
-        <section className="mx-auto max-w-6xl px-5 py-20">
-          <div className="mx-auto mb-10 max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight">Built for both sides of the release.</h2>
-            <p className="mt-3 text-navy-400">Engineers get depth and control. Security and compliance get enforcement and evidence. One platform, one source of truth.</p>
-          </div>
-          <div className="relative grid gap-4 md:grid-cols-2">
-            {/* center glow beam */}
-            <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 hidden h-full w-px -translate-x-1/2 md:block" style={{ background: 'linear-gradient(180deg,transparent,rgba(196,181,253,.5),transparent)' }} />
-            {[
-              { label: 'For engineers', items: DEV_ITEMS },
-              { label: 'For security & compliance', items: SEC_ITEMS },
-            ].map((col) => (
-              <div key={col.label} className="rounded-3xl border border-white/10 p-7" style={{ background: 'linear-gradient(160deg,rgba(124,92,230,.10),rgba(255,255,255,.02))' }}>
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 text-sm font-semibold text-white">
-                  <BadgeCheck size={15} className="text-brand-300" />{col.label}
-                </div>
-                <div className="space-y-5">
-                  {col.items.map((it) => (
-                    <div key={it.t} className="flex items-start gap-3">
-                      <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-brand-300" />
-                      <div>
-                        <div className="text-[15px] font-semibold text-white">{it.t}</div>
-                        <div className="text-sm text-navy-400">{it.d}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* gradient feature band */}
-        <section id="features" className="mx-auto max-w-6xl px-5 py-20">
+        <section id="features" className="mx-auto max-w-6xl px-5 py-24">
           <div className="rounded-3xl px-8 py-14 text-white"
             style={{ background: 'linear-gradient(120deg, #7c5ce6 0%, #8b6ef2 45%, #c98fd8 100%)', boxShadow: '0 30px 60px -24px rgba(124,92,230,.5)' }}>
             <div className="grid lg:grid-cols-3 gap-8">
@@ -958,7 +916,7 @@ export function LandingPage() {
         </section>
 
         {/* comparison table */}
-        <section className="mx-auto max-w-6xl px-5 py-20">
+        <section className="mx-auto max-w-6xl px-5 py-24">
           <div className="mx-auto mb-10 max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight">How LytHouse compares.</h2>
             <p className="mt-3 text-navy-400">Against a manual review process, or a generic code scanner that was never built to make a release decision.</p>
@@ -1000,12 +958,12 @@ export function LandingPage() {
         </section>
 
         {/* FAQ */}
-        <section className="mx-auto max-w-3xl px-5 py-20">
+        <section className="mx-auto max-w-3xl px-5 py-24">
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-bold tracking-tight">Questions, answered.</h2>
             <p className="mt-3 text-navy-400">The things teams ask before they connect their first repo.</p>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {FAQ_ITEMS.map((q, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
                 <button onClick={() => setOpenFaq(openFaq === i ? -1 : i)} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left">
