@@ -113,9 +113,12 @@ export function StacksPage() {
     setCreating(false); setDraft({ name: '', sel: new Set() })
   }
   const deleteStack = (i) => { const n = [...stacks]; n.splice(i, 1); persist(n); if (sel === i) setSel(null) }
+  // Composite score from each project's real open-findings state (no floor —
+  // a stack where every project has critical findings should be able to show
+  // a genuinely low number, not an artificially propped-up one).
   const analyze = (i) => {
     const s = stacks[i]; const ps = (s.projects || []).map(projMeta); const bad = ps.filter((p) => p.sev !== 'ok').length
-    const n = [...stacks]; n[i] = { ...s, status: 'validated', readiness: Math.max(45, 100 - bad * 16) }; persist(n)
+    const n = [...stacks]; n[i] = { ...s, status: 'validated', readiness: ps.length ? Math.max(0, Math.round(100 - (bad / ps.length) * 100)) : null }; persist(n)
   }
 
   // ── SVG diagram (radial hub-and-spoke of the stack's projects) ──
@@ -178,7 +181,7 @@ export function StacksPage() {
   return (
     <div className="stk"><style>{CSS}</style>
       <div className="stk-head">
-        <div><h1>Stacks</h1><div className="sub">A stack groups related projects so LytHouse validates them together — catching risk across services before you deploy.</div></div>
+        <div><h1>Stacks</h1><div className="sub">A stack groups related projects so LytHouse validates them together — catching risk across services before you deploy. Saved to this browser for now, not shared with teammates yet.</div></div>
         <button className="stk-btn pri" onClick={() => { setDraft({ name: '', sel: new Set() }); setCreating(true) }}><Plus size={16} />Create stack</button>
       </div>
       {stacks.length === 0 ? (

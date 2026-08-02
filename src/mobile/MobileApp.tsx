@@ -10,6 +10,7 @@ import {
   Clock, RefreshCw, Monitor, Menu, X, LayoutDashboard, ChartBar, FolderGit2,
   Webhook, Boxes, Users, Sparkles, Settings as SettingsIcon, Server,
   Building2, Bug, Layers, Pin, ChevronsUpDown,
+  Compass, Workflow, Rocket, Zap, Activity, ClipboardCheck, Scale, FileWarning, ScrollText,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -18,17 +19,29 @@ import { Logo } from '../lib/ui';
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins';
 import { getHeadSha } from '../workspace/repoCache';
 
-// Same sections the desktop sidebar exposes — so nothing on the web is missing
-// on mobile. Selecting one renders the real page inside the mobile chrome.
+// Same destinations the desktop sidebar exposes (see SECTIONS in
+// pages/AppShell.tsx) — kept in sync by hand so nothing on the web is
+// unreachable on mobile. Selecting one renders the real page inside the
+// mobile chrome.
 const MENU = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/executive', label: 'Executive View', icon: ChartBar },
+  { to: '/docs', label: 'Getting Started', icon: Compass },
   { to: '/projects', label: 'Projects', icon: FolderGit2 },
   { to: '/stacks', label: 'Stacks', icon: Layers },
-  { to: '/findings', label: 'Findings', icon: Bug },
-  { to: '/environment', label: 'Environment', icon: Server },
+  { to: '/pipeline', label: 'Release Pipeline', icon: Workflow },
+  { to: '/executive', label: 'Executive View', icon: ChartBar },
+  { to: '/deployments', label: 'Deployments', icon: Rocket },
+  { to: '/simulator', label: 'Deployment Simulator', icon: Zap },
+  { to: '/analytics', label: 'Analytics', icon: Activity },
   { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
+  { to: '/environment', label: 'Environment', icon: Server },
   { to: '/integrations', label: 'Integrations', icon: Webhook },
+  { to: '/plugins', label: 'Plugins', icon: Boxes },
+  { to: '/findings', label: 'Findings', icon: Bug },
+  { to: '/approvals', label: 'Approvals', icon: ClipboardCheck },
+  { to: '/compliance', label: 'Compliance', icon: Scale },
+  { to: '/incidents', label: 'Incidents', icon: FileWarning },
+  { to: '/audit', label: 'Audit', icon: ScrollText },
   { to: '/organizations', label: 'Organizations', icon: Building2 },
   { to: '/workspaces', label: 'Workspaces', icon: Boxes },
   { to: '/team', label: 'Team', icon: Users },

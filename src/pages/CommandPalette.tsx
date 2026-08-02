@@ -5,7 +5,8 @@ import {
   LayoutDashboard, ChartBar as BarChart3, FolderGit2, Server, Boxes, BookOpen,
   Sparkles, Scale, Rocket, Activity, ShieldCheck, FileWarning, Users, CreditCard,
   Settings as SettingsIcon, Plug, GitBranch, Sun, Moon, LogOut, CornerDownLeft,
-  ArrowUp, ArrowDown, Search as SearchIcon, Zap, ClipboardCheck, Building2, Bug
+  ArrowUp, ArrowDown, Search as SearchIcon, Zap, ClipboardCheck, Building2, Bug,
+  Layers, Workflow, Compass
 } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -57,17 +58,22 @@ export function CommandPalette({ open, onClose, theme, onToggleTheme, onSignOut 
     { sec: 'Navigate', label: 'Overview', sub: 'Release readiness at a glance', icon: LayoutDashboard, kw: 'home dashboard', go: () => navigate('/dashboard') },
     { sec: 'Navigate', label: 'Executive View', sub: 'Portfolio health for leadership', icon: BarChart3, kw: 'leadership kpi', go: () => navigate('/executive') },
     { sec: 'Navigate', label: 'Projects', sub: 'Your connected repositories', icon: FolderGit2, kw: 'repos repositories apps', go: () => navigate('/projects') },
+    { sec: 'Navigate', label: 'Stacks', sub: 'Groups of projects validated together', icon: Layers, kw: 'group bundle related projects', go: () => navigate('/stacks') },
+    { sec: 'Navigate', label: 'Release Pipeline', sub: 'Stage-by-stage release flow', icon: Workflow, kw: 'pipeline stages ci cd', go: () => navigate('/pipeline') },
+    { sec: 'Navigate', label: 'Command Center', sub: 'Per-project readiness & policy status', icon: Compass, kw: 'readiness policy overview command', go: () => navigate('/command-center') },
     { sec: 'Navigate', label: 'Deployments', sub: 'Release history & pipeline', icon: Rocket, kw: 'ship releases', go: () => navigate('/deployments') },
     { sec: 'Navigate', label: 'Deployment Simulator', sub: 'Dry-run a release', icon: Zap, kw: 'simulate dry run', go: () => navigate('/simulator') },
     { sec: 'Navigate', label: 'Analytics', sub: 'Trends across releases', icon: Activity, kw: 'metrics charts trends', go: () => navigate('/analytics') },
     { sec: 'Navigate', label: 'Policy Studio', sub: 'Author release policies', icon: ShieldCheck, kw: 'rules gates opa', go: () => navigate('/policies') },
     { sec: 'Navigate', label: 'Environment Validation', sub: 'Verify target environments', icon: Server, kw: 'env infra kubernetes', go: () => navigate('/environment') },
     { sec: 'Navigate', label: 'Integrations', sub: 'Connect your tooling', icon: Plug, kw: 'connect github slack', go: () => navigate('/integrations') },
+    { sec: 'Navigate', label: 'Plugins', sub: 'Extend LytHouse', icon: Boxes, kw: 'extensions marketplace add-ons', go: () => navigate('/plugins') },
     { sec: 'Navigate', label: 'Findings', sub: 'Workspace-wide risk items', icon: Bug, kw: 'issues vulnerabilities risk', go: () => navigate('/findings') },
     { sec: 'Navigate', label: 'Approvals', sub: 'Releases awaiting sign-off', icon: ClipboardCheck, kw: 'sign off governance', go: () => navigate('/approvals') },
     { sec: 'Navigate', label: 'Compliance', sub: 'Controls & evidence', icon: Scale, kw: 'audit soc2 iso', go: () => navigate('/compliance') },
     { sec: 'Navigate', label: 'Incidents', sub: 'Post-release incidents', icon: FileWarning, kw: 'outage postmortem', go: () => navigate('/incidents') },
     { sec: 'Navigate', label: 'Audit Log', sub: 'Every action, timestamped', icon: BookOpen, kw: 'history trail', go: () => navigate('/audit') },
+    { sec: 'Navigate', label: 'Organizations', sub: 'Manage organizations', icon: Building2, kw: 'org company account', go: () => navigate('/organizations') },
     { sec: 'Navigate', label: 'Workspaces', sub: 'Switch or manage workspaces', icon: Building2, kw: 'org team switch', go: () => navigate('/workspaces') },
     { sec: 'Navigate', label: 'Team', sub: 'Members & roles', icon: Users, kw: 'people members invite', go: () => navigate('/team') },
     { sec: 'Navigate', label: 'Plans & Billing', sub: 'Subscription & usage', icon: CreditCard, kw: 'billing upgrade payment', go: () => navigate('/plans') },

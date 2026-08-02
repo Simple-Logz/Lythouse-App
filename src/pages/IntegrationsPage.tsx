@@ -70,7 +70,7 @@ export function IntegrationsPage() {
         })}
       </div>
 
-      <p className="text-[11px] text-gray-400 mt-5 max-w-2xl">Credentials are stored securely in your browser and sent only to the tool you’re creating a ticket in, via LytHouse’s server-side connector. Tools marked “beta” save your connection now; one-click creation for them is rolling out.</p>
+      <p className="text-[11px] text-gray-400 mt-5 max-w-2xl">Credentials are saved unencrypted in this browser's local storage (not synced to your account or other devices) and are sent only to the tool you’re creating a ticket in, via LytHouse’s server-side connector. Encrypted, account-level storage for these tokens is on the roadmap — for now, avoid using credentials here you wouldn't want readable by anything else running on this device. Tools marked “beta” save your connection now; one-click creation for them is rolling out.</p>
     </div>
   );
 }

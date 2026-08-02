@@ -241,6 +241,10 @@ export function ExecutiveDashboard(){
             {projectRisks.filter(p=>{
   const matchSearch=!projectSearch||p.project_name.toLowerCase().includes(projectSearch.toLowerCase());
   if(!matchSearch)return false;
+  const matchWs=wsFilter==='all'||p.workspace_id===wsFilter;
+  if(!matchWs)return false;
+  const matchOwner=ownerFilter==='all'||p.created_by===ownerFilter;
+  if(!matchOwner)return false;
   if(riskFilter.size===0)return true;
   const riskChecks=[];
   if(riskFilter.has('critical'))riskChecks.push(p.critical>0);
@@ -255,9 +259,6 @@ export function ExecutiveDashboard(){
   if(riskFilter.has('scanned-today'))riskChecks.push(daysSince===0);
   if(riskFilter.has('stale'))riskChecks.push(daysSince>=7);
   return riskChecks.some(Boolean);
-  const matchWs=wsFilter==='all'||p.workspace_id===wsFilter;
-  const matchOwner=ownerFilter==='all'||p.created_by===ownerFilter;
-  return matchWs&&matchOwner;
 }).map((p,i)=>(
               <div key={p.project_id} className="flex items-center gap-4 py-3">
                 <span className="text-sm font-bold text-gray-400 w-5">{i+1}</span>
