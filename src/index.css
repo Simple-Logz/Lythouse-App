@@ -29,6 +29,21 @@
 .no-scrollbar::-webkit-scrollbar{display:none;}
 /* Prevent horizontal page shift / cutoffs + pinch-zoom on phones */
 @media (max-width:820px){html,body{overflow-x:hidden;touch-action:pan-x pan-y;}}
+/* The white flash on a hard/fast scroll on phones is iOS/Android's rubber-
+   band overscroll bounce briefly revealing the real <body> background past
+   the end of the page's own content — body defaults to the light theme's
+   background-color, which reads as a jarring white flash on dark pages.
+   Turning off the bounce removes the flash entirely (also just feels more
+   like a native app, less like a webpage). */
+html,body{overscroll-behavior-y:none;}
+/* iOS/Android's "does this need two taps?" heuristic: an element with a
+   :hover style (Tailwind's hover: utilities, used all over this app) but no
+   explicit cursor:pointer gets treated as needing a first tap to simulate
+   :hover and a second tap to actually click. Every <button> in the browser's
+   own default stylesheet is cursor:default, not pointer, so this hit nearly
+   every button in the app. Setting it explicitly makes the first tap count,
+   everywhere, not just on the landing page. */
+button,[role="button"]{cursor:pointer;}
 /* Disable the ~300ms double-tap-to-zoom delay/gesture on touch devices via
    CSS instead of a global JS touchend handler (that JS approach used to
    preventDefault() ANY touchend within 300ms of the previous one, anywhere

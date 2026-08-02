@@ -67,7 +67,7 @@ const COMP_ROWS = [
 const PRODUCT_MENU = [
   { icon: ScanLine, t: 'Release validation', d: 'Real checks before every deploy', to: '#product' },
   { icon: GitBranch, t: 'Repo connections', d: 'GitHub, GitLab, Bitbucket & more', to: '/signup' },
-  { icon: ShieldCheck, t: 'Policy gates', d: 'Enforce readiness & approvals', to: '#features' },
+  { icon: ShieldCheck, t: 'Policy gates', d: 'Enforce readiness & approvals', to: '#how' },
   { icon: Activity, t: 'Observability', d: 'Watch releases after they ship', to: '#how' },
 ];
 const HOW_MENU = [
@@ -90,7 +90,7 @@ const RESOURCES_MENU = [
 ];
 const ABOUT_MENU = [
   { icon: Mail, t: 'Contact Us', d: 'Talk to the team', to: '/demo' },
-  { icon: Info, t: 'About Us', d: 'What LytHouse stands for', to: '#features' },
+  { icon: Info, t: 'About Us', d: 'What LytHouse stands for', to: '#how' },
   { icon: Briefcase, t: 'Careers', d: "We're growing — say hi", to: '/demo' },
   { icon: Accessibility, t: 'Accessibility', d: 'Our commitment', to: '/security' },
 ];
@@ -627,6 +627,17 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState(null);
+
+  // This is the only fully dark page in the app — every other route uses the
+  // light theme's body background. Setting the real <body> to match while
+  // this page is mounted (and reverting on unmount) means a hard overscroll
+  // bounce reveals dark, not the light theme's default white, closing the
+  // gap that overscroll-behavior alone doesn't cover on every browser.
+  useEffect(() => {
+    const prev = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#171423';
+    return () => { document.body.style.backgroundColor = prev; };
+  }, []);
   const startTrial = () => navigate('/signup');
   const goTo = (to) => () => { if (to.startsWith('#')) document.querySelector(to)?.scrollIntoView({ behavior: 'smooth' }); else navigate(to); };
 
@@ -697,7 +708,7 @@ export function LandingPage() {
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => { setMobileMenuOpen(false); setMobileSection(null); }} />
-            <div className="absolute inset-x-3 top-3 max-h-[calc(100vh-24px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#1f1b2c] shadow-2xl">
+            <div className="absolute inset-x-3 top-3 max-h-[75vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#1f1b2c] shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 px-5 h-14">
                 <Logo size={22} />
                 <button onClick={() => { setMobileMenuOpen(false); setMobileSection(null); }} className="p-2 text-white/70" aria-label="Close menu"><X size={20} /></button>
@@ -891,26 +902,6 @@ export function LandingPage() {
                 <h3 className="text-xl font-semibold text-white">Fix findings in a click</h3>
                 <p className="mt-2 text-sm leading-relaxed text-navy-400">Turn any finding into a grounded pull request your team reviews and merges — no busywork.</p>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* gradient feature band */}
-        <section id="features" className="mx-auto max-w-6xl px-5 py-24">
-          <div className="rounded-3xl px-8 py-14 text-white"
-            style={{ background: 'linear-gradient(120deg, #7c5ce6 0%, #8b6ef2 45%, #c98fd8 100%)', boxShadow: '0 30px 60px -24px rgba(124,92,230,.5)' }}>
-            <div className="grid lg:grid-cols-3 gap-8">
-              {[
-                { icon: ShieldCheck, t: 'Honest by design', d: 'Every score is computed from real signals in your repo — never fabricated telemetry.' },
-                { icon: TrendingUp, t: 'Decision-first', d: 'Open a release and immediately see the call: cleared, review, or blocked — and why.' },
-                { icon: Lock, t: 'Policy as code', d: 'Encode your deployment rules once and let LytHouse enforce them on every release.' },
-              ].map((f) => (
-                <div key={f.t} className="rounded-2xl bg-white/10 p-5 backdrop-blur transition-transform duration-300 ease-out hover:-translate-y-1 [box-shadow:inset_0_1px_0_rgba(255,255,255,.18)]">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 [box-shadow:inset_0_1px_0_rgba(255,255,255,.3)]"><f.icon size={20} /></span>
-                  <h3 className="mt-4 text-xl font-bold">{f.t}</h3>
-                  <p className="mt-2 text-sm text-white/85 leading-relaxed">{f.d}</p>
-                </div>
-              ))}
             </div>
           </div>
         </section>
