@@ -35,6 +35,20 @@
    in the app — which ate legitimate fast taps and interrupted scroll-fling
    momentum too, making the mobile app feel laggy and unresponsive). */
 button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipulation;}
+/* backdrop-filter (the "frosted glass" look on the landing page's nav pill
+   and content cards) is one of the most expensive things a mobile browser
+   can be asked to recompute — it has to reblur whatever's behind an element
+   on basically every frame it moves through during scroll. On a page with
+   several of these, that shows up as exactly what it feels like: scrolling
+   that stutters/hitches instead of running smooth. Desktop GPUs shrug this
+   off; phones (especially Android) often can't keep up. Killing it below
+   1024px keeps every element's background color/border/shadow (so nothing
+   looks broken) and just drops the blur-through effect on phones. */
+@media (max-width:1024px){
+  .backdrop-blur,.backdrop-blur-sm,.backdrop-blur-md,.backdrop-blur-lg,.backdrop-blur-xl,.backdrop-blur-2xl,.backdrop-blur-3xl{
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  }
+}
 /* ─── Enterprise Dark Theme ─────────────────────────────────────── */
 :root {
   --bg-base: #ffffff;

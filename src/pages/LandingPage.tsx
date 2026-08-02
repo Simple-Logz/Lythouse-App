@@ -626,6 +626,7 @@ export function LandingPage() {
   const [slide, setSlide] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSection, setMobileSection] = useState(null);
   const startTrial = () => navigate('/signup');
   const goTo = (to) => () => { if (to.startsWith('#')) document.querySelector(to)?.scrollIntoView({ behavior: 'smooth' }); else navigate(to); };
 
@@ -685,28 +686,38 @@ export function LandingPage() {
         {/* mobile nav drawer — every link the desktop pill nav has, reachable below lg */}
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+            <div className="absolute inset-0 bg-black/50" onClick={() => { setMobileMenuOpen(false); setMobileSection(null); }} />
             <div className="absolute inset-x-3 top-3 max-h-[calc(100vh-24px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#1f1b2c] shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 px-5 h-14">
                 <Logo size={22} />
-                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-white/70" aria-label="Close menu"><X size={20} /></button>
+                <button onClick={() => { setMobileMenuOpen(false); setMobileSection(null); }} className="p-2 text-white/70" aria-label="Close menu"><X size={20} /></button>
               </div>
               <div className="px-3 py-3">
                 {[
-                  { label: 'Product', items: PRODUCT_MENU },
-                  { label: 'How it works', items: HOW_MENU },
-                  { label: 'Resources', items: RESOURCES_MENU },
-                  { label: 'About', items: ABOUT_MENU },
-                ].map((sec) => (
-                  <div key={sec.label} className="mb-1">
-                    <p className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-widest text-white/40">{sec.label}</p>
-                    {sec.items.map((it) => (
-                      <button key={it.t} onClick={() => { setMobileMenuOpen(false); goTo(it.to)(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 hover:bg-white/5">
-                        <it.icon size={16} className="shrink-0 text-white/50" /><span className="text-sm font-medium">{it.t}</span>
+                  { key: 'product', label: 'Product', items: PRODUCT_MENU },
+                  { key: 'how', label: 'How it works', items: HOW_MENU },
+                  { key: 'resources', label: 'Resources', items: RESOURCES_MENU },
+                  { key: 'about', label: 'About', items: ABOUT_MENU },
+                ].map((sec) => {
+                  const isOpen = mobileSection === sec.key;
+                  return (
+                    <div key={sec.key} className="border-b border-white/10 last:border-b-0">
+                      <button onClick={() => setMobileSection(isOpen ? null : sec.key)} className="flex w-full items-center justify-between px-3 py-3.5 text-left">
+                        <span className="text-sm font-semibold text-white/90">{sec.label}</span>
+                        <ChevronDown size={16} className={`text-white/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                       </button>
-                    ))}
-                  </div>
-                ))}
+                      {isOpen && (
+                        <div className="pb-2">
+                          {sec.items.map((it) => (
+                            <button key={it.t} onClick={() => { setMobileMenuOpen(false); setMobileSection(null); goTo(it.to)(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 hover:bg-white/5">
+                              <it.icon size={16} className="shrink-0 text-white/50" /><span className="text-sm font-medium">{it.t}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 <div className="mt-2 border-t border-white/10 pt-2">
                   <button onClick={() => { setMobileMenuOpen(false); goTo('/docs')(); }} className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 hover:bg-white/5">Docs</button>
                   <button onClick={() => { setMobileMenuOpen(false); goTo('/plans')(); }} className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 hover:bg-white/5">Pricing</button>
