@@ -47,18 +47,10 @@ const CSS = `
 @keyframes wz-fade{from{opacity:0}to{opacity:1}}
 @keyframes wz-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes wz-slide{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
-/* Lighter, less-purple modal surface: redefine the --lh tokens locally so the
-   panel, rail, inputs and chips all lift to an elevated near-neutral slate that
-   reads as a light card floating over the dark app (keeps a faint purple cast). */
+/* Use the app's real theme tokens (defined on :root / :root[data-theme=dark]
+   in AppShell) instead of a hardcoded local palette, so this matches the
+   rest of the app and actually follows the light/dark toggle. */
 .wz{
-  --lh-surface:#282b32;
-  --lh-surface2:#31343c;
-  --lh-sidebar:#20222a;
-  --lh-border:#3a3e49;
-  --lh-border2:#474c58;
-  --lh-text:#f4f5f8;
-  --lh-text2:#c6cad3;
-  --lh-text3:#8f94a1;
   width:min(96vw,860px);max-height:90vh;display:flex;background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:18px;overflow:hidden;box-shadow:0 30px 90px -18px rgba(4,8,14,.7);animation:wz-in .2s cubic-bezier(.2,.8,.2,1)}
 .wz-rail{width:236px;flex-shrink:0;background:var(--lh-sidebar);border-right:1px solid var(--lh-border);padding:22px 16px;display:flex;flex-direction:column}
 @media(max-width:680px){.wz-rail{display:none}}
