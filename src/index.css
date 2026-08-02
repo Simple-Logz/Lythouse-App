@@ -1,8 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&display=swap');
+/* Inter/Fraunces are now loaded via <link rel=stylesheet> in index.html
+   (with preconnect) instead of a CSS @import — a CSS @import of an external
+   stylesheet blocks the rest of this file from applying until that fetch
+   finishes, which was adding an extra round-trip before anything painted,
+   most noticeable on mobile connections. */
 @layer base{
   html{font-size:16.5px;}
   body{@apply text-navy-900 antialiased;background-color:#fbfaff;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
@@ -26,6 +29,12 @@
 .no-scrollbar::-webkit-scrollbar{display:none;}
 /* Prevent horizontal page shift / cutoffs + pinch-zoom on phones */
 @media (max-width:820px){html,body{overflow-x:hidden;touch-action:pan-x pan-y;}}
+/* Disable the ~300ms double-tap-to-zoom delay/gesture on touch devices via
+   CSS instead of a global JS touchend handler (that JS approach used to
+   preventDefault() ANY touchend within 300ms of the previous one, anywhere
+   in the app — which ate legitimate fast taps and interrupted scroll-fling
+   momentum too, making the mobile app feel laggy and unresponsive). */
+button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipulation;}
 /* ─── Enterprise Dark Theme ─────────────────────────────────────── */
 :root {
   --bg-base: #ffffff;

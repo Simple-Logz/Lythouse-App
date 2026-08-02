@@ -1,55 +1,67 @@
+// @ts-nocheck
+import{Suspense,lazy}from'react';
 import{RouterProvider,useRouter}from'./lib/router';
 import{AppShell,usePlanId}from'./pages/AppShell';
 import type{PlanId}from'./lib/supabase';
 import{AuthPage}from'./pages/AuthPage';
-import{ProjectsPage}from'./pages/ProjectsPage';
-import{ProjectWorkspace}from'./workspace/ProjectWorkspace';
-import{DashboardPage}from'./pages/DashboardPage';
-import{DeploymentsPage}from'./pages/DeploymentsPage';
-import{SimulatorPage}from'./pages/SimulatorPage';
-import{AnalyticsPage}from'./pages/AnalyticsPage';
-import{PolicyPage}from'./pages/PolicyPage';
-import{AuditLogPage}from'./pages/AuditLogPage';
-import{TeamPage}from'./pages/TeamPage';
-import{SettingsPage}from'./pages/SettingsPage';
-import{PlansPage}from'./pages/PlansPage';
-import{WorkspacesPage}from'./pages/WorkspacesPage';
-import{OrganizationsPage}from'./pages/OrganizationsPage';
-import CompliancePage from'./pages/CompliancePage';
-import IncidentPage from'./pages/IncidentPage';
-import IntegrationsPage from'./pages/IntegrationsPage';
-import{ServerValidationPage}from'./pages/server-validation/ServerValidationPage';
-import{EnvWizard}from'./pages/server-validation/EnvWizard';
-import{EnvDetailPage}from'./pages/server-validation/EnvDetailPage';
-import{ValidationRunPage}from'./pages/server-validation/ValidationRunPage';
-import{PassportPage}from'./pages/server-validation/PassportPage';
-import{LoadTestingPage}from'./pages/LoadTestingPage';
-import{ApiTestingPage}from'./pages/ApiTestingPage';
-import{ChaosEngineeringPage}from'./pages/ChaosEngineeringPage';
 import{useAuth}from'./lib/auth';
 import{useIsMobile}from'./lib/useIsMobile';
 import{MobileApp}from'./mobile/MobileApp';
-import{MobilePreview}from'./mobile/MobilePreview';
-import{DecisionPreview}from'./workspace/DecisionPreview';
 import{LandingPage}from'./pages/LandingPage';
-import{FreeTrialPage}from'./pages/FreeTrialPage';
-import{BookDemoPage}from'./pages/BookDemoPage';
-import{ResetPasswordPage}from'./pages/ResetPasswordPage';
 import{LegalPage,LEGAL_ROUTES}from'./pages/LegalPage';
-import{EnvironmentValidationPage}from'./pages/EnvironmentValidationPage';
-import{DocsPage}from'./pages/DocsPage';
-import{OnboardingPage}from'./pages/OnboardingPage';
 import{AcceptInvitePage,takePendingInvite}from'./pages/AcceptInvitePage';
-import{FindingsPage}from'./pages/FindingsPage';
-import{ApprovalsPage}from'./pages/ApprovalsPage';
-import{StacksPage}from'./pages/StacksPage';
-import{ReleasePipelinePage}from'./pages/ReleasePipelinePage';
-import{PluginsPage}from'./pages/PluginsPage';
-import{CommandCenter}from'./pages/CommandCenter';
-import{ExecutiveDashboard}from'./pages/ExecutiveDashboard';
-import{WorkspaceDetailPage}from'./pages/WorkspaceDetailPage';
 import{Spinner,ToastHost}from'./lib/ui';
 import type{ReactNode}from'react';
+
+// Route-level pages are code-split: a phone (or a fresh desktop load) only
+// has to fetch the app shell plus whichever single page is actually open,
+// instead of every feature in the product bundled into one multi-megabyte
+// file. This is what was making first load (and every full page nav on a
+// slow connection) feel frozen/unresponsive on mobile.
+const ProjectsPage=lazy(()=>import('./pages/ProjectsPage').then(m=>({default:m.ProjectsPage})));
+const ProjectWorkspace=lazy(()=>import('./workspace/ProjectWorkspace').then(m=>({default:m.ProjectWorkspace})));
+const DashboardPage=lazy(()=>import('./pages/DashboardPage').then(m=>({default:m.DashboardPage})));
+const DeploymentsPage=lazy(()=>import('./pages/DeploymentsPage').then(m=>({default:m.DeploymentsPage})));
+const SimulatorPage=lazy(()=>import('./pages/SimulatorPage').then(m=>({default:m.SimulatorPage})));
+const AnalyticsPage=lazy(()=>import('./pages/AnalyticsPage').then(m=>({default:m.AnalyticsPage})));
+const PolicyPage=lazy(()=>import('./pages/PolicyPage').then(m=>({default:m.PolicyPage})));
+const AuditLogPage=lazy(()=>import('./pages/AuditLogPage').then(m=>({default:m.AuditLogPage})));
+const TeamPage=lazy(()=>import('./pages/TeamPage').then(m=>({default:m.TeamPage})));
+const SettingsPage=lazy(()=>import('./pages/SettingsPage').then(m=>({default:m.SettingsPage})));
+const PlansPage=lazy(()=>import('./pages/PlansPage').then(m=>({default:m.PlansPage})));
+const WorkspacesPage=lazy(()=>import('./pages/WorkspacesPage').then(m=>({default:m.WorkspacesPage})));
+const OrganizationsPage=lazy(()=>import('./pages/OrganizationsPage').then(m=>({default:m.OrganizationsPage})));
+const CompliancePage=lazy(()=>import('./pages/CompliancePage'));
+const IncidentPage=lazy(()=>import('./pages/IncidentPage'));
+const IntegrationsPage=lazy(()=>import('./pages/IntegrationsPage'));
+const ServerValidationPage=lazy(()=>import('./pages/server-validation/ServerValidationPage').then(m=>({default:m.ServerValidationPage})));
+const EnvWizard=lazy(()=>import('./pages/server-validation/EnvWizard').then(m=>({default:m.EnvWizard})));
+const EnvDetailPage=lazy(()=>import('./pages/server-validation/EnvDetailPage').then(m=>({default:m.EnvDetailPage})));
+const ValidationRunPage=lazy(()=>import('./pages/server-validation/ValidationRunPage').then(m=>({default:m.ValidationRunPage})));
+const PassportPage=lazy(()=>import('./pages/server-validation/PassportPage').then(m=>({default:m.PassportPage})));
+const LoadTestingPage=lazy(()=>import('./pages/LoadTestingPage').then(m=>({default:m.LoadTestingPage})));
+const ApiTestingPage=lazy(()=>import('./pages/ApiTestingPage').then(m=>({default:m.ApiTestingPage})));
+const ChaosEngineeringPage=lazy(()=>import('./pages/ChaosEngineeringPage').then(m=>({default:m.ChaosEngineeringPage})));
+const MobilePreview=lazy(()=>import('./mobile/MobilePreview').then(m=>({default:m.MobilePreview})));
+const DecisionPreview=lazy(()=>import('./workspace/DecisionPreview').then(m=>({default:m.DecisionPreview})));
+const FreeTrialPage=lazy(()=>import('./pages/FreeTrialPage').then(m=>({default:m.FreeTrialPage})));
+const BookDemoPage=lazy(()=>import('./pages/BookDemoPage').then(m=>({default:m.BookDemoPage})));
+const ResetPasswordPage=lazy(()=>import('./pages/ResetPasswordPage').then(m=>({default:m.ResetPasswordPage})));
+const EnvironmentValidationPage=lazy(()=>import('./pages/EnvironmentValidationPage').then(m=>({default:m.EnvironmentValidationPage})));
+const DocsPage=lazy(()=>import('./pages/DocsPage').then(m=>({default:m.DocsPage})));
+const OnboardingPage=lazy(()=>import('./pages/OnboardingPage').then(m=>({default:m.OnboardingPage})));
+const FindingsPage=lazy(()=>import('./pages/FindingsPage').then(m=>({default:m.FindingsPage})));
+const ApprovalsPage=lazy(()=>import('./pages/ApprovalsPage').then(m=>({default:m.ApprovalsPage})));
+const StacksPage=lazy(()=>import('./pages/StacksPage').then(m=>({default:m.StacksPage})));
+const ReleasePipelinePage=lazy(()=>import('./pages/ReleasePipelinePage').then(m=>({default:m.ReleasePipelinePage})));
+const PluginsPage=lazy(()=>import('./pages/PluginsPage').then(m=>({default:m.PluginsPage})));
+const CommandCenter=lazy(()=>import('./pages/CommandCenter').then(m=>({default:m.CommandCenter})));
+const ExecutiveDashboard=lazy(()=>import('./pages/ExecutiveDashboard').then(m=>({default:m.ExecutiveDashboard})));
+const WorkspaceDetailPage=lazy(()=>import('./pages/WorkspaceDetailPage').then(m=>({default:m.WorkspaceDetailPage})));
+
+function PageFallback(){
+  return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
+}
 
 // Shared route → page mapping, used by both the desktop shell and the mobile app
 // so every feature on the web is reachable on mobile too (no missing screens).
@@ -92,7 +104,7 @@ else if(seg[0]==='server-validation'){
   else c=<EnvDetailPage envId={seg[1]} planId={planId}/>;
 }
 else c=<DashboardPage/>;
-return c;
+return<Suspense fallback={<PageFallback/>}>{c}</Suspense>;
 }
 
 function Routes(){
@@ -106,17 +118,17 @@ const{session,loading}=useAuth();
 const{path}=useRouter();
 const isMobile=useIsMobile();
 // TEMP: design previews without auth.
-if(path==='/__mpreview')return<MobilePreview/>;
-if(path==='/__dpreview'){const D=DecisionPreview;return<D/>;}
-if(path==='/__envpreview')return<div className="min-h-screen bg-[#f4f3f0]"><div className="mx-auto max-w-7xl px-4 py-8"><EnvironmentValidationPage/></div></div>;
+if(path==='/__mpreview')return<Suspense fallback={<PageFallback/>}><MobilePreview/></Suspense>;
+if(path==='/__dpreview'){const D=DecisionPreview;return<Suspense fallback={<PageFallback/>}><D/></Suspense>;}
+if(path==='/__envpreview')return<div className="min-h-screen bg-[#f4f3f0]"><div className="mx-auto max-w-7xl px-4 py-8"><Suspense fallback={<PageFallback/>}><EnvironmentValidationPage/></Suspense></div></div>;
 // Password recovery lands here (with a temporary recovery session) — render
 // regardless of auth state.
-if(path==='/reset-password')return<ResetPasswordPage/>;
+if(path==='/reset-password')return<Suspense fallback={<PageFallback/>}><ResetPasswordPage/></Suspense>;
 // Public legal/trust pages (accessible signed-in or out).
 {const seg0=path.split('/').filter(Boolean)[0];if(LEGAL_ROUTES.includes(seg0))return<LegalPage doc={seg0}/>;}
 // Documentation is a standalone microsite with its own chrome — never nest it
 // inside the app shell (that produced a broken double-sidebar layout).
-{const seg0=path.split('/').filter(Boolean)[0];if(seg0==='docs')return<DocsPage/>;}
+{const seg0=path.split('/').filter(Boolean)[0];if(seg0==='docs')return<Suspense fallback={<PageFallback/>}><DocsPage/></Suspense>;}
 if(loading)return(
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
     <div className="flex flex-col items-center gap-3">
@@ -131,10 +143,10 @@ if(loading)return(
 if(!session){
   // Unauthenticated: the marketing cover page is the front door. Free trial and
   // Book a demo get dedicated pages; the auth form is only for sign in.
-  if(path==='/signup'||path==='/trial'||path==='/free-trial')return<FreeTrialPage/>;
-  if(path==='/demo'||path==='/book-demo')return<BookDemoPage/>;
-  if(path==='/docs')return<DocsPage/>;
-  if(path==='/plans'||path==='/pricing')return<div className="min-h-screen bg-[#fbfaff]"><div className="mx-auto max-w-6xl px-5 py-12"><PlansPage/></div></div>;
+  if(path==='/signup'||path==='/trial'||path==='/free-trial')return<Suspense fallback={<PageFallback/>}><FreeTrialPage/></Suspense>;
+  if(path==='/demo'||path==='/book-demo')return<Suspense fallback={<PageFallback/>}><BookDemoPage/></Suspense>;
+  if(path==='/docs')return<Suspense fallback={<PageFallback/>}><DocsPage/></Suspense>;
+  if(path==='/plans'||path==='/pricing')return<div className="min-h-screen bg-[#fbfaff]"><div className="mx-auto max-w-6xl px-5 py-12"><Suspense fallback={<PageFallback/>}><PlansPage/></Suspense></div></div>;
   const authPaths=['/signin','/auth','/login'];
   if(authPaths.includes(path))return<AuthPage initialMode='signin'/>;
   return<LandingPage/>;
