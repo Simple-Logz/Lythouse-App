@@ -10,6 +10,7 @@ import {
 } from '../../lib/supabase';
 import { PageHeader, Spinner, EmptyState, Breadcrumb, timeAgo } from '../../lib/ui';
 import { useRouter } from '../../lib/router';
+import { PinButton } from '../../lib/pins';
 import { Server, Plus, Lock, ArrowRight, ShieldCheck, Boxes, CirclePlay as PlayCircle, FileCheck } from 'lucide-react';
 
 type EnvRow = ServerEnvironment & {
@@ -180,10 +181,12 @@ export function ServerValidationPage({ planId }: { planId: PlanId }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {envs.map(env => (
-            <button
+            <div
               key={env.id}
+              role="button" tabIndex={0}
               onClick={() => navigate(`/server-validation/${env.id}`)}
-              className="card group text-left transition-all hover:shadow-md hover:border-brand-300"
+              onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/server-validation/${env.id}`) }}
+              className="card group cursor-pointer text-left transition-all hover:shadow-md hover:border-brand-300"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -195,7 +198,10 @@ export function ServerValidationPage({ planId }: { planId: PlanId }) {
                     <p className="text-xs text-gray-400">{env.business_unit ?? 'No business unit'}</p>
                   </div>
                 </div>
-                <span className={`chip capitalize ${ENV_STATUS_CLS[env.status] ?? ENV_STATUS_CLS.draft}`}>{env.status}</span>
+                <div className="flex items-center gap-1">
+                  <span className={`chip capitalize ${ENV_STATUS_CLS[env.status] ?? ENV_STATUS_CLS.draft}`}>{env.status}</span>
+                  <PinButton item={{type:'environment',id:env.id,label:env.name,to:`/server-validation/${env.id}`}}/>
+                </div>
               </div>
 
               <div className="mt-4 flex items-center gap-2">
@@ -239,7 +245,7 @@ export function ServerValidationPage({ planId }: { planId: PlanId }) {
               <div className="mt-3 flex items-center gap-1 text-sm font-medium text-brand-600 opacity-0 transition-opacity group-hover:opacity-100">
                 View details <ArrowRight size={14} />
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}

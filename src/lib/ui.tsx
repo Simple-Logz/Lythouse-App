@@ -1,7 +1,42 @@
+import{useEffect,useState}from'react';
 import type{ReactNode}from'react';
-import{ShieldCheck,ShieldAlert,ShieldX,TriangleAlert as AlertTriangle,Check,X,Loader as Loader2,ChevronRight,Info}from'lucide-react';
+import{ShieldCheck,ShieldAlert,ShieldX,TriangleAlert as AlertTriangle,Check,X,Loader as Loader2,ChevronRight,Info,CheckCircle2,XCircle}from'lucide-react';
 import type{Severity,ValidationStatus,StepStatus,FindingStatus}from'./supabase';
 import{useRouter}from'./router';
+
+// ---- Toast notifications --------------------------------------------------
+// A small in-app replacement for window.alert(). Native alert() blocks the
+// tab, can't be styled, and looks out of place next to the rest of the UI.
+// Call toast('message', 'error'|'success'|'info') from anywhere; mount
+// <ToastHost/> once near the app root (already done in App.tsx).
+type ToastKind='info'|'success'|'error';
+type ToastItem={id:number;message:string;kind:ToastKind};
+let toastItems:ToastItem[]=[];
+let toastListeners:((items:ToastItem[])=>void)[]=[];
+let toastId=0;
+function emitToasts(){toastListeners.forEach(l=>l(toastItems));}
+export function toast(message:string,kind:ToastKind='info'){
+  const id=++toastId;
+  toastItems=[...toastItems,{id,message,kind}];
+  emitToasts();
+  setTimeout(()=>{toastItems=toastItems.filter(t=>t.id!==id);emitToasts();},5000);
+}
+export function ToastHost(){
+  const[items,setItems]=useState<ToastItem[]>(toastItems);
+  useEffect(()=>{toastListeners.push(setItems);return()=>{toastListeners=toastListeners.filter(l=>l!==setItems);};},[]);
+  if(!items.length)return null;
+  const icon=(k:ToastKind)=>k==='success'?<CheckCircle2 size={16} className="text-green-600 shrink-0"/>:k==='error'?<XCircle size={16} className="text-danger-600 shrink-0"/>:<Info size={16} className="text-blue-600 shrink-0"/>;
+  const cls=(k:ToastKind)=>k==='success'?'border-green-200 bg-green-50 text-green-800':k==='error'?'border-red-200 bg-red-50 text-danger-700':'border-blue-200 bg-blue-50 text-blue-800';
+  return<div className="fixed bottom-4 right-4 z-[200] flex w-full max-w-sm flex-col gap-2">
+    {items.map(t=>(
+      <div key={t.id} className={`flex items-start gap-2 rounded-lg border px-4 py-3 text-sm shadow-lg animate-scale-in ${cls(t.kind)}`}>
+        {icon(t.kind)}
+        <span className="flex-1 leading-snug">{t.message}</span>
+        <button onClick={()=>{toastItems=toastItems.filter(x=>x.id!==t.id);emitToasts();}} className="shrink-0 text-current opacity-60 transition-opacity hover:opacity-100"><X size={14}/></button>
+      </div>
+    ))}
+  </div>;
+}
 
 // A tiny hover/focus info affordance. Sits inline next to a label; on hover
 // (or keyboard focus / tap) reveals a small popover explaining the term.

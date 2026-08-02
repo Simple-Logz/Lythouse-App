@@ -48,7 +48,3 @@ export default tseslint.config({
   },
 })
 ```
-
-<!-- Verified push to main: 2026-07-31 22:07 UTC — repo confirmed in sync with local zip contents -->
-
-<!-- Verified push to main: 2026-07-31 22:07 UTC -->

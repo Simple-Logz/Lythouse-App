@@ -1,6 +1,6 @@
 import{useCallback,useEffect,useRef,useState}from'react';
 import{edgeFunctionUrl,anonKey,type Project,type RepoFile}from'../lib/supabase';
-import{Spinner}from'../lib/ui';
+import{Spinner,toast}from'../lib/ui';
 import{X,Folder,File as FileIcon,ChevronRight,ChevronDown,RefreshCw,AlertTriangle,Copy,Check,Search,GitBranch,Code2,FolderOpen,Maximize2,Minimize2,Save,RotateCcw as Undo,Eye,EyeOff,Sparkles,GitCommit,Terminal,Download,MessageSquare,CheckCircle2,Loader as Loader2}from'lucide-react';
 
 type TreeNode={name:string;path:string;type:'file'|'dir';children:Map<string,TreeNode>;size?:number|null};
@@ -158,7 +158,7 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
       await call({operation:'write',projectId,path:selected,content:editedContent,message:`Edit ${selected} via LytHouse`});
       setFileContent(editedContent);setIsDirty(false);setSaved(true);
       setTimeout(()=>setSaved(false),2000);
-    }catch(e:any){alert('Save failed: '+e.message);}
+    }catch(e:any){toast('Save failed: '+e.message,'error');}
     setSaving(false);
   };
 
@@ -255,7 +255,7 @@ export function CodeEditorPanel({projectId,project,initialFile,initialLine,onClo
       a.download=`${project.name}-${project.git_branch||'main'}.zip`;
       a.click();
       URL.revokeObjectURL(url);
-    }catch(e:any){alert('Download failed: '+e.message);}
+    }catch(e:any){toast('Download failed: '+e.message,'error');}
     setDownloading(false);setDownloadProgress(0);
   };
 

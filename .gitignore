@@ -26,3 +26,6 @@ dist-ssr
 # back here and run `git rm --cached .env` to stop committing it.
 .env.local
 .env.*.local
+
+# Supabase CLI local project link cache — machine-specific, not needed in git.
+supabase/.temp/

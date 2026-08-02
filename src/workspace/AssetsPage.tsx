@@ -1,6 +1,7 @@
 // @ts-nocheck
 import{useCallback,useEffect,useState,useMemo}from'react';
 import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
+import{useRouter}from'../lib/router';
 import{Spinner}from'../lib/ui';
 import{Activity,Plus,X,Check,RefreshCw,Search,Bell,BellOff,ChevronRight,AlertTriangle,CheckCircle2,Clock,Zap,Shield,GitBranch,Cloud,Database,Loader as Loader2,Wifi,WifiOff,AlertCircle,ArrowRight,TrendingDown,Layers}from'lucide-react';
 import{AssetDetailPanel}from'./AssetDetailPanel';
@@ -231,6 +232,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
   const[connections,setConnections]=useState<Connection[]>([]);
   const[loading,setLoading]=useState(true);
   const[showCatalogue,setShowCatalogue]=useState(false);
+  const{navigate}=useRouter();
   const[search,setSearch]=useState('');
   const[catFilter,setCatFilter]=useState('all');
   const[connecting,setConnecting]=useState<string|null>(null);
@@ -398,7 +400,6 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
             <button onClick={()=>setNotifications(n=>!n)} title={notifications?'Notifications on':'Notifications off'} className={'p-2 rounded-lg border transition-colors '+(notifications?'border-brand-300 bg-brand-50 text-brand-600':'border-gray-200 text-gray-400')}>
               {notifications?<Bell size={16}/>:<BellOff size={16}/>}
             </button>
-            <button onClick={()=>setShowCatalogue(s=>!s)} className="btn-primary flex items-center gap-1.5"><Plus size={14}/>{showCatalogue?'Close':'Add Connection'}</button>
           </div>
         </div>
         {/* Live metrics */}
@@ -438,7 +439,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
               <Wifi size={28} className="mx-auto text-gray-200 mb-3"/>
               <p className="text-sm font-medium text-gray-500 mb-1">No systems connected</p>
               <p className="text-xs text-gray-400 mb-4">Connect your first system to start continuous monitoring.</p>
-              <button onClick={()=>setShowCatalogue(true)} className="btn-primary text-sm"><Plus size={13}/>Browse Integrations</button>
+              <button onClick={()=>navigate('/integrations')} className="btn-primary text-sm"><Plus size={13}/>Browse Integrations</button>
             </div>
           ):(
             <div className="space-y-3">

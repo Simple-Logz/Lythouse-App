@@ -21,6 +21,8 @@ const RISK_COLORS={low:'bg-green-50 text-green-700 border-green-200',medium:'bg-
 type ChaosRun={id:string;scenario:ScenarioId;status:RunStatus;duration:number;recoveryTime:number|null;passed:boolean|null;findings:string[];createdAt:string;};
 
 export function ChaosEngineeringPage(){
+  // Sample entries so the page isn't empty on first visit — no scenarios have
+  // actually run yet. New runs below are simulated too (see the banner).
   const[runs,setRuns]=useState<ChaosRun[]>([
     {id:'1',scenario:'pod-failure',status:'completed',duration:120,recoveryTime:18,passed:true,findings:['Pod recovered in 18s (within 30s SLA)','HPA scaled from 2→4 replicas during failure'],createdAt:new Date(Date.now()-3600000).toISOString()},
     {id:'2',scenario:'latency-injection',status:'completed',duration:300,recoveryTime:null,passed:false,findings:['P99 latency exceeded 2000ms at 200ms injection','Retry storms detected — circuit breaker not configured'],createdAt:new Date(Date.now()-86400000).toISOString()},
@@ -51,7 +53,7 @@ export function ChaosEngineeringPage(){
 
   <div className="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50 flex items-start gap-3">
     <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5"/>
-    <div className="text-sm text-amber-800"><strong>Controlled environment only.</strong> All chaos scenarios are designed for staging and pre-production. Never run against live production without a verified rollback plan and team awareness.</div>
+    <div className="text-sm text-amber-800"><strong>Controlled environment only — and currently simulated.</strong> Scenarios are designed for staging and pre-production; never run against live production without a verified rollback plan. Runs you launch here return simulated outcomes for demonstration — real fault injection against connected infrastructure is on the roadmap.</div>
   </div>
 
   {/* scenario catalogue */}

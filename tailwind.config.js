@@ -6,11 +6,19 @@
 // links, active states and focus. Natural amber/red kept for warning & danger.
 // Every accent token is remapped here so existing classes resolve automatically.
 
-// Accent spark: one refined indigo (links, active nav, focus rings).
+// Accent spark: soft lavender-violet (Dash-style) — used for links, active nav,
+// highlights, focus rings and gradient blends. Primary buttons stay near-black.
 const violet = {
-  50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
-  400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
-  800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
+  50: '#f5f3ff', 100: '#ece8ff', 200: '#dcd5ff', 300: '#c4b5fd',
+  400: '#a78bfa', 500: '#8b6ef2', 600: '#7c5ce6', 700: '#6a48cf',
+  800: '#583aa8', 900: '#4a3488', 950: '#2e1f5c',
+};
+
+// Success / passed tone: clean green (Spacelift-style green checks).
+const green = {
+  50: '#ecfdf3', 100: '#d1fadf', 200: '#a6f4c5', 300: '#6ce9a6',
+  400: '#32d583', 500: '#12b76a', 600: '#039855', 700: '#027a48',
+  800: '#05603a', 900: '#054f31', 950: '#03271a',
 };
 
 // Neutral text/UI (kept under "navy"): true-neutral ink, no blue cast.
@@ -49,10 +57,10 @@ export default {
         cyan: violet,
         fuchsia: violet,
         pink: violet,
-        // Greens also read as brand so the app stays one family
-        green: violet,
-        emerald: violet,
-        lime: violet,
+        // Success stays green (passed checks), everything else is the violet accent
+        green: green,
+        emerald: green,
+        lime: green,
         teal: violet,
 
         // Neutral text/surfaces
@@ -68,7 +76,10 @@ export default {
         rose: red,
         danger: red,
       },
-      fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Fraunces', 'Georgia', 'serif'],
+      },
       boxShadow: {
         glossy: '0 1px 0 0 rgba(255,255,255,.3) inset, 0 8px 20px -6px rgba(16,24,40,.20)',
         soft: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -12px rgba(16,24,40,.16)',

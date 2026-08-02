@@ -11,7 +11,7 @@ export function OnboardingPage(){
   const{user,profile}=useAuth();
   const{navigate}=useRouter();
   const[step,setStep]=useState<Step>('workspace');
-  const[wsName,setWsName]=useState('');
+  const[wsName,setWsName]=useState(()=>localStorage.getItem('lh.pendingAccount')||'');
   const[wsDesc,setWsDesc]=useState('');
   const[projName,setProjName]=useState('');
   const[gitUrl,setGitUrl]=useState('');

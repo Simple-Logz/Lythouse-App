@@ -9,11 +9,13 @@ import {
   XCircle, AlertTriangle, GitBranch, Loader as Loader2, LogOut, Shield, Check,
   Clock, RefreshCw, Monitor, Menu, X, LayoutDashboard, ChartBar, FolderGit2,
   Webhook, Boxes, Users, Sparkles, Settings as SettingsIcon, Server,
+  Building2, Bug, Layers, Pin, ChevronsUpDown,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useRouter } from '../lib/router';
 import { Logo } from '../lib/ui';
+import { usePins, removePin, pinKey, type PinType } from '../lib/pins';
 import { getHeadSha } from '../workspace/repoCache';
 
 // Same sections the desktop sidebar exposes — so nothing on the web is missing
@@ -22,14 +24,21 @@ const MENU = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/executive', label: 'Executive View', icon: ChartBar },
   { to: '/projects', label: 'Projects', icon: FolderGit2 },
+  { to: '/stacks', label: 'Stacks', icon: Layers },
+  { to: '/findings', label: 'Findings', icon: Bug },
   { to: '/environment', label: 'Environment', icon: Server },
   { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
   { to: '/integrations', label: 'Integrations', icon: Webhook },
+  { to: '/organizations', label: 'Organizations', icon: Building2 },
   { to: '/workspaces', label: 'Workspaces', icon: Boxes },
   { to: '/team', label: 'Team', icon: Users },
   { to: '/plans', label: 'Plans', icon: Sparkles },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
+// Pinned items reuse the same type→icon mapping as the desktop sidebar.
+const PIN_ICONS: Record<PinType, any> = {
+  workspace: Boxes, project: FolderGit2, finding: Bug, stack: Layers, environment: Server,
+};
 
 export const TONE = {
   red: { text: 'text-[#dc2626]', bg: 'bg-[#fde3e3]', border: 'border-[#f5a3a3]', dot: 'bg-[#dc2626]' },
@@ -59,6 +68,7 @@ function projectStatus(project, validations, findings) {
 export function MobileApp({ renderPage }) {
   const { user, profile, signOut } = useAuth();
   const { path, navigate } = useRouter();
+  const pins = usePins();
   const [tab, setTab] = useState('home');
   const [menuOpen, setMenuOpen] = useState(false);
   const [browsing, setBrowsing] = useState(false); // true = showing a real desktop page
@@ -163,6 +173,23 @@ export function MobileApp({ renderPage }) {
               <button onClick={() => setMenuOpen(false)} className="p-2 -mr-1 text-gray-400"><X size={18} /></button>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
+              {pins.length > 0 && (
+                <>
+                  <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5"><Pin size={11} />Pinned</p>
+                  {pins.map((p) => {
+                    const Icon = PIN_ICONS[p.type] || FolderGit2;
+                    return (
+                      <div key={pinKey(p.type, p.id)} className="group flex items-center">
+                        <button onClick={() => { navigate(p.to); setBrowsing(true); setMenuOpen(false); }} className="flex-1 min-w-0 flex items-center gap-3 px-4 py-3 text-sm text-navy-800 active:bg-gray-50">
+                          <Icon size={17} className="text-brand-500 shrink-0" /><span className="truncate">{p.label}</span>
+                        </button>
+                        <button onClick={() => removePin(p.type, p.id)} aria-label={`Unpin ${p.label}`} className="px-3 py-3 text-gray-300 active:text-brand-600"><X size={15} /></button>
+                      </div>
+                    );
+                  })}
+                  <div className="mx-4 my-2 border-t border-gray-100" />
+                </>
+              )}
               <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">All features</p>
               {MENU.map((m) => (
                 <button key={m.to} onClick={() => { navigate(m.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-navy-800 active:bg-gray-50">

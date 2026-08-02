@@ -1,6 +1,6 @@
 import{useEffect,useState,useCallback}from'react';
 import{supabase,type WorkspaceMember,type WorkspaceInvitation}from'../lib/supabase';
-import{PageHeader,Spinner,EmptyState}from'../lib/ui';
+import{PageHeader,Spinner,EmptyState,toast}from'../lib/ui';
 import{useAuth}from'../lib/auth';
 import{useRole}from'../lib/useRole';
 import{type Role,ROLE_CLS,ROLE_DESC,ROLE_LABEL,ASSIGNABLE_ROLES,canManageMember,normalizeRole}from'../lib/roles';
@@ -116,16 +116,16 @@ export function TeamPage(){
   };
 
   const removeMember=async(memberId:string,userId:string)=>{
-    if(userId===user?.id){alert('You cannot remove yourself from the workspace.');return;}
+    if(userId===user?.id){toast('You cannot remove yourself from the workspace.','error');return;}
     if(!confirm('Remove this member from the workspace?'))return;
     const{error}=await supabase.from('workspace_members').delete().eq('id',memberId);
-    if(error){alert(error.message);return;}
+    if(error){toast(error.message,'error');return;}
     setMembers(prev=>prev.filter(m=>m.id!==memberId));
   };
 
   const changeRole=async(memberId:string,newRole:Role)=>{
     const{error}=await supabase.from('workspace_members').update({role:newRole}).eq('id',memberId);
-    if(error){alert(error.message);return;}
+    if(error){toast(error.message,'error');return;}
     setMembers(prev=>prev.map(m=>m.id===memberId?{...m,role:newRole}:m));
   };
 

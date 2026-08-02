@@ -177,27 +177,47 @@ export function EnvironmentValidationPage() {
 
       {/* empty state → connect-first */}
       {!hasAnything && (
-        <div className="card !p-8">
-          <div className="text-center max-w-lg mx-auto">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600"><Link2 size={26} /></div>
-            <h3 className="text-lg font-bold text-navy-900">Connect your environment</h3>
-            <p className="mt-1.5 text-sm text-gray-500">Pick where your infrastructure runs. A read-only collector pulls the live components and LytHouse validates them — your cloud credentials never leave your side.</p>
+        <div className="card !p-0 overflow-hidden">
+          {/* header band */}
+          <div className="relative px-8 pt-10 pb-8 text-center" style={{ background: 'linear-gradient(180deg, rgba(124,92,230,.07), transparent)' }}>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 [box-shadow:0_10px_28px_-10px_rgba(124,92,230,.5)]"><Link2 size={26} /></div>
+            <div className="text-xs font-bold uppercase tracking-wider text-brand-600">Environment validation</div>
+            <h3 className="mt-2 text-2xl font-bold text-navy-900">Connect your environment</h3>
+            <p className="mt-2 mx-auto max-w-lg text-sm leading-relaxed text-gray-500">A read-only collector pulls your live components — IAM, security groups, workloads, images and servers — and validates them against the same checks that gate your releases.</p>
+            {/* 3-step mini guide */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+              {['Choose a source', 'Run the read-only collector', 'See validated components'].map((s, i) => (
+                <div key={s} className="flex items-center gap-3">
+                  <span className="inline-flex items-center gap-2 text-[12.5px] font-medium text-navy-700">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">{i + 1}</span>{s}
+                  </span>
+                  {i < 2 && <span className="hidden sm:block h-px w-6 bg-gray-200" />}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 mt-6 max-w-2xl mx-auto">
+          {/* provider cards */}
+          <div className="mx-auto grid max-w-3xl gap-3 px-8 pb-7 sm:grid-cols-2">
             {PROVIDERS.map((p) => {
               const Icon = p.icon;
               return (
-                <button key={p.id} onClick={() => setConnecting(p.id)} className="flex items-start gap-3 rounded-2xl border border-gray-200 p-4 text-left hover:border-brand-300 hover:shadow-soft transition-all">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0" style={{ backgroundColor: `${p.accent}1a`, color: p.accent }}><Icon size={20} /></span>
+                <button key={p.id} onClick={() => setConnecting(p.id)} className="group flex items-start gap-3.5 rounded-2xl border border-gray-200 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:[box-shadow:0_14px_32px_-16px_rgba(124,92,230,.45)]">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${p.accent}1a`, color: p.accent }}><Icon size={21} /></span>
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 text-sm font-semibold text-navy-900">{p.label}<ArrowRight size={13} className="text-gray-300" /></span>
-                    <span className="block text-[12px] text-gray-500 leading-snug mt-0.5">{p.blurb}</span>
+                    <span className="flex items-center gap-1.5 text-[15px] font-semibold text-navy-900">{p.label}<ArrowRight size={14} className="text-brand-400 transition-transform group-hover:translate-x-0.5" /></span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-gray-500">{p.blurb}</span>
                   </span>
                 </button>
               );
             })}
           </div>
-          <p className="text-center text-xs text-gray-400 mt-6">Prefer to check a single file? <button onClick={() => setAdding(true)} className="text-brand-600 hover:underline font-medium">Add a component manually</button>.</p>
+          {/* trust footer */}
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 border-t border-gray-100 px-8 py-4 text-xs text-gray-400">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-500"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+            Read-only — your cloud credentials never reach LytHouse.
+            <span className="text-gray-300">·</span>
+            <button onClick={() => setAdding(true)} className="font-medium text-brand-600 hover:underline">Add a single component manually</button>
+          </div>
         </div>
       )}
 

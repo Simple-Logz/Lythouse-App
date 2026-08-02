@@ -2,7 +2,7 @@
 import{useEffect,useState}from'react';
 import{supabase,edgeFunctionUrl,anonKey}from'../lib/supabase';
 import{useAuth}from'../lib/auth';
-import{PageHeader,Spinner}from'../lib/ui';
+import{PageHeader,Spinner,toast}from'../lib/ui';
 import{User,Bell,Shield,Globe,Key,Palette,Save,Check,Loader as Loader2,Eye,EyeOff,AlertTriangle,Monitor,Moon,Sun,Camera,Upload,Download,Trash2}from'lucide-react';
 
 type NotifPref={email_validations:boolean;email_critical:boolean;email_digest:boolean;email_deployments:boolean;};
@@ -25,8 +25,8 @@ export function SettingsPage(){
 
   const uploadAvatar=async(file:File)=>{
     if(!user)return;
-    if(file.size>2*1024*1024){alert('Image must be under 2MB.');return;}
-    if(!file.type.startsWith('image/')){alert('Please upload an image file.');return;}
+    if(file.size>2*1024*1024){toast('Image must be under 2MB.','error');return;}
+    if(!file.type.startsWith('image/')){toast('Please upload an image file.','error');return;}
     setUploadingAvatar(true);
     try{
       const ext=file.name.split('.').pop();
@@ -112,18 +112,16 @@ export function SettingsPage(){
 
   const applyTheme=(theme:'light'|'dark'|'system')=>{
     const root=document.documentElement;
-    if(theme==='dark'){
-      root.classList.add('dark');
-      root.style.colorScheme='dark';
-    } else if(theme==='light'){
-      root.classList.remove('dark');
-      root.style.colorScheme='light';
-    } else {
-      // System
-      const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if(prefersDark){root.classList.add('dark');root.style.colorScheme='dark';}
-      else{root.classList.remove('dark');root.style.colorScheme='light';}
-    }
+    const resolved:'light'|'dark' = theme==='system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')
+      : theme;
+    // Drive BOTH systems used across the app: the `.dark` class (page utilities)
+    // and the `data-theme` attribute (the app-shell --lh tokens), plus persist to
+    // `lh.theme` — the key the shell reads — so the switch sticks everywhere.
+    root.classList.toggle('dark', resolved==='dark');
+    root.setAttribute('data-theme', resolved);
+    root.style.colorScheme=resolved;
+    try{ localStorage.setItem('lh.theme', resolved); }catch{}
   };
 
   const saveAppearance=()=>{
@@ -166,7 +164,7 @@ export function SettingsPage(){
       const a=document.createElement('a');
       a.href=url;a.download=`lythouse-export-${new Date().toISOString().slice(0,10)}.json`;
       document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-    }catch(e){console.error(e);alert('Export failed. Please try again.');}
+    }catch(e){console.error(e);toast('Export failed. Please try again.','error');}
     setExporting(false);
   };
 
@@ -185,10 +183,10 @@ export function SettingsPage(){
         body:JSON.stringify({confirm:'DELETE'}),
       });
       const json=await res.json().catch(()=>({}));
-      if(!res.ok){alert(json.error||'Could not delete account.');setDeleting(false);return;}
+      if(!res.ok){toast(json.error||'Could not delete account.','error');setDeleting(false);return;}
       await supabase.auth.signOut();
       window.location.href='/';
-    }catch(e:any){alert(e.message||'Could not delete account.');setDeleting(false);}
+    }catch(e:any){toast(e.message||'Could not delete account.','error');setDeleting(false);}
   };
 
   const changePassword=async()=>{

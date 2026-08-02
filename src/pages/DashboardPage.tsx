@@ -1,499 +1,391 @@
 // @ts-nocheck
-import{useCallback,useEffect,useState}from'react';
-import{supabase,anonKey,edgeFunctionUrl}from'../lib/supabase';
-import{useAuth}from'../lib/auth';
-import{Spinner,InfoHint}from'../lib/ui';
+import { useCallback, useEffect, useState } from 'react'
+import { supabase, anonKey, edgeFunctionUrl } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
+import { Spinner } from '../lib/ui'
+import { Link, useRouter } from '../lib/router'
+import {
+  Check, AlertTriangle, XCircle, Lock, Users, Server, Layers,
+  ShieldCheck, ChevronRight, Play, RefreshCw, Loader as Loader2,
+  GitBranch, ArrowRight, Clock, Activity, ChevronDown
+} from 'lucide-react'
 
-// Deterministic, transparent deployment confidence — derived only from real
-// signals (last risk score + open blockers + pending approvals). Returns null
-// when there's nothing to base it on, so we never show an invented number.
-function computeConfidence(latest,critical,high,pendingApprovals,validationsRun){
-  if(!validationsRun||latest?.risk_score==null)return null;
-  let c=100-latest.risk_score;
-  c-=critical.length*25;
-  c-=high.length*8;
-  c-=pendingApprovals.length*6;
-  return Math.max(5,Math.min(98,Math.round(c)));
-}
-import{Link}from'../lib/router';
-import{
-  CheckCircle2,XCircle,AlertTriangle,Clock,Shield,Zap,
-  RefreshCw,Play,ChevronRight,Sparkles,GitBranch,
-  Activity,Server,Lock,Package,Layers,ArrowRight,
-  Check,Users,GitPullRequest,BarChart3,Loader as Loader2,
-  GitCommit,Box,TrendingUp,Bell,User,ExternalLink
-}from'lucide-react';
-
-function timeAgo(iso:string):string{
-  const ms=Date.now()-new Date(iso).getTime();
-  const m=Math.floor(ms/60000),h=Math.floor(m/60),d=Math.floor(h/24);
-  if(m<1)return'just now';if(m<60)return`${m}m ago`;
-  if(h<24)return`${h}h ago`;return`${d}d ago`;
+// Deterministic, transparent confidence — from real signals only.
+function computeConfidence(latest, critical, high, pendingApprovals, validationsRun) {
+  if (!validationsRun || latest?.risk_score == null) return null
+  let c = 100 - latest.risk_score
+  c -= critical.length * 25
+  c -= high.length * 8
+  c -= pendingApprovals.length * 6
+  return Math.max(5, Math.min(98, Math.round(c)))
 }
 
-function formatTime(iso:string):string{
-  return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+function timeAgo(iso: string): string {
+  if (!iso) return ''
+  const ms = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(ms / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24)
+  if (m < 1) return 'just now'; if (m < 60) return `${m}m ago`
+  if (h < 24) return `${h}h ago`; return `${d}d ago`
 }
 
-export function DashboardPage(){
-  const{user,profile}=useAuth();
-  const[loading,setLoading]=useState(true);
-  const[projects,setProjects]=useState<any[]>([]);
-  const[validations,setValidations]=useState<any[]>([]);
-  const[findings,setFindings]=useState<any[]>([]);
-  const[approvals,setApprovals]=useState<any[]>([]);
-  const[connections,setConnections]=useState<any[]>([]);
-  const[aiRec,setAiRec]=useState<{decision:string;confidence:number;reasons:string[];nextStep:string;etaMinutes:number}|null>(null);
-  const[loadingAI,setLoadingAI]=useState(false);
-  const wsId=()=>localStorage.getItem('sandbox.activeWs');
+const CSS = `
+.dv{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.dv .ok{--c:var(--lh-accent)}
+.dv .warn{--c:#d08a1a}.dv .bad{--c:#e5484d}.dv .off{--c:var(--lh-text3)}
+:root[data-theme="dark"] .dv .warn{--c:#e6b23d}:root[data-theme="dark"] .dv .bad{--c:#ff6166}
+.dv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.dv-h1{font-size:30px;font-weight:700;letter-spacing:-.025em;color:var(--lh-text);line-height:1.1}
+.dv-sub{font-size:14.5px;color:var(--lh-text2);margin-top:6px;max-width:560px;line-height:1.45}
+.dv-tools{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.dv-sel{position:relative;display:flex;align-items:center}
+.dv-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13.5px;font-weight:500;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:10px;padding:9px 34px 9px 13px;cursor:pointer;max-width:210px}
+.dv-sel .cv{position:absolute;right:11px;pointer-events:none;color:var(--lh-text3)}
+.dv-run{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--lh-accent-contrast);background:var(--lh-accent);border:none;border-radius:10px;padding:9px 16px;cursor:pointer;transition:.14s}
+.dv-run:hover{filter:brightness(1.05)}.dv-run:active{transform:scale(.97)}.dv-run:disabled{opacity:.6;cursor:default}
+.dv-card{background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px}
+.dv-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){.dv-kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:18px 20px;display:flex;flex-direction:column;gap:3px;transition:.15s;text-decoration:none}
+a.kpi:hover{border-color:var(--lh-border2);transform:translateY(-1px)}
+.kpi .kl{font-size:13px;color:var(--lh-text2);font-weight:500}
+.kpi .kv{font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--lh-text);line-height:1.05;margin-top:4px}
+.kpi .ks{font-size:12.5px;color:var(--lh-text3);margin-top:2px}
+.kpi .ks b{color:var(--c);font-weight:600}
+.dv-grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:16px}
+@media(max-width:900px){.dv-grid2{grid-template-columns:1fr}}
+.rc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--lh-border)}
+.rc-title{font-size:15px;font-weight:600;color:var(--lh-text);display:flex;align-items:center;gap:7px;min-width:0}
+.rc-title .mono{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--lh-text2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 11px;border-radius:20px;background:color-mix(in srgb,var(--c) 13%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);flex-shrink:0}
+.pill .pd{width:6px;height:6px;border-radius:50%;background:var(--c)}
+.rc-body{padding:20px;display:flex;gap:22px;align-items:center}
+@media(max-width:520px){.rc-body{flex-direction:column;align-items:flex-start}}
+.ring{position:relative;width:104px;height:104px;flex-shrink:0}
+.ring .num{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;font-weight:700;color:var(--lh-text);letter-spacing:-.02em}
+.checks{display:flex;flex-direction:column;gap:11px;min-width:0}
+.chk{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--lh-text)}
+.chk .cb{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c);flex-shrink:0}
+.rc-meta{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--lh-border)}
+@media(max-width:520px){.rc-meta{grid-template-columns:repeat(2,1fr)}}
+.rc-meta .m{padding:14px 20px;border-right:1px solid var(--lh-border)}
+.rc-meta .m:last-child{border-right:none}
+.rc-meta .ml{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--lh-text3)}
+.rc-meta .mv{font-size:14px;font-weight:600;color:var(--lh-text);margin-top:3px}
+.rc-meta .mv.mono{font-family:'JetBrains Mono',monospace;font-weight:500}
+.rc-foot{display:flex;gap:10px;padding:15px 20px;border-top:1px solid var(--lh-border)}
+.btn-a{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer;text-decoration:none;transition:.14s}
+.btn-a.pri{background:var(--lh-accent);color:var(--lh-accent-contrast);border:1px solid transparent}
+.btn-a.pri:hover{filter:brightness(1.05)}
+.btn-a.gho{background:transparent;color:var(--lh-text2);border:1px solid var(--lh-border)}
+.btn-a.gho:hover{background:var(--lh-surface2);color:var(--lh-text)}
+.pos-row{display:flex;align-items:center;gap:13px;padding:13px 18px;border-top:1px solid var(--lh-border)}
+.pos-row:first-of-type{border-top:none}
+.pos-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);flex-shrink:0}
+.pos-tx{min-width:0;flex:1}
+.pos-tx .pn{font-size:14px;font-weight:600;color:var(--lh-text)}
+.pos-tx .ps{font-size:12px;color:var(--lh-text3);margin-top:1px}
+.pos-st{font-size:12.5px;font-weight:600;color:var(--c);flex-shrink:0}
+.pos-st.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--lh-border)}
+.sec-h .st{font-size:15px;font-weight:600;color:var(--lh-text)}
+.sec-h a{font-size:12.5px;color:var(--lh-text2);text-decoration:none;font-weight:500}
+.sec-h a:hover{color:var(--lh-accent)}
+.act-row{display:flex;align-items:flex-start;gap:12px;padding:13px 20px;border-top:1px solid var(--lh-border)}
+.act-row:first-of-type{border-top:none}
+.act-dot{width:9px;height:9px;border-radius:50%;background:var(--c);margin-top:5px;flex-shrink:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent)}
+.act-tx{flex:1;min-width:0}
+.act-tx .al{font-size:13.5px;color:var(--lh-text);line-height:1.35}
+.act-tx .at{font-size:11.5px;color:var(--lh-text3);margin-top:1px}
+.dv-empty{padding:34px 20px;text-align:center;color:var(--lh-text3);font-size:13.5px}
+`
 
-  const load=useCallback(async()=>{
-    setLoading(true);
-    const wid=wsId();
-    if(!wid){setLoading(false);return;}
-    const[pr,vl,fn,ap,ec]=await Promise.all([
-      supabase.from('projects').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}),
-      supabase.from('validations').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(50),
-      supabase.from('findings').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}),
-      supabase.from('release_approvals').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(5),
-      supabase.from('environment_connections').select('*').eq('workspace_id',wid),
-    ]);
-    setProjects(pr.data??[]);
-    setValidations(vl.data??[]);
-    setFindings(fn.data??[]);
-    setApprovals(ap.data??[]);
-    setConnections(ec.data??[]);
-    setLoading(false);
-  },[]);
+function Ring({ value }: { value: number | null }) {
+  const r = 44, c = 2 * Math.PI * r
+  const pct = value == null ? 0 : Math.max(0, Math.min(100, value))
+  const off = c * (1 - pct / 100)
+  const stroke = value == null ? 'var(--lh-border2)' : pct >= 80 ? 'var(--lh-accent)' : pct >= 55 ? '#d08a1a' : '#e5484d'
+  return (
+    <div className="ring">
+      <svg width="104" height="104" viewBox="0 0 104 104">
+        <circle cx="52" cy="52" r={r} fill="none" stroke="var(--lh-border)" strokeWidth="8" />
+        <circle cx="52" cy="52" r={r} fill="none" stroke={stroke} strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={off} transform="rotate(-90 52 52)"
+          style={{ transition: 'stroke-dashoffset .7s cubic-bezier(.2,.8,.2,1)' }} />
+      </svg>
+      <span className="num">{value == null ? '—' : value}</span>
+    </div>
+  )
+}
 
-  useEffect(()=>{load();},[load]);
+export function DashboardPage() {
+  const { profile } = useAuth()
+  const { navigate } = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [running, setRunning] = useState(false)
+  const [ws, setWs] = useState<any>(null)
+  const [projects, setProjects] = useState<any[]>([])
+  const [validations, setValidations] = useState<any[]>([])
+  const [findings, setFindings] = useState<any[]>([])
+  const [approvals, setApprovals] = useState<any[]>([])
+  const [connections, setConnections] = useState<any[]>([])
+  const [selProj, setSelProj] = useState<string>('')
+  const wsId = () => localStorage.getItem('sandbox.activeWs')
 
-  const getAIRec=useCallback(async(open:any[],latest:any,pendingApprovals:any[],connectedSystems:any[])=>{
-    setLoadingAI(true);
-    const critical=open.filter(f=>f.severity==='critical');
-    const high=open.filter(f=>f.severity==='high');
-    try{
-      const res=await fetch(`${edgeFunctionUrl}/ai-chat`,{method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':`Bearer ${anonKey}`,'apikey':anonKey},
-        body:JSON.stringify({
-          systemPrompt:'You are an AI Release Advisor. Respond ONLY with valid JSON. No markdown, no explanation outside JSON.',
-          messages:[{role:'user',content:`Analyze and return JSON only:
-{"decision":"DEPLOY NOW|DELAY|DO NOT DEPLOY","confidence":0-100,"reasons":["reason1","reason2","reason3"],"nextStep":"single most important action","etaMinutes":number}
+  const load = useCallback(async () => {
+    const wid = wsId()
+    if (!wid) { setLoading(false); return }
+    const [wr, pr, vl, fn, ap, ec] = await Promise.all([
+      supabase.from('workspaces').select('name').eq('id', wid).single(),
+      supabase.from('projects').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }),
+      supabase.from('validations').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }).limit(50),
+      supabase.from('findings').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }),
+      supabase.from('release_approvals').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }).limit(10),
+      supabase.from('environment_connections').select('*').eq('workspace_id', wid),
+    ])
+    setWs(wr.data)
+    setProjects(pr.data ?? [])
+    setValidations(vl.data ?? [])
+    setFindings(fn.data ?? [])
+    setApprovals(ap.data ?? [])
+    setConnections(ec.data ?? [])
+    setSelProj((p) => p || (pr.data?.[0]?.id ?? ''))
+    setLoading(false)
+  }, [])
 
-Context:
-- Risk score: ${latest?.risk_score??'none'}/100
-- Critical blockers: ${critical.length}
-- High severity: ${high.length}
-- Pending approvals: ${pendingApprovals.length}
-- Validations run: ${validations.length}
-- Connected systems: ${connectedSystems.length}`}]
+  useEffect(() => { load() }, [load])
+
+  const runValidation = async () => {
+    const proj = projects.find((p) => p.id === selProj) || projects[0]
+    if (!proj || running) return
+    setRunning(true)
+    const wid = wsId()
+    const { data: v } = await supabase.from('validations').insert({
+      project_id: proj.id, workspace_id: wid, status: 'running', trigger: 'manual',
+    }).select().single()
+    if (v) {
+      try {
+        await fetch(`${edgeFunctionUrl}/process-validation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${anonKey}`, apikey: anonKey },
+          body: JSON.stringify({ validationId: v.id, projectId: proj.id, gitUrl: proj.git_url, branch: proj.git_branch || 'main', githubToken: proj.github_token || null }),
         })
-      });
-      // Confidence is NOT taken from the model — it's computed from real signals.
-      const conf=computeConfidence(latest,critical,high,pendingApprovals,validations.length);
-      if(res.ok){
-        const d=await res.json();
-        try{
-          const text=d.content?.replace(/```json|```/g,'').trim();
-          const parsed=JSON.parse(text);
-          setAiRec({...parsed,confidence:conf});
-        }catch{
-          // Fallback structured recommendation
-          const isBlocked=critical.length>0;
-          setAiRec({
-            decision:isBlocked?'DO NOT DEPLOY':high.length>0?'DELAY':validations.length===0?'DELAY':'DEPLOY NOW',
-            confidence:conf,
-            reasons:isBlocked?[`${critical.length} critical blocker${critical.length!==1?'s':''} unresolved`,pendingApprovals.length>0?`${pendingApprovals.length} approval${pendingApprovals.length!==1?'s':''} pending`:'Recent validation failed','Deployment gate blocked'].filter(Boolean)
-              :high.length>0?[`${high.length} high-severity issue${high.length!==1?'s':''} needs review`,pendingApprovals.length>0?`${pendingApprovals.length} approval pending`:'All blockers cleared'].filter(Boolean)
-              :validations.length===0?['No validation has been run','Cannot assess risk without a scan','Connect repository and run scan first']
-              :['All blockers resolved','Validation passed','Ready to proceed'],
-            nextStep:isBlocked?'Fix critical blockers in Remediation':high.length>0?'Review high-severity findings':validations.length===0?'Run your first validation':'Proceed to deployment',
-            etaMinutes:isBlocked?open.reduce((t,f)=>t+(f.severity==='critical'?60:f.severity==='high'?30:10),0)/60|0:high.length>0?30:5,
-          });
-        }
-      }
-    }catch{}
-    setLoadingAI(false);
-  },[validations]);
-
-  useEffect(()=>{
-    if(!loading&&projects.length>0){
-      const open=findings.filter(f=>f.status==='open');
-      const latest=validations.find(v=>v.status==='completed');
-      const pendingApprovals=approvals.filter(a=>a.status==='pending');
-      const connectedSystems=connections.filter(c=>c.status==='connected');
-      getAIRec(open,latest,pendingApprovals,connectedSystems);
+      } catch {}
     }
-  },[loading]);
+    await load()
+    setRunning(false)
+  }
 
-  if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
+  if (loading) return <div className="flex justify-center py-24"><Spinner size={28} /></div>
 
-  // ─── Computed ─────────────────────────────────────────────────────────────
-  const latest=validations.find(v=>v.status==='completed');
-  const open=findings.filter(f=>f.status==='open');
-  const critical=open.filter(f=>f.severity==='critical');
-  const high=open.filter(f=>f.severity==='high');
-  const resolved=findings.filter(f=>f.status==='resolved');
-  const riskScore=latest?.risk_score??null;
-  const readiness=riskScore!==null?Math.max(0,100-riskScore):null;
-  const isBlocked=critical.length>0;
-  const pendingApprovals=approvals.filter(a=>a.status==='pending');
-  const latestProject=projects[0];
-  const connectedSystems=connections.filter(c=>c.status==='connected');
-  const successRate=validations.length>0?Math.round((validations.filter(v=>v.status==='completed'&&v.critical_count===0).length/validations.length)*100):0;
-  const noData=projects.length===0||validations.length===0;
+  // ─── Real-data computed values ──────────────────────────────────────────
+  const cat = (re: RegExp) => (f: any) => re.test(`${f.category || ''} ${f.title || ''}`)
+  const open = findings.filter((f) => f.status === 'open')
+  const critical = open.filter((f) => f.severity === 'critical')
+  const high = open.filter((f) => f.severity === 'high')
+  const latest = validations.find((v) => v.status === 'completed')
+  const pendingApprovals = approvals.filter((a) => a.status === 'pending')
+  const rejected = approvals.filter((a) => a.status === 'rejected')
+  const connected = connections.filter((c) => c.status === 'connected')
+  const featured = projects.find((p) => p.id === selProj) || projects[0] || null
+  const confidence = computeConfidence(latest, critical, high, pendingApprovals, validations.length)
+  const riskScore = latest?.risk_score ?? null
+  const readiness = riskScore !== null ? Math.max(0, 100 - riskScore) : null
+  const isBlocked = critical.length > 0
+  const approvedRoles = featured
+    ? (approvals.find((a) => a.project_id === featured.id)?.approvals || [])
+    : []
+  const featApproval = featured ? approvals.find((a) => a.project_id === featured.id) : null
+  const totalRoles = 3
+  const approvedCount = new Set((featApproval?.approvals || []).map((a: any) => a.role)).size
+  const deployGated = isBlocked || (riskScore !== null && readiness < 60)
+  const waitingSignoffs = pendingApprovals.reduce((n, a) => n + Math.max(0, totalRoles - new Set((a.approvals || []).map((x: any) => x.role)).size), 0)
 
-  // My tasks
-  const myTasks=[
-    ...pendingApprovals.map(a=>({label:`Approve release: ${a.release_name}`,type:'approval',link:`/projects/${a.project_id}`,urgent:true})),
-    ...critical.slice(0,2).map(f=>({label:`Fix: ${f.title.slice(0,40)}`,type:'fix',link:`/projects/${f.project_id}`,urgent:true})),
-    ...validations.length===0?[{label:'Run first validation scan',type:'validation',link:latestProject?`/projects/${latestProject.id}`:'/projects',urgent:false}]:[],
-  ].slice(0,4);
+  const riskLabel = riskScore === null ? '—' : riskScore < 40 ? 'Low' : riskScore < 70 ? 'Medium' : 'High'
 
-  // Timeline
-  const timeline=[
-    ...validations.slice(0,5).map(v=>({
-      time:v.created_at,label:v.status==='completed'?`Validation completed — ${v.total_findings} findings, risk ${v.risk_score}/100`:`Validation ${v.status}`,
-      status:v.status==='completed'&&v.critical_count===0?'ok':v.critical_count>0?'blocked':'running',
+  // KPI cards (all real)
+  const kpis = [
+    {
+      label: 'Releases pending decision', value: pendingApprovals.length,
+      parts: pendingApprovals.length === 0 && rejected.length === 0
+        ? [{ t: 'All decisions made', tone: 'off' }]
+        : [rejected.length ? { t: `${rejected.length} blocked`, tone: 'bad' } : null, pendingApprovals.length ? { t: `${pendingApprovals.length} need review`, tone: 'warn' } : null].filter(Boolean),
+      to: '/approvals',
+    },
+    {
+      label: 'Open findings', value: open.length,
+      parts: open.length === 0
+        ? [{ t: 'All clear', tone: 'ok' }]
+        : [critical.length ? { t: `${critical.length} critical`, tone: 'bad' } : null, high.length ? { t: `${high.length} high`, tone: 'warn' } : null, (!critical.length && !high.length) ? { t: `${open.length} to review`, tone: 'off' } : null].filter(Boolean),
+      to: '/findings',
+    },
+    {
+      label: 'Environments validated', value: `${connected.length}/${connections.length || 0}`,
+      parts: connections.length === 0
+        ? [{ t: 'None connected yet', tone: 'off' }]
+        : connected.length < connections.length
+          ? [{ t: `${(connections.find((c) => c.status !== 'connected')?.source || 'One')} not connected`, tone: 'warn' }]
+          : [{ t: 'All connected', tone: 'ok' }],
+      to: '/environment',
+    },
+    {
+      label: 'Approvals waiting', value: waitingSignoffs,
+      parts: waitingSignoffs === 0 ? [{ t: 'Nothing waiting', tone: 'off' }] : [{ t: 'sign-offs needed', tone: 'warn' }],
+      to: '/approvals',
+    },
+  ]
+
+  // Release status pill
+  const status = projects.length === 0 ? { t: 'No project', tone: 'off' }
+    : validations.length === 0 ? { t: 'Not validated', tone: 'off' }
+      : isBlocked ? { t: 'Blocked', tone: 'bad' }
+        : deployGated ? { t: 'Review', tone: 'warn' }
+          : readiness !== null && readiness >= 80 ? { t: 'Deploy now', tone: 'ok' }
+            : { t: 'Review', tone: 'warn' }
+
+  const checks = [
+    { ok: critical.length === 0, on: 'All blockers cleared', off: `${critical.length} blocker${critical.length !== 1 ? 's' : ''} to resolve` },
+    { ok: approvedCount >= totalRoles, on: `${approvedCount} of ${totalRoles} approvals in`, off: `${approvedCount} of ${totalRoles} approvals in` },
+    { ok: !deployGated, on: 'Production gate satisfied', off: 'Production gate not satisfied' },
+  ]
+
+  // Environment posture — derived from real finding categories + connections
+  const kubeConn = connected.some((c) => (c.source || '').includes('kubernetes'))
+  const secretF = open.filter(cat(/secret|credential|token|password/i))
+  const iamF = open.filter(cat(/iam|permission|policy|access|role|privilege/i))
+  const serverF = open.filter(cat(/server|host|os|patch|hardening/i))
+  const certF = open.filter(cat(/cert|tls|ssl|expir/i))
+  const postureRows = [
+    { icon: Lock, name: 'Secrets', ok: secretF.length === 0, sub: secretF.length ? `${secretF.length} to rotate` : 'No exposed secrets', st: secretF.length ? 'Review' : 'Clean' },
+    { icon: Users, name: 'IAM', ok: iamF.length === 0, sub: iamF.length ? `${iamF.length} policy issue${iamF.length !== 1 ? 's' : ''}` : 'Least-privilege', st: iamF.length ? 'Review' : 'Clean' },
+    { icon: Layers, name: 'Kubernetes', ok: kubeConn, off: !kubeConn, sub: kubeConn ? 'Connected · monitoring' : 'Not connected', st: kubeConn ? 'Healthy' : 'Not connected' },
+    { icon: Server, name: 'Servers', ok: serverF.length === 0, sub: serverF.length ? `${serverF.length} to patch` : 'Baseline applied', st: serverF.length ? 'Review' : 'Hardened' },
+    { icon: ShieldCheck, name: 'Certificates', ok: certF.length === 0, sub: certF.length ? `${certF.length} expiring` : 'None expiring', st: certF.length ? 'Review' : 'Valid' },
+  ]
+  const postureFindings = secretF.length + iamF.length + serverF.length + certF.length
+
+  // Recent activity — real events
+  const activity = [
+    ...validations.slice(0, 6).map((v) => ({
+      time: v.created_at,
+      label: v.status === 'completed' ? `Validation completed — ${v.total_findings ?? 0} findings, risk ${v.risk_score ?? '—'}/100` : `Validation ${v.status}`,
+      tone: v.status === 'completed' && (v.critical_count ?? 0) === 0 ? 'ok' : (v.critical_count ?? 0) > 0 ? 'bad' : 'warn',
     })),
-    ...findings.filter(f=>f.status==='resolved'&&f.resolved_at).slice(0,3).map(f=>({
-      time:f.resolved_at,label:`Fixed: ${f.title}`,status:'ok',
-    })),
-    ...approvals.flatMap(a=>(a.approvals||[]).map((ap:any)=>({
-      time:ap.approved_at,label:`${ap.approver_name} approved as ${ap.role}`,status:'ok',
-    }))),
-  ].sort((a,b)=>new Date(b.time).getTime()-new Date(a.time).getTime()).slice(0,6);
+    ...findings.filter((f) => f.status === 'resolved' && f.resolved_at).slice(0, 4).map((f) => ({ time: f.resolved_at, label: `Resolved — ${f.title}`, tone: 'ok' })),
+    ...approvals.flatMap((a) => (a.approvals || []).map((ap: any) => ({ time: ap.approved_at, label: `${ap.approver_name || 'A team member'} approved as ${ap.role}`, tone: 'ok' }))),
+  ].filter((e) => e.time).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6)
 
-  // What changed
-  const lastValidation=validations[1];
-  const recentFindings=findings.filter(f=>{
-    if(!latest)return false;
-    return new Date(f.created_at)>new Date(latest.created_at);
-  });
+  const wsName = ws?.name || 'your workspace'
 
-  // Decision colors
-  const decisionCfg:{[k:string]:{bg:string;border:string;color:string;dot:string}}={
-    'DEPLOY NOW':{bg:'bg-green-50',border:'border-green-300',color:'text-green-700',dot:'bg-green-500'},
-    'DELAY':{bg:'bg-amber-50',border:'border-amber-300',color:'text-amber-700',dot:'bg-amber-500'},
-    'DO NOT DEPLOY':{bg:'bg-red-50',border:'border-red-300',color:'text-red-700',dot:'bg-red-500'},
-  };
-  const dc=decisionCfg[aiRec?.decision||'']||{bg:'bg-gray-50',border:'border-gray-200',color:'text-gray-700',dot:'bg-gray-400'};
+  return (
+    <div className="dv">
+      <style>{CSS}</style>
 
-  return(
-    <div className="space-y-4 max-w-7xl mx-auto">
-
-      {/* ══ ROW 1 — AI Decision + Single CTA ══════════════════════════════ */}
-      <div className="grid gap-4 lg:grid-cols-3">
-
-        {/* ①  AI Decision Block */}
-        <div className={`lg:col-span-2 rounded-2xl border-2 ${dc.border} ${dc.bg} px-6 py-5`}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              {/* Decision */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={13} className="text-purple-500 shrink-0"/>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">AI Recommendation</span>
-                  {loadingAI&&<Loader2 size={11} className="animate-spin text-gray-400"/>}
-                </div>
-                {loadingAI&&!aiRec?(
-                  <div className="space-y-2">
-                    <div className="h-8 bg-gray-200 animate-pulse rounded-lg w-48"/>
-                    <div className="h-4 bg-gray-100 animate-pulse rounded w-32"/>
-                  </div>
-                ):(
-                  <h1 className={`text-3xl font-semibold tracking-tight ${dc.color}`}>
-                    {aiRec?.decision||(!noData?isBlocked?'DO NOT DEPLOY':'DEPLOY NOW':'GET STARTED')}
-                  </h1>
-                )}
-                {aiRec&&(
-                  aiRec.confidence!=null?(
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm font-bold text-gray-600 flex items-center gap-1">Confidence<InfoHint text="Computed from your latest scan: readiness (100 − risk score) minus fixed penalties for open critical/high findings and pending approvals. Not a model guess or live telemetry."/></span>
-                    <span className={`text-xl font-semibold ${aiRec.confidence>=80?'text-green-600':aiRec.confidence>=60?'text-amber-600':'text-red-600'}`}>{aiRec.confidence}%</span>
-                    <div className="flex-1 h-1.5 rounded-full bg-gray-200 overflow-hidden max-w-24">
-                      <div className={`h-1.5 rounded-full transition-all ${aiRec.confidence>=80?'bg-green-500':aiRec.confidence>=60?'bg-amber-500':'bg-red-500'}`} style={{width:`${aiRec.confidence}%`}}/>
-                    </div>
-                  </div>
-                  ):(
-                    <p className="text-xs text-gray-400 mt-1">Confidence isn't scored yet — run a validation to compute it from real findings.</p>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* CTA */}
-            <div className="shrink-0 flex flex-col gap-2 items-end">
-              {latestProject&&(
-                aiRec?.decision==='DEPLOY NOW'?(
-                  <Link to={`/projects/${latestProject.id}`} className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-colors shadow-sm"><Play size={15}/>Deploy Now</Link>
-                ):(
-                  <Link to={`/projects/${latestProject.id}`} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold hover:bg-brand-700 transition-colors shadow-sm"><ChevronRight size={15}/>Open Release</Link>
-                )
-              )}
-              {!latestProject&&(
-                <Link to="/projects" className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold hover:bg-brand-700"><Play size={15}/>Add Project</Link>
-              )}
-            </div>
-          </div>
-
-          {/* Reasons */}
-          {aiRec?.reasons?.length>0&&(
-            <div className="mt-4 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-              {aiRec.reasons.slice(0,3).map((r:string,i:number)=>(
-                <div key={i} className="flex items-start gap-2 text-xs text-gray-700 bg-white/60 rounded-lg px-3 py-2 border border-black/5">
-                  <span className={`w-1.5 h-1.5 rounded-full mt-1 shrink-0 ${dc.dot}`}/>
-                  {r}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Next step + ETA */}
-          {aiRec&&(
-            <div className="mt-4 pt-4 border-t border-black/10 flex items-center justify-between gap-4">
-              <div className="flex items-start gap-2 flex-1 min-w-0">
-                <ArrowRight size={14} className={`${dc.color} shrink-0 mt-0.5`}/>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Next Action — </span>
-                  <span className="text-sm font-semibold text-navy-900">{aiRec.nextStep}</span>
-                </div>
-              </div>
-              {aiRec.etaMinutes>0&&(
-                <div className="flex items-center gap-1.5 text-xs text-gray-500 shrink-0">
-                  <Clock size={12}/>~{aiRec.etaMinutes<60?`${aiRec.etaMinutes}m`:`${Math.round(aiRec.etaMinutes/60)}h`}
-                </div>
-              )}
-            </div>
-          )}
+      {/* Header */}
+      <div className="dv-head">
+        <div>
+          <h1 className="dv-h1">Overview</h1>
+          <p className="dv-sub">Release health across {wsName}. Everything you need to answer: can we ship?</p>
         </div>
-
-        {/* ② My Tasks */}
-        <div className="card flex flex-col">
-          <h2 className="text-sm font-semibold text-navy-900 mb-3 flex items-center gap-2">
-            <User size={14} className="text-brand-600"/>Your Actions
-            {myTasks.filter(t=>t.urgent).length>0&&<span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">{myTasks.filter(t=>t.urgent).length}</span>}
-          </h2>
-          {myTasks.length===0?(
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center py-4">
-                <CheckCircle2 size={24} className="mx-auto text-green-400 mb-2"/>
-                <p className="text-xs text-gray-500">No actions needed right now</p>
-              </div>
-            </div>
-          ):(
-            <div className="space-y-2 flex-1">
-              {myTasks.map((t,i)=>(
-                <Link key={i} to={t.link} className={`flex items-center gap-3 px-3 py-3 rounded-xl border transition-all hover:shadow-sm ${t.urgent?'border-red-200 bg-red-50 hover:border-red-300':'border-gray-200 bg-white hover:border-brand-200'}`}>
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${t.urgent?'bg-red-500':'bg-gray-300'}`}/>
-                  <span className={`text-xs font-medium flex-1 ${t.urgent?'text-red-700':'text-gray-700'}`}>{t.label}</span>
-                  <ChevronRight size={13} className="text-gray-300 shrink-0"/>
-                </Link>
-              ))}
-            </div>
+        <div className="dv-tools">
+          {projects.length > 0 && (
+            <label className="dv-sel">
+              <select value={selProj} onChange={(e) => setSelProj(e.target.value)}>
+                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <ChevronDown size={15} className="cv" />
+            </label>
           )}
-          {latestProject&&myTasks.length>0&&(
-            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
-              <span className="text-gray-500">Est. time to clear</span>
-              <span className="font-bold text-navy-900">~{myTasks.length*3}m</span>
-            </div>
-          )}
+          <button className="dv-run" onClick={runValidation} disabled={running || projects.length === 0}>
+            {running ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+            {running ? 'Validating…' : 'Run validation'}
+          </button>
         </div>
       </div>
 
-      {/* ══ ROW 2 — Blockers + Current Release + What Changed ═══════════════ */}
-      <div className="grid gap-4 lg:grid-cols-3">
-
-        {/* ③ Deployment Blockers — highest urgency */}
-        <div className={`card border-2 ${isBlocked?'border-red-300':high.length>0?'border-amber-200':'border-green-200'}`}>
-          <h2 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isBlocked?'text-red-700':high.length>0?'text-amber-700':'text-green-700'}`}>
-            {isBlocked?<XCircle size={14}/>:high.length>0?<AlertTriangle size={14}/>:<CheckCircle2 size={14}/>}
-            {isBlocked?`${critical.length} Blocker${critical.length!==1?'s':''}`:high.length>0?`${high.length} Need${high.length!==1?'':'s'} Attention`:'All Clear'}
-          </h2>
-          {isBlocked||high.length>0?(
-            <div className="space-y-2">
-              {[...critical,...high].slice(0,3).map((f:any)=>(
-                <div key={f.id} className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 ${f.severity==='critical'?'border-red-200 bg-red-50':'border-amber-200 bg-amber-50'}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${f.severity==='critical'?'bg-red-500':'bg-amber-500'}`}/>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-navy-900 truncate">{f.title}</p>
-                    {f.file_path&&<p className="text-[10px] font-mono text-gray-400 truncate">{f.file_path.split('/').pop()}</p>}
-                  </div>
-                  {latestProject&&(
-                    <Link to={`/projects/${latestProject.id}`} className="shrink-0 px-2 py-1 bg-brand-600 text-white rounded-lg text-[10px] font-bold hover:bg-brand-700">Fix</Link>
-                  )}
-                </div>
+      {/* KPI cards */}
+      <div className="dv-kpis">
+        {kpis.map((k) => (
+          <Link to={k.to} key={k.label} className="dv-card kpi">
+            <span className="kl">{k.label}</span>
+            <span className="kv">{k.value}</span>
+            <span className="ks">
+              {k.parts.map((p: any, i: number) => (
+                <span key={i} className={p.tone}>{i > 0 && ' · '}<b>{p.t}</b></span>
               ))}
-              {critical.length+high.length>3&&<p className="text-[10px] text-gray-400 text-center">+{critical.length+high.length-3} more</p>}
-            </div>
-          ):(
-            <div className="text-center py-6">
-              <CheckCircle2 size={24} className="mx-auto text-green-400 mb-2"/>
-              <p className="text-xs text-green-600 font-medium">No blockers — clear to deploy</p>
-              {validations.length===0&&<p className="text-[10px] text-gray-400 mt-1">Run a validation to confirm</p>}
-            </div>
-          )}
-        </div>
-
-        {/* ④ Current Release — operational feel */}
-        <div className="card">
-          <h2 className="text-sm font-semibold text-navy-900 mb-3 flex items-center gap-2">
-            <GitBranch size={14} className="text-brand-600"/>Current Release
-          </h2>
-          {latestProject?(
-            <div className="space-y-2.5">
-              {[
-                {label:'Release',value:latestProject.name,bold:true},
-                {label:'Environment',value:'Production',color:'text-red-600 font-semibold'},
-                {label:'Branch',value:latestProject.git_branch||'main',color:'text-brand-600'},
-                {label:'Approvals',value:`${approvals.filter(a=>a.status==='approved').length}/${Math.max(approvals.length,3)}`,color:approvals.some(a=>a.status==='approved')?'text-green-600':'text-amber-600'},
-                {label:'Blockers',value:critical.length,color:critical.length>0?'text-red-600 font-bold':'text-green-600'},
-                {label:'ETA',value:aiRec?.etaMinutes?`~${aiRec.etaMinutes}m`:'—',color:'text-gray-700'},
-                {label:'Owner',value:'Platform Team',color:'text-gray-600'},
-              ].map(row=>(
-                <div key={row.label} className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-gray-400 shrink-0">{row.label}</span>
-                  <span className={`font-medium text-right ${row.color||'text-navy-900'} ${row.bold?'font-bold text-sm':''} truncate max-w-36`}>{String(row.value)}</span>
-                </div>
-              ))}
-              <Link to={`/projects/${latestProject.id}`} className="mt-2 flex items-center justify-center gap-1.5 w-full py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-colors">
-                Open Release Workspace <ChevronRight size={12}/>
-              </Link>
-            </div>
-          ):(
-            <div className="text-center py-6">
-              <p className="text-xs text-gray-400 mb-3">No projects yet</p>
-              <Link to="/projects" className="btn-primary text-xs">Add Project</Link>
-            </div>
-          )}
-        </div>
-
-        {/* ⑤ What Changed */}
-        <div className="card">
-          <h2 className="text-sm font-semibold text-navy-900 mb-3 flex items-center gap-2">
-            <GitCommit size={14} className="text-brand-600"/>What Changed
-          </h2>
-          {validations.length===0?(
-            <div className="text-center py-6">
-              <p className="text-xs text-gray-400">Run a validation to see what changed</p>
-            </div>
-          ):(
-            <div className="space-y-2">
-              {[
-                {icon:Shield,label:'Validation scans',value:validations.length,color:'text-brand-600'},
-                {icon:AlertTriangle,label:'New findings',value:findings.length,color:findings.length>0?'text-amber-600':'text-green-600'},
-                {icon:CheckCircle2,label:'Resolved',value:resolved.length,color:'text-green-600'},
-                {icon:Lock,label:'Secrets issues',value:open.filter(f=>f.category==='secret_scan').length,color:open.filter(f=>f.category==='secret_scan').length>0?'text-red-600':'text-green-600'},
-                {icon:Package,label:'Dependency issues',value:open.filter(f=>f.category==='dependency_audit').length,color:open.filter(f=>f.category==='dependency_audit').length>0?'text-amber-600':'text-green-600'},
-                {icon:Layers,label:'Connected systems',value:connectedSystems.length,color:connectedSystems.length>0?'text-brand-600':'text-gray-400'},
-              ].map(row=>(
-                <div key={row.label} className="flex items-center gap-2.5 py-1">
-                  <row.icon size={13} className={row.color}/>
-                  <span className="text-xs text-gray-600 flex-1">{row.label}</span>
-                  <span className={`text-sm font-bold ${row.color}`}>{row.value}</span>
-                </div>
-              ))}
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-[10px] text-gray-400">Overall risk</span>
-                <span className={`text-sm font-semibold ${riskScore!==null&&riskScore<40?'text-green-600':riskScore!==null&&riskScore<70?'text-amber-600':'text-red-600'}`}>
-                  {riskScore!==null?`${riskScore}/100`:'—'}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ══ ROW 3 — Timeline + Production Health ════════════════════════════ */}
-      <div className="grid gap-4 lg:grid-cols-5">
-
-        {/* ⑥ Deployment Timeline — tells a story */}
-        <div className="lg:col-span-3 card">
-          <h2 className="text-sm font-semibold text-navy-900 mb-4 flex items-center gap-2"><Activity size={14} className="text-brand-600"/>Deployment Timeline</h2>
-          {timeline.length===0?(
-            <div className="text-center py-8">
-              <Activity size={24} className="mx-auto text-gray-200 mb-2"/>
-              <p className="text-xs text-gray-400 mb-3">No activity yet</p>
-              {latestProject&&<Link to={`/projects/${latestProject.id}`} className="btn-primary text-xs">Run Validation</Link>}
-            </div>
-          ):(
-            <div className="relative">
-              {/* Vertical line */}
-              <div className="absolute left-4 top-4 bottom-4 w-px bg-gray-100"/>
-              <div className="space-y-0">
-                {timeline.map((e,i)=>(
-                  <div key={i} className="flex items-start gap-3 py-3 relative">
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 bg-white z-10 ${e.status==='ok'?'border-green-200':e.status==='blocked'?'border-red-200':'border-brand-200'}`}>
-                      {e.status==='ok'?<Check size={12} className="text-green-600"/>:e.status==='blocked'?<XCircle size={12} className="text-red-500"/>:<RefreshCw size={12} className="text-brand-600 animate-spin"/>}
-                    </div>
-                    <div className="flex-1 min-w-0 pt-1">
-                      <p className="text-sm text-navy-900 leading-tight">{e.label}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{formatTime(e.time)} · {timeAgo(e.time)}</p>
-                    </div>
-                  </div>
-                ))}
-                {/* Waiting indicator */}
-                {pendingApprovals.length>0&&(
-                  <div className="flex items-start gap-3 py-3 relative">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-amber-300 bg-amber-50 z-10">
-                      <Clock size={12} className="text-amber-600"/>
-                    </div>
-                    <div className="pt-1">
-                      <p className="text-sm text-amber-700 font-medium">Waiting for approval</p>
-                      <p className="text-[10px] text-amber-500">{pendingApprovals[0]?.release_name}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ⑦ Production Health — clickable, actionable */}
-        <div className="lg:col-span-2 card">
-          <h2 className="text-sm font-semibold text-navy-900 mb-3 flex items-center gap-2">
-            <Server size={14} className="text-brand-600"/>Production Health
-          </h2>
-          <div className="space-y-1.5">
-            {[
-              {label:'Kubernetes',status:connectedSystems.find(c=>c.source==='kubernetes')?'healthy':open.filter(f=>f.category==='configuration').length>2?'warning':'unknown',detail:connectedSystems.find(c=>c.source==='kubernetes')?'Connected · Monitoring':'Not connected'},
-              {label:'Secrets',status:open.filter(f=>f.category==='secret_scan').length>0?'warning':'healthy',detail:open.filter(f=>f.category==='secret_scan').length>0?`${open.filter(f=>f.category==='secret_scan').length} rotation${open.filter(f=>f.category==='secret_scan').length!==1?'s':''} required`:'All secrets clean'},
-              {label:'Dependencies',status:open.filter(f=>f.category==='dependency_audit'&&f.severity==='critical').length>0?'warning':'healthy',detail:open.filter(f=>f.category==='dependency_audit').length>0?`${open.filter(f=>f.category==='dependency_audit').length} vulnerable`:'Dependencies clean'},
-              {label:'CI/CD Pipeline',status:connectedSystems.find(c=>['github-actions','jenkins','circleci'].includes(c.source))?'healthy':'unknown',detail:connectedSystems.find(c=>['github-actions','jenkins','circleci'].includes(c.source))?'Pipeline connected':'Not connected'},
-              {label:'Container Registry',status:connectedSystems.find(c=>['docker-hub','ecr','acr','gcr'].includes(c.source))?'healthy':'unknown',detail:connectedSystems.find(c=>['docker-hub','ecr','acr','gcr'].includes(c.source))?'Registry connected':'Not connected'},
-              {label:'Compliance',status:critical.length===0?'healthy':'warning',detail:critical.length>0?`${critical.length} policy violation${critical.length!==1?'s':''}`:'All checks passing'},
-            ].map(h=>(
-              <Link key={h.label} to={latestProject?`/projects/${latestProject.id}`:'/projects'} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all hover:shadow-sm group cursor-pointer ${h.status==='healthy'?'border-green-100 bg-green-50/50 hover:border-green-200':h.status==='warning'?'border-amber-200 bg-amber-50 hover:border-amber-300':'border-gray-200 bg-gray-50 hover:border-gray-300'}`}>
-                <span className={`w-2 h-2 rounded-full shrink-0 ${h.status==='healthy'?'bg-green-500':h.status==='warning'?'bg-amber-500':'bg-gray-400'}`}/>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-navy-900">{h.label}</p>
-                  <p className={`text-[10px] ${h.status==='warning'?'text-amber-600':h.status==='healthy'?'text-green-600':'text-gray-400'}`}>{h.detail}</p>
-                </div>
-                <span className={`text-[10px] font-bold capitalize shrink-0 ${h.status==='healthy'?'text-green-600':h.status==='warning'?'text-amber-600':'text-gray-400'}`}>
-                  {h.status==='healthy'?'Healthy':h.status==='warning'?'Warning':'Unknown'}
-                </span>
-                <ChevronRight size={12} className="text-gray-300 group-hover:text-gray-500 shrink-0 transition-colors"/>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ══ ROW 4 — Executive Metrics bar ═══════════════════════════════════ */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {[
-          {label:'Success Rate',value:`${successRate}%`,color:successRate>=90?'text-green-600':successRate>=70?'text-amber-600':'text-red-600',link:'/executive'},
-          {label:'Total Scans',value:validations.length,color:'text-navy-900',link:latestProject?`/projects/${latestProject.id}`:'/projects'},
-          {label:'Open Issues',value:open.length,color:open.length>0?'text-amber-600':'text-green-600',link:latestProject?`/projects/${latestProject.id}`:'/projects'},
-          {label:'Resolved',value:resolved.length,color:'text-green-600',link:latestProject?`/projects/${latestProject.id}`:'/projects'},
-          {label:'Systems',value:connectedSystems.length,color:connectedSystems.length>0?'text-brand-600':'text-gray-400',link:latestProject?`/projects/${latestProject.id}`:'/projects'},
-        ].map(m=>(
-          <Link key={m.label} to={m.link} className="card py-3 text-center hover:shadow-md transition-all hover:border-brand-200 border border-transparent">
-            <div className={`text-2xl font-semibold ${m.color}`}>{m.value}</div>
-            <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">{m.label}</div>
+            </span>
           </Link>
         ))}
       </div>
+
+      {/* Latest release + Environment posture */}
+      <div className="dv-grid2">
+        {/* Latest release */}
+        <div className="dv-card">
+          <div className="rc-top">
+            <div className="rc-title">
+              Latest release <span className="mono">· {featured ? featured.name : 'no project'}</span>
+            </div>
+            <span className={`pill ${status.tone}`}>{status.tone === 'ok' && <span className="pd" />}{status.t}</span>
+          </div>
+          {featured ? (
+            <>
+              <div className="rc-body">
+                <Ring value={confidence} />
+                <div className="checks">
+                  {checks.map((c, i) => (
+                    <div className={`chk ${c.ok ? 'ok' : 'warn'}`} key={i}>
+                      <span className="cb">{c.ok ? <Check size={13} /> : <AlertTriangle size={12} />}</span>
+                      {c.ok ? c.on : c.off}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rc-meta">
+                <div className="m"><div className="ml">Environment</div><div className="mv">Production</div></div>
+                <div className="m"><div className="ml">Risk</div><div className="mv">{riskLabel}{riskScore !== null ? ` · ${riskScore}` : ''}</div></div>
+                <div className="m"><div className="ml">Branch</div><div className="mv mono">{featured.git_branch || 'main'}</div></div>
+                <div className="m"><div className="ml">Owner</div><div className="mv">{featured.owner || 'Platform'}</div></div>
+              </div>
+              <div className="rc-foot">
+                <Link to={`/projects/${featured.id}`} className="btn-a pri">Open release <ChevronRight size={15} /></Link>
+                <Link to="/findings" className="btn-a gho">View findings</Link>
+              </div>
+            </>
+          ) : (
+            <div className="dv-empty">
+              No projects yet. <Link to="/projects" style={{ color: 'var(--lh-accent)', fontWeight: 600 }}>Connect a repository</Link> to start validating releases.
+            </div>
+          )}
+        </div>
+
+        {/* Environment posture */}
+        <div className="dv-card">
+          <div className="rc-top">
+            <div className="rc-title">Environment posture</div>
+            <span className={`pill ${postureFindings ? 'warn' : 'ok'}`}>{postureFindings ? `${postureFindings} finding${postureFindings !== 1 ? 's' : ''}` : 'All clear'}</span>
+          </div>
+          {postureRows.map((r) => (
+            <div className={`pos-row ${r.off ? 'off' : r.ok ? 'ok' : 'warn'}`} key={r.name}>
+              <span className="pos-ic">{r.off ? <r.icon size={15} /> : r.ok ? <Check size={15} /> : <AlertTriangle size={14} />}</span>
+              <div className="pos-tx"><div className="pn">{r.name}</div><div className="ps">{r.sub}</div></div>
+              <span className="pos-st mono">{r.st}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent activity */}
+      <div className="dv-card">
+        <div className="sec-h"><span className="st">Recent activity</span><Link to="/audit">View all</Link></div>
+        {activity.length === 0 ? (
+          <div className="dv-empty">No activity yet. Run a validation to see events here.</div>
+        ) : activity.map((e, i) => (
+          <div className={`act-row ${e.tone}`} key={i}>
+            <span className="act-dot" />
+            <div className="act-tx"><div className="al">{e.label}</div><div className="at">{timeAgo(e.time)}</div></div>
+          </div>
+        ))}
+      </div>
     </div>
-  );
+  )
 }

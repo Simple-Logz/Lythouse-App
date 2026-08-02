@@ -57,3 +57,14 @@ Legend: ✅ done in repo · 🟡 in progress · ⬜ to do (code) · 👤 your ac
 - Background job/worker system for long validations (Vercel functions time out; needs a queue + worker).
 - Isolated/sandboxed execution for inspecting untrusted customer repos.
 - These are Paid-beta/Enterprise-stage items, not private-beta blockers.
+
+## 5. Known-simulated features (UI audit, 2026-08-01)
+Three pages returned fabricated pass/fail results with no backend behind them,
+presented the same as real data — a trust risk for a validation/security product.
+They're now clearly labeled "Preview mode" with an explanation, and a UI bug
+that re-randomized results on every render (ApiTestingPage's OWASP checklist)
+was fixed so a given run's results are at least internally consistent.
+- ⬜ `ApiTestingPage` — no real HTTP requests are sent; wire to a real scanner (own Edge Function or a third-party OWASP ZAP-style API).
+- ⬜ `LoadTestingPage` — no load is generated; needs an actual load-generation backend (e.g. k6/Locust runner, queued job).
+- ⬜ `ChaosEngineeringPage` — no fault injection occurs; needs a real agent/collector hook into the target infra.
+- ✅ All three now say plainly in-app that results are simulated, so a prospect or new user can't mistake a demo number for a real finding.

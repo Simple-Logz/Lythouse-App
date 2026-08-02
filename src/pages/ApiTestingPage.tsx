@@ -1,19 +1,21 @@
 import{useState}from'react';
 import{PageHeader,EmptyState}from'../lib/ui';
-import{Network,Plus,X,Loader as Loader2,CheckCircle2,AlertTriangle,Lock,Zap,FileCode2,Globe}from'lucide-react';
+import{Network,Plus,X,Loader as Loader2,CheckCircle2,AlertTriangle,Lock,Zap,FileCode2,Globe,FlaskConical}from'lucide-react';
 
 type ScanStatus='idle'|'running'|'completed'|'failed';
-type ApiScan={id:string;name:string;baseUrl:string;status:ScanStatus;endpointsFound:number|null;passed:number|null;failed:number|null;securityScore:number|null;createdAt:string;};
+type ApiScan={id:string;name:string;baseUrl:string;status:ScanStatus;endpointsFound:number|null;passed:number|null;failed:number|null;securityScore:number|null;owaspResults?:boolean[];createdAt:string;};
 
-const MOCK_SCANS:ApiScan[]=[
-  {id:'1',name:'Production API',baseUrl:'https://api.yourapp.com',status:'completed',endpointsFound:42,passed:38,failed:4,securityScore:87,createdAt:new Date(Date.now()-7200000).toISOString()},
-  {id:'2',name:'Staging v2',baseUrl:'https://staging-api.yourapp.com',status:'completed',endpointsFound:38,passed:38,failed:0,securityScore:96,createdAt:new Date(Date.now()-86400000).toISOString()},
+// Sample entries so the page isn't empty on first visit. No live scanner is
+// wired up yet — see the notice below the page header.
+const SAMPLE_SCANS:ApiScan[]=[
+  {id:'1',name:'Production API (sample)',baseUrl:'https://api.yourapp.com',status:'completed',endpointsFound:42,passed:38,failed:4,securityScore:87,createdAt:new Date(Date.now()-7200000).toISOString()},
+  {id:'2',name:'Staging v2 (sample)',baseUrl:'https://staging-api.yourapp.com',status:'completed',endpointsFound:38,passed:38,failed:0,securityScore:96,createdAt:new Date(Date.now()-86400000).toISOString()},
 ];
 
 const OWASP_CHECKS=['Broken Object Level Authorization','Broken Authentication','Excessive Data Exposure','Lack of Resources & Rate Limiting','Broken Function Level Authorization','Mass Assignment','Security Misconfiguration','Injection','Improper Assets Management','Insufficient Logging & Monitoring'];
 
 export function ApiTestingPage(){
-  const[scans,setScans]=useState<ApiScan[]>(MOCK_SCANS);
+  const[scans,setScans]=useState<ApiScan[]>(SAMPLE_SCANS);
   const[creating,setCreating]=useState(false);
   const[form,setForm]=useState({name:'',baseUrl:'',authType:'none',token:'',clientId:'',clientSecret:'',openApiUrl:'',timeout:'30',retries:'2',tlsVerify:true,rateLimitTest:true,schemaValidation:true});
   const[saving,setSaving]=useState(false);
@@ -29,7 +31,8 @@ export function ApiTestingPage(){
     setTimeout(()=>{
       const ep=Math.floor(Math.random()*30)+10;
       const fail=Math.floor(Math.random()*5);
-      setScans(p=>p.map(s=>s.id===scan.id?{...s,status:'completed',endpointsFound:ep,passed:ep-fail,failed:fail,securityScore:Math.floor(Math.random()*20+78)}:s));
+      const owaspResults=OWASP_CHECKS.map(()=>Math.random()>0.15);
+      setScans(p=>p.map(s=>s.id===scan.id?{...s,status:'completed',endpointsFound:ep,passed:ep-fail,failed:fail,securityScore:Math.floor(Math.random()*20+78),owaspResults}:s));
     },5000);
   };
 
@@ -37,6 +40,11 @@ export function ApiTestingPage(){
 
   return<div>
   <PageHeader title="API Testing" description="Discover, authenticate, and validate your APIs against OWASP security standards and OpenAPI contracts." actions={<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/>New API scan</button>}/>
+
+  <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <FlaskConical size={18} className="text-amber-600 shrink-0 mt-0.5"/>
+    <div className="text-sm text-amber-800"><strong>Preview mode.</strong> Scans here are simulated for demonstration — no requests are sent to your API yet. Live OWASP scanning against a real base URL is on the roadmap; treat these numbers as a UI preview, not a security result.</div>
+  </div>
 
   <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
     {[['Total Scans',scans.length,Globe,'bg-blue-50 text-blue-600'],['Endpoints Found',scans.reduce((a,s)=>a+(s.endpointsFound??0),0),Network,'bg-brand-50 text-brand-600'],['Issues Found',scans.reduce((a,s)=>a+(s.failed??0),0),AlertTriangle,'bg-red-50 text-danger-600'],['Avg Security Score',scans.filter(s=>s.securityScore!==null).length?Math.round(scans.filter(s=>s.securityScore!==null).reduce((a,s)=>a+(s.securityScore??0),0)/scans.filter(s=>s.securityScore!==null).length):0,Lock,'bg-green-50 text-green-600']].map(([l,v,I,c]:any)=>(
@@ -75,7 +83,7 @@ export function ApiTestingPage(){
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">OWASP API Security Checks</p>
             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {OWASP_CHECKS.map((check,i)=>{
-                const ok=Math.random()>0.15;
+                const ok=scan.owaspResults?scan.owaspResults[i]:true;
                 return<div key={check} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${ok?'border-green-200 bg-green-50':'border-red-200 bg-red-50'}`}>
                   {ok?<CheckCircle2 size={13} className="text-green-600 shrink-0"/>:<AlertTriangle size={13} className="text-danger-600 shrink-0"/>}
                   <span className={ok?'text-green-700':'text-danger-600'}>{check}</span>

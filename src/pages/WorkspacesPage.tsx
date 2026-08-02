@@ -3,6 +3,7 @@ import{supabase,type Workspace,type WorkspacePlan,type PlanId,PLANS}from'../lib/
 import{PageHeader,Spinner,EmptyState}from'../lib/ui';
 import{Boxes,Plus,X,Check,Loader as Loader2,Sparkles,ArrowRight}from'lucide-react';
 import{useRouter}from'../lib/router';
+import{PinButton}from'../lib/pins';
 
 export function WorkspacesPage(){
 const[loading,setLoading]=useState(true);
@@ -21,7 +22,8 @@ const load=async()=>{
   setLoading(true);
   const{data,error}=await supabase.from('workspaces').select('*').order('created_at',{ascending:false});
   if(error)console.error('WorkspacesPage load error:',error);
-  const wsList=data??[];
+  const cur=localStorage.getItem('sandbox.activeOrg');
+  const wsList=(data??[]).filter(w=>!cur||!w.organization_id||w.organization_id===cur);
   setWorkspaces(wsList);
   if(wsList.length){
     const{data:planData}=await supabase.from('workspace_plans').select('*').in('workspace_id',wsList.map(w=>w.id)).order('created_at',{ascending:false});
@@ -38,10 +40,12 @@ const createWorkspace=async()=>{
   if(!name.trim())return;
   setSaving(true);setError('');
   const slug=name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const cur=localStorage.getItem('sandbox.activeOrg');
   const{data,error}=await supabase.from('workspaces').insert({
     name:name.trim(),
     slug:slug||`ws-${Date.now()}`,
     description:desc.trim()||null,
+    ...(cur?{organization_id:cur}:{}),
   }).select().single();
   if(error){setError(error.message);setSaving(false);return;}
   // Create a default free plan
@@ -62,7 +66,7 @@ if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/>
 const activeId=wsId();
 
 return<div>
-<PageHeader title="Workspaces" description="Switch between workspaces or create a new one." actions={
+<PageHeader title="Workspaces" description="Workspaces live inside your organization — group related projects and validations. Switch or create one." actions={
 <button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New workspace</button>
 }/>
 
@@ -78,7 +82,10 @@ return<div>
     <div key={w.id} className={`card group text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${isActive?'ring-2 ring-brand-500':''}`}>
       <div className="flex items-start justify-between">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><Boxes size={20}/></div>
-        {isActive&&<span className="chip bg-brand-50 text-brand-700 border border-brand-200"><Check size={11}/>Active</span>}
+        <div className="flex items-center gap-1">
+          {isActive&&<span className="chip bg-brand-50 text-brand-700 border border-brand-200"><Check size={11}/>Active</span>}
+          <PinButton item={{type:'workspace',id:w.id,label:w.name,to:`/workspaces/${w.id}`}}/>
+        </div>
       </div>
       <h3 className="mt-3 text-base font-semibold text-navy-900">{w.name}</h3>
       {w.description&&<p className="mt-1 line-clamp-2 text-sm text-gray-500">{w.description}</p>}
@@ -101,10 +108,10 @@ return<div>
 {creating&&(
 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={()=>setCreating(false)}>
 <div className="w-full max-w-md animate-scale-in rounded-xl bg-white p-5 shadow-xl" onClick={e=>e.stopPropagation()}>
-<div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">New workspace</h2><button onClick={()=>setCreating(false)} className="btn-ghost p-1"><X size={16}/></button></div>
+<div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">New organization</h2><button onClick={()=>setCreating(false)} className="btn-ghost p-1"><X size={16}/></button></div>
 {error&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{error}</div>}
 <label className="label">Name</label>
-<input className="input mb-3" value={name} onChange={e=>setName(e.target.value)} placeholder="My workspace"/>
+<input className="input mb-3" value={name} onChange={e=>setName(e.target.value)} placeholder="Acme Inc"/>
 <label className="label">Description</label>
 <textarea className="input mb-4" rows={2} value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Optional"/>
 <div className="flex justify-end gap-2"><button onClick={()=>setCreating(false)} className="btn-secondary">Cancel</button><button onClick={createWorkspace} disabled={saving||!name.trim()} className="btn-primary">{saving?<Loader2 size={16} className="animate-spin"/>:<Plus size={16}/>} Create</button></div>

@@ -6,6 +6,7 @@ import{Link}from'../lib/router';
 import{ChevronRight,Settings,ArrowLeft,Network}from'lucide-react';
 import{ReleaseWorkspace}from'./ReleaseWorkspace';
 import{AssetsPage}from'./AssetsPage';
+import{ProjectIntegrationsPage}from'./ProjectIntegrationsPage';
 import{PoliciesPage}from'./PoliciesPage';
 import{TopologyView}from'./TopologyView';
 import{CodeEditorPanel}from'./CodeEditorPanel';
@@ -42,7 +43,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
           {[
             {id:'workspace',label:'AI Release Review'},
             {id:'topology',label:'Topology',icon:Network},
-            {id:'assets',label:'Environment'},
+            {id:'assets',label:'Integrations'},
             {id:'policies',label:'Policies'},
             {id:'settings',label:'Settings',icon:Settings},
           ].map(v=>(
@@ -65,7 +66,7 @@ export function ProjectWorkspace({projectId}:{projectId:string}){
             <TopologyView projectId={projectId} project={project} onOpenFile={()=>setView('workspace')}/>
           </div>
         )}
-        {view==='assets'&&<div className="p-6 overflow-y-auto h-full"><AssetsPage projectId={projectId} workspaceId={wsId}/></div>}
+        {view==='assets'&&<div className="p-6 overflow-y-auto h-full"><ProjectIntegrationsPage projectId={projectId} workspaceId={wsId} project={project}/></div>}
         {view==='policies'&&<div className="p-6 overflow-y-auto h-full"><PoliciesPage projectId={projectId} workspaceId={wsId}/></div>}
         {view==='settings'&&(
           <div className="p-6 overflow-y-auto h-full max-w-2xl">

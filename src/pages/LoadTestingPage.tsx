@@ -1,6 +1,6 @@
 import{useState}from'react';
 import{PageHeader,EmptyState}from'../lib/ui';
-import{Activity,Plus,X,Loader as Loader2,Zap,Users,Clock,Target,AlertTriangle,CheckCircle2,BarChart3,HelpCircle}from'lucide-react';
+import{Activity,Plus,X,Loader as Loader2,Zap,Users,Clock,Target,AlertTriangle,CheckCircle2,BarChart3,HelpCircle,FlaskConical}from'lucide-react';
 
 
 function Tip({text}:{text:string}){
@@ -19,14 +19,16 @@ function Tip({text}:{text:string}){
 type TestStatus='idle'|'running'|'completed'|'failed';
 type TestRun={id:string;name:string;concurrentUsers:number;targetRps:number;duration:number;latencySla:number;status:TestStatus;p95:number|null;p99:number|null;actualRps:number|null;errorRate:number|null;createdAt:string;};
 
-const MOCK_RUNS:TestRun[]=[
-  {id:'1',name:'Production Baseline',concurrentUsers:500,targetRps:2000,duration:300,latencySla:200,status:'completed',p95:142,p99:198,actualRps:1987,errorRate:0.12,createdAt:new Date(Date.now()-3600000*2).toISOString()},
-  {id:'2',name:'Peak Traffic Simulation',concurrentUsers:2000,targetRps:8000,duration:600,latencySla:300,status:'completed',p95:287,p99:412,actualRps:7640,errorRate:1.4,createdAt:new Date(Date.now()-3600000*24).toISOString()},
-  {id:'3',name:'API Stress Ramp',concurrentUsers:5000,targetRps:15000,duration:900,latencySla:500,status:'failed',p95:null,p99:null,actualRps:null,errorRate:null,createdAt:new Date(Date.now()-3600000*48).toISOString()},
+// Sample entries so the page isn't empty on first visit. No load-generation
+// backend is wired up yet — see the notice below the page header.
+const SAMPLE_RUNS:TestRun[]=[
+  {id:'1',name:'Production Baseline (sample)',concurrentUsers:500,targetRps:2000,duration:300,latencySla:200,status:'completed',p95:142,p99:198,actualRps:1987,errorRate:0.12,createdAt:new Date(Date.now()-3600000*2).toISOString()},
+  {id:'2',name:'Peak Traffic Simulation (sample)',concurrentUsers:2000,targetRps:8000,duration:600,latencySla:300,status:'completed',p95:287,p99:412,actualRps:7640,errorRate:1.4,createdAt:new Date(Date.now()-3600000*24).toISOString()},
+  {id:'3',name:'API Stress Ramp (sample)',concurrentUsers:5000,targetRps:15000,duration:900,latencySla:500,status:'failed',p95:null,p99:null,actualRps:null,errorRate:null,createdAt:new Date(Date.now()-3600000*48).toISOString()},
 ];
 
 export function LoadTestingPage(){
-  const[runs,setRuns]=useState<TestRun[]>(MOCK_RUNS);
+  const[runs,setRuns]=useState<TestRun[]>(SAMPLE_RUNS);
   const[creating,setCreating]=useState(false);
   const[form,setForm]=useState({name:'',concurrentUsers:'500',targetRps:'2000',duration:'300',latencySla:'200',rampUp:'60',rampDown:'30',region:'us-east-1',authType:'none',jwtToken:'',chaos:false});
   const[saving,setSaving]=useState(false);
@@ -53,6 +55,11 @@ export function LoadTestingPage(){
 
   return<div>
   <PageHeader title="Load Testing" description="Simulate concurrent users and validate performance under expected and peak load." actions={<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/>New load test</button>}/>
+
+  <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <FlaskConical size={18} className="text-amber-600 shrink-0 mt-0.5"/>
+    <div className="text-sm text-amber-800"><strong>Preview mode.</strong> Test runs here are simulated for demonstration — no traffic is generated against your target yet. Live load generation is on the roadmap; treat these numbers as a UI preview, not a performance result.</div>
+  </div>
 
   {/* summary strip */}
   <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">

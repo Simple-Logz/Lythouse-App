@@ -7,7 +7,8 @@ export const edgeFunctionUrl=(import.meta.env.VITE_SUPABASE_URL as string)+'/fun
 export const supabase=createClient(url,anonKey,{auth:{persistSession:true}});
 
 export type PlanId='free'|'developer'|'enterprise';
-export type Workspace={id:string;name:string;slug:string;owner_id:string|null;description:string|null;created_at:string};
+export type Organization={id:string;name:string;slug:string|null;description:string|null;owner_id:string|null;created_at:string};
+export type Workspace={id:string;name:string;slug:string;owner_id:string|null;description:string|null;organization_id?:string|null;created_at:string};
 export type WorkspaceMember={id:string;workspace_id:string;user_id:string;role:'owner'|'admin'|'developer'|'approver'|'viewer';created_at:string};
 export type WorkspaceInvitation={id:string;workspace_id:string;email:string;role:'admin'|'developer'|'approver'|'viewer';token:string;status:'pending'|'accepted'|'declined'|'revoked'|'expired';invited_by:string|null;created_at:string;expires_at:string;accepted_at:string|null};
 export type WorkspacePlan={id:string;workspace_id:string;plan_id:PlanId;status:'active'|'cancelled'|'trialing';trial_ends_at:string|null;current_period_end:string|null;stripe_subscription_id:string|null;cancel_at_period_end:boolean;created_at:string;updated_at:string};

@@ -2,7 +2,7 @@
 import{useCallback,useEffect,useRef,useState}from'react';
 import{supabase,anonKey,edgeFunctionUrl,type Finding,type Validation}from'../lib/supabase';
 import{useAuth}from'../lib/auth';
-import{Spinner}from'../lib/ui';
+import{Spinner,toast}from'../lib/ui';
 import{
   Shield,ShieldAlert,CheckCircle2,XCircle,AlertTriangle,Clock,
   Zap,GitBranch,GitPullRequest,Users,Play,RefreshCw,ChevronRight,
@@ -98,7 +98,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
       const{data:v,error:insErr}=await supabase.from('validations').insert({
         project_id:projectId,workspace_id:wsId,status:'running',trigger:'manual',
       }).select().single();
-      if(insErr||!v){console.error('Validation insert failed:',insErr);alert('Could not start validation: '+(insErr?.message||'unknown error'));setRunning(false);return;}
+      if(insErr||!v){console.error('Validation insert failed:',insErr);toast('Could not start validation: '+(insErr?.message||'unknown error'),'error');setRunning(false);return;}
       setValidations(prev=>[v,...prev]);
       try{
         await fetch(`${edgeFunctionUrl}/process-validation`,{
@@ -240,16 +240,16 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         {STAGES.map((s,i)=>{
           const st=stageStatus[s.id];
           return(
-            <button key={s.id} onClick={()=>setStage(s.id)} title={s.label} className={`flex flex-col lg:flex-row items-center lg:gap-2.5 gap-0.5 px-1 lg:px-3 py-2 lg:py-2.5 rounded-xl text-sm font-medium transition-all lg:text-left border ${stage===s.id?'bg-[#f97316]/10 text-[#c2560c] border-[#fb923c]/40':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
-              <div className={`flex h-7 w-7 lg:h-6 lg:w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-[#f97316]/90 text-white':st==='done'?'bg-green-500 text-white':'bg-gray-200 text-gray-500'}`}>
+            <button key={s.id} onClick={()=>setStage(s.id)} title={s.label} className={`flex flex-col lg:flex-row items-center lg:gap-2.5 gap-0.5 px-1 lg:px-3 py-2 lg:py-2.5 rounded-xl text-sm font-medium transition-all lg:text-left border ${stage===s.id?'bg-brand-50 text-brand-700 border-brand-200':'border-transparent text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}>
+              <div className={`flex h-7 w-7 lg:h-6 lg:w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${stage===s.id?'bg-brand-600 text-white':st==='done'?'bg-brand-500 text-white':'bg-gray-200 text-gray-500'}`}>
                 {stage===s.id?i+1:st==='done'?<Check size={12}/>:i+1}
               </div>
               <span className="lg:hidden text-[9px] leading-none text-center truncate w-full">{s.label}</span>
               <span className="hidden lg:block min-w-0 flex-1">
                 <span className="block leading-tight">{s.label}</span>
-                <span className={`block text-[10px] font-normal leading-tight ${stage===s.id?'text-[#ea7a00]/80':'text-gray-400'}`}>{s.sub}</span>
+                <span className={`block text-[10px] font-normal leading-tight ${stage===s.id?'text-brand-600/80':'text-gray-400'}`}>{s.sub}</span>
               </span>
-              {stage===s.id?<span className="hidden lg:block w-1.5 h-1.5 rounded-full bg-[#f97316]/80 shrink-0"/>:st==='active'?<span className="hidden lg:block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
+              {stage===s.id?<span className="hidden lg:block w-1.5 h-1.5 rounded-full bg-brand-500/80 shrink-0"/>:st==='active'?<span className="hidden lg:block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>:null}
             </button>
           );
         })}
@@ -265,7 +265,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
       <div className="flex-1 min-w-0 overflow-y-auto">
 
         {/* Release Header — always visible */}
-        <div className={`sticky top-0 z-20 border-b px-6 py-4 ${isBlocked?'bg-red-50 border-red-200':readiness!==null&&readiness>=80?'bg-green-50 border-green-200':'bg-white border-gray-100'}`}>
+        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 px-6 py-4 backdrop-blur">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4 min-w-0">
               <div className="min-w-0">

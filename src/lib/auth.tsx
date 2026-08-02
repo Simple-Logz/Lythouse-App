@@ -10,7 +10,8 @@ type AuthContextValue = {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string, meta?: Record<string, any>) => Promise<{ error: string | null }>;
+  signInWithProvider: (provider: 'google' | 'github' | 'gitlab' | 'azure') => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -93,11 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signUp: AuthContextValue['signUp'] = async (email, password, fullName) => {
+  const signUp: AuthContextValue['signUp'] = async (email, password, fullName, meta) => {
+    // Stash account name + company size so onboarding can pre-fill the workspace.
+    if (meta?.account_name) localStorage.setItem('lh.pendingAccount', meta.account_name);
+    if (meta?.company_size) localStorage.setItem('lh.pendingCompanySize', meta.company_size);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { full_name: fullName, ...(meta || {}) } },
     });
     if (error) return { error: error.message };
 
@@ -116,6 +120,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (signInError) return { error: signInError.message };
     return { error: null };
+  };
+
+  const signInWithProvider: AuthContextValue['signInWithProvider'] = async (provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/dashboard` },
+    });
+    return { error: error?.message ?? null };
   };
 
   const signOut = async () => {
@@ -146,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signOut, refreshProfile, resetPassword, updatePassword, resendVerification }}
+      value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signInWithProvider, signOut, refreshProfile, resetPassword, updatePassword, resendVerification }}
     >
       {children}
     </AuthContext.Provider>

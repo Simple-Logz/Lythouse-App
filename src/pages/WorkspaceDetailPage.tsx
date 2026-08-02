@@ -1,6 +1,6 @@
 import{useEffect,useState,useCallback}from'react';
 import{supabase,type Project,type Validation,type WorkspacePlan,PLANS,type PlanId}from'../lib/supabase';
-import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,RiskGauge,timeAgo}from'../lib/ui';
+import{PageHeader,Spinner,EmptyState,StatusBadge,SeverityBadge,RiskGauge,timeAgo,toast}from'../lib/ui';
 import{Link,useRouter}from'../lib/router';
 import{FolderGit2,Users,ShieldCheck,ShieldAlert,Plus,Settings,Boxes,Activity,AlertTriangle,CheckCircle2,TrendingUp,Play,ArrowRight,Sparkles}from'lucide-react';
 
@@ -264,7 +264,7 @@ export function WorkspaceDetailPage({workspaceId}:{workspaceId:string}){
             <button onClick={async()=>{
               if(!confirm(`Delete workspace "${workspace.name}"? This will permanently delete all projects and data inside it.`))return;
               const confirmed=prompt(`Type the workspace name "${workspace.name}" to confirm deletion:`);
-              if(confirmed!==workspace.name){alert('Name did not match. Workspace not deleted.');return;}
+              if(confirmed!==workspace.name){toast('Name did not match. Workspace not deleted.','error');return;}
               await supabase.from('workspaces').delete().eq('id',workspaceId);
               localStorage.removeItem('sandbox.activeWs');
               navigate('/workspaces');

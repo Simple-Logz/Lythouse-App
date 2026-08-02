@@ -21,6 +21,7 @@ const[plan,setPlan]=useState<WorkspacePlan|null>(null);
 const[busy,setBusy]=useState<PlanId|'portal'|null>(null);
 const[error,setError]=useState('');
 const[notice,setNotice]=useState('');
+const[hover,setHover]=useState<PlanId|null>(null);
 
 const wsId=()=>localStorage.getItem('sandbox.activeWs');
 
@@ -98,7 +99,7 @@ return<div>
     <AlertTriangle size={16}/>{error}
   </div>
 )}
-{!canManage&&(
+{!canManage&&wsId()&&(
   <div className="mb-6 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
     <AlertTriangle size={16} className="text-gray-400 shrink-0 mt-0.5"/>
     <div className="text-sm text-gray-600">You're viewing plans in read-only mode. Only workspace owners and admins can change billing.</div>
@@ -111,7 +112,7 @@ return<div>
   </div>
 )}
 
-<div className="grid gap-6 lg:grid-cols-3">
+<div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
 {ORDER.map(id=>{
   const info=PLANS[id];
   const features=FEATURES[id];
@@ -119,34 +120,39 @@ return<div>
   const isCurrent=id===currentId;
   const isEnterprise=id==='enterprise';
   const isFree=id==='free';
+  const dark=hover===id; // the hovered card goes black + purple; the rest stay light
   return(
-    <div key={id} className={`card flex flex-col ${isCurrent?'ring-2 ring-brand-500':isEnterprise?'border-navy-800':''}`}>
+    <div key={id}
+      onMouseEnter={()=>setHover(id)} onMouseLeave={()=>setHover(null)}
+      className={`relative flex flex-col rounded-2xl border p-6 transition-all duration-200 ${dark?'text-white -translate-y-1':`bg-white text-navy-900 ${isCurrent?'border-brand-400 ring-1 ring-brand-300':'border-gray-200'}`}`}
+      style={dark?{background:'linear-gradient(165deg,#1c1433 0%,#0b0812 100%)',borderColor:'rgba(124,92,230,.55)',boxShadow:'0 30px 70px -28px rgba(124,92,230,.6)'}:undefined}>
       <div className="mb-4 flex items-center justify-between">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${info.color}`}><Icon size={20}/></div>
-        {isCurrent&&<span className="chip bg-brand-50 text-brand-700 border border-brand-200"><Check size={11}/>Current</span>}
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl transition-colors"
+          style={dark?{background:'rgba(255,255,255,.1)',color:'#c4b5fd'}:{background:'#ece8ff',color:'#7c5ce6'}}><Icon size={20}/></div>
+        {isCurrent&&<span className={`chip ${dark?'bg-white/15 text-white border border-white/25':'bg-brand-50 text-brand-700 border border-brand-200'}`}><Check size={11}/>Current</span>}
       </div>
-      <h2 className="text-lg font-bold text-navy-900">{info.name}</h2>
+      <h2 className={`text-lg font-bold ${dark?'text-white':'text-navy-900'}`}>{info.name}</h2>
       <div className="mt-2 flex items-baseline gap-1">
-        <span className="text-3xl font-bold tabular-nums text-navy-900">${info.price}</span>
-        <span className="text-sm text-gray-500">/mo</span>
+        <span className={`text-3xl font-bold tabular-nums ${dark?'text-white':'text-navy-900'}`}>${info.price}</span>
+        <span className={`text-sm ${dark?'text-white/55':'text-gray-500'}`}>/mo</span>
       </div>
       <ul className="mt-5 flex-1 space-y-2.5">
         {features.map((f,i)=>(
-        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-        <Check size={15} className="mt-0.5 shrink-0 text-brand-600"/>{f}
+        <li key={i} className={`flex items-start gap-2 text-sm ${dark?'text-white/85':'text-gray-600'}`}>
+        <Check size={15} className={`mt-0.5 shrink-0 ${dark?'text-brand-300':'text-brand-600'}`}/>{f}
         </li>
         ))}
       </ul>
       {isCurrent?(
-        <button disabled className="mt-6 w-full btn-secondary cursor-default">Current plan</button>
+        <button disabled className={`mt-6 w-full cursor-default rounded-xl border px-4 py-2.5 text-sm font-semibold ${dark?'border-white/25 text-white':'border-gray-300 text-navy-700'}`}>Current plan</button>
       ):isFree?(
         hasSubscription&&canManage?(
-          <button onClick={manageBilling} disabled={busy!==null} className="mt-6 w-full btn-secondary">Downgrade via billing</button>
+          <button onClick={manageBilling} disabled={busy!==null} className={`mt-6 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold ${dark?'border-white/25 text-white':'border-gray-300 text-navy-700 hover:bg-gray-50'}`}>Downgrade via billing</button>
         ):(
-          <button disabled className="mt-6 w-full btn-secondary cursor-default opacity-60">Free forever</button>
+          <button disabled className={`mt-6 w-full cursor-default rounded-xl border px-4 py-2.5 text-sm font-semibold ${dark?'border-white/20 text-white/70':'border-gray-200 text-gray-400'}`}>Free forever</button>
         )
       ):(
-        <button onClick={()=>choose(id)} disabled={!canManage||busy!==null} className={`mt-6 w-full ${isEnterprise?'bg-navy-800 text-white hover:bg-navy-700 rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-[0.98] inline-flex items-center justify-center gap-1.5 disabled:opacity-50':'btn-primary'}`}>
+        <button onClick={()=>choose(id)} disabled={!canManage||busy!==null} className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50" style={{background:'linear-gradient(120deg,#8b6ef2,#7c5ce6)',boxShadow:'0 10px 26px -10px rgba(124,92,230,.65)'}}>
           {busy===id?<Loader2 size={16} className="animate-spin"/>:isEnterprise&&!isSelfServe('enterprise')?<><Building2 size={16}/> Contact sales</>:<><Sparkles size={16}/> Upgrade</>}
         </button>
       )}
