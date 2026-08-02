@@ -35,6 +35,28 @@ export type DoraMetric={id:string;workspace_id:string;metric_date:string;deploym
 export type EnvironmentDrift={id:string;workspace_id:string;project_id:string;environment:string;drift_score:number;differences:Record<string,unknown>;detected_at:string};
 export type AiInsight={id:string;workspace_id:string;type:string;title:string;description:string;severity:string;actionable:boolean;action_url:string|null;created_at:string};
 
+// ── Unified Environment / Asset / Dependency / Change Event model ──
+// See supabase/migrations/20260802010000_unified_environment_asset_model.sql.
+// Additive layer over projects/server_environments/discovered_components —
+// nothing above this line changes shape or meaning.
+export type EnvironmentKind='production'|'staging'|'development'|'multi_cloud'|'on_prem'|'kubernetes_cluster'|'business_unit'|'other';
+export type EnvironmentStatus='provisioning'|'active'|'degraded'|'maintenance'|'suspended'|'decommissioned';
+export type AssetSource='git'|'server_collector'|'aws'|'azure'|'gcp'|'kubernetes'|'manual';
+export type LhEnvironment={id:string;workspace_id:string;name:string;kind:EnvironmentKind;status:EnvironmentStatus;source:AssetSource;owner:string|null;tags:Record<string,unknown>;server_environment_id:string|null;created_at:string;updated_at:string};
+export type AssetKind='repository'|'microservice'|'container_image'|'k8s_deployment'|'database'|'vm'|'api_gateway'|'terraform_module'|'saas_integration'|'load_balancer'|'storage_bucket'|'function'|'server'|'other';
+export type AssetStatus='discovered'|'registered'|'active'|'modified'|'deprecated'|'failed'|'retired';
+export type Asset={id:string;workspace_id:string;environment_id:string;kind:AssetKind;name:string;status:AssetStatus;source:AssetSource;external_id:string|null;metadata:Record<string,unknown>;project_id:string|null;server_target_id:string|null;discovered_component_id:string|null;first_seen_at:string;last_seen_at:string;created_at:string;updated_at:string};
+export type DependencyRelationship='depends_on'|'contains'|'communicates_with'|'deployed_to'|'configured_by'|'references';
+export type DependencyStatus='detected'|'verified'|'suspected'|'broken'|'degraded'|'resolved';
+export type AssetDependency={id:string;workspace_id:string;environment_id:string|null;source_asset_id:string;target_asset_id:string;relationship_type:DependencyRelationship;status:DependencyStatus;evidence:Record<string,unknown>;confidence:number|null;human_confirmed:boolean;dependency_edge_id:string|null;created_at:string;resolved_at:string|null};
+export type ChangeEventSource='git_commit'|'git_pr_merge'|'deployment'|'config_change'|'scaling_event'|'security_policy_update'|'infra_change'|'manual';
+export type ChangeEventStatus='detected'|'ingested'|'analyzing'|'evaluated'|'approved'|'rejected'|'deployed'|'rolled_back';
+export type ChangeEvent={id:string;workspace_id:string;environment_id:string|null;asset_id:string|null;source:ChangeEventSource;title:string;description:string|null;external_ref:string|null;status:ChangeEventStatus;validation_id:string|null;deployment_id:string|null;triggered_by:string|null;metadata:Record<string,unknown>;created_at:string;evaluated_at:string|null};
+// asset_impact(start_asset_id, max_depth?) RPC — real recursive dependency
+// traversal ("what breaks if this asset changes?"). Usage:
+//   const { data } = await supabase.rpc('asset_impact', { start_asset_id, max_depth: 5 });
+export type AssetImpactRow={asset_id:string;depth:number;path:string[]};
+
 export type ServerEnvironment={id:string;workspace_id:string;project_id:string|null;name:string;business_unit:string|null;owner:string|null;environment_type:string;location:string|null;expected_server_count:number;primary_purpose:string|null;status:string;created_at:string;updated_at:string};
 export type ServerTarget={id:string;environment_id:string;workspace_id:string;hostname:string;ip:string|null;os_platform:string;server_role:string|null;port_override:number|null;status:string;created_at:string};
 export type ConnectionMethod='agent'|'ssh'|'winrm'|'collector'|'offline';
