@@ -1,5 +1,5 @@
 import{useEffect,useState}from'react';
-import{supabase,type DeploymentSimulation,type Project}from'../lib/supabase';
+import{supabase,type DeploymentSimulation,type Project,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,RiskGauge,StatusBadge}from'../lib/ui';
 import{FlaskConical,Plus,X,Loader as Loader2,Activity,Boxes,AlertTriangle,CheckCircle2,Zap,RefreshCw,ChevronDown,ChevronRight,Globe}from'lucide-react';
 
@@ -28,7 +28,6 @@ const[overrides,setOverrides]=useState('');
 const[saving,setSaving]=useState(false);
 const[error,setError]=useState('');
 const[expanded,setExpanded]=useState<string|null>(null);
-const[polling,setPolling]=useState<string|null>(null);
 
 const wsId=()=>localStorage.getItem('sandbox.activeWs');
 
@@ -49,15 +48,51 @@ const load=async()=>{
 
 useEffect(()=>{load();},[]);
 
+// The prediction is derived from the project's most recent COMPLETED
+// validation and its still-open findings — real severity counts and real
+// file paths, not invented numbers. If the project has never been
+// validated, there is nothing real to predict from, so we say that
+// plainly instead of fabricating a score.
 const createSimulation=async()=>{
   const wid=wsId();
-  if(!wid||!selProject){setError('Select a project');return;}
+  if(!wid||!selProject){setError('Select a project.');return;}
   setSaving(true);setError('');
   let cfg:Record<string,unknown>={};
-  try{cfg=overrides.trim()?JSON.parse(overrides):{};}catch{setError('Config overrides must be valid JSON');setSaving(false);return;}
+  try{cfg=overrides.trim()?JSON.parse(overrides):{};}catch{setError('Config overrides must be valid JSON.');setSaving(false);return;}
+
+  const{data:lastValidation,error:vErr}=await supabase.from('validations')
+    .select('*').eq('project_id',selProject).eq('status','completed')
+    .order('created_at',{ascending:false}).limit(1).maybeSingle();
+  if(vErr){setError(vErr.message);setSaving(false);return;}
+  if(!lastValidation){setError("This project has no completed validation yet — run one first so the simulator has real findings to base a prediction on.");setSaving(false);return;}
+
+  const{data:openFindingsRaw,error:fErr}=await supabase.from('findings')
+    .select('severity,category,file_path').eq('validation_id',lastValidation.id).eq('status','open');
+  if(fErr){setError(fErr.message);setSaving(false);return;}
+  const openFindings=openFindingsRaw??[];
+
+  const critical=openFindings.filter(f=>f.severity==='critical').length;
+  const high=openFindings.filter(f=>f.severity==='high').length;
+  const medium=openFindings.filter(f=>f.severity==='medium').length;
+  const touched=[...new Set(openFindings.map(f=>f.file_path||f.category).filter(Boolean))]as string[];
+
+  const envMultiplier=selEnv==='production'?1.15:selEnv==='preview'?0.85:1;
+  const predicted_risk_score=Math.max(0,Math.min(100,Math.round((critical*22+high*11+medium*4)*envMultiplier)));
+  const predicted_severity=(critical?'critical':high?'high':medium?'medium':openFindings.length?'low':null)as Severity|null;
+  const blast_radius=(critical>=3||touched.length>=8?'critical':critical>=1||touched.length>=4?'large':touched.length>=1?'medium':'small')as DeploymentSimulation['blast_radius'];
+  const confidence=Math.max(40,Math.min(95,95-touched.length*2));
+  const impact_summary=openFindings.length
+    ?`Based on the last validation, this project has ${critical} critical and ${high} high-severity open finding${critical+high===1?'':'s'} across ${touched.length} file${touched.length===1?'':'s'}. Deploying to ${selEnv} at this risk level ${predicted_risk_score>=70?'is not recommended.':predicted_risk_score>=40?'should be reviewed carefully first.':'looks reasonably safe.'}`
+    :"No open findings from the last validation — this project's last known state was clean.";
+  const rollback_plan=selEnv==='production'
+    ?'Keep the previous release deployable for an immediate rollback, and watch error rate and latency closely for the first 30 minutes after deploy.'
+    :'Standard rollback: redeploy the last known-good build for this environment if issues appear.';
+
   const{data,error}=await supabase.from('deployment_simulations').insert({
-    workspace_id:wid,project_id:selProject,environment:selEnv,config_overrides:cfg,
-    affected_services:[],simulation_metadata:{},status:'pending',
+    workspace_id:wid,project_id:selProject,environment:selEnv,config_overrides:cfg,validation_id:lastValidation.id,
+    affected_services:touched.slice(0,8),predicted_risk_score,predicted_severity,blast_radius,confidence,
+    impact_summary,rollback_plan,simulation_metadata:{based_on_validation:lastValidation.id,open_findings_considered:openFindings.length},
+    status:'completed',completed_at:new Date().toISOString(),
   }).select().single();
   if(error){setError(error.message);setSaving(false);return;}
   const proj=projects.find(p=>p.id===selProject);
@@ -167,5 +202,40 @@ return<div key={s.id} className="card p-0 overflow-hidden">
 </div>;
 })}
 </div>}
+
+{creating&&(
+<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={()=>{setCreating(false);setError('');}}>
+<div className="w-full max-w-lg animate-scale-in rounded-xl bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
+  <div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold">New deployment simulation</h2><button onClick={()=>{setCreating(false);setError('');}} className="btn-ghost p-1"><X size={16}/></button></div>
+  <div className="space-y-3">
+    <div>
+      <label className="label">Project</label>
+      <select className="input" value={selProject} onChange={e=>setSelProject(e.target.value)}>
+        <option value="">Select a project…</option>
+        {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+    </div>
+    <div>
+      <label className="label">Target environment</label>
+      <select className="input" value={selEnv} onChange={e=>setSelEnv(e.target.value as DeploymentSimulation['environment'])}>
+        <option value="staging">Staging</option>
+        <option value="production">Production</option>
+        <option value="preview">Preview</option>
+      </select>
+    </div>
+    <div>
+      <label className="label">Config overrides (optional JSON)</label>
+      <textarea className="input font-mono text-xs" rows={3} value={overrides} onChange={e=>setOverrides(e.target.value)} placeholder='{"replicas": 3}'/>
+    </div>
+    {error&&<p className="text-xs text-danger-600">{error}</p>}
+    <p className="text-xs text-gray-400">The prediction is computed from this project's most recent completed validation — its open findings, their severity, and how many files they touch. Projects without a completed validation yet can't be simulated, since there'd be nothing real to base it on.</p>
+  </div>
+  <div className="mt-5 flex justify-end gap-2">
+    <button onClick={()=>{setCreating(false);setError('');}} className="btn-secondary">Cancel</button>
+    <button onClick={createSimulation} disabled={saving||!selProject} className="btn-primary">{saving?<Loader2 size={16} className="animate-spin"/>:<FlaskConical size={16}/>}Run simulation</button>
+  </div>
+</div>
+</div>
+)}
 </div>;
 }

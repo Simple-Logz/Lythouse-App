@@ -25,7 +25,7 @@ import { getHeadSha } from '../workspace/repoCache';
 // mobile chrome.
 const MENU = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/docs', label: 'Getting Started', icon: Compass },
+  { to: '/docs', label: 'Documentation', icon: Compass },
   { to: '/projects', label: 'Projects', icon: FolderGit2 },
   { to: '/stacks', label: 'Stacks', icon: Layers },
   { to: '/pipeline', label: 'Release Pipeline', icon: Workflow },

@@ -19,7 +19,7 @@ export function usePlanId(): PlanId { return useContext(PlanContext) }
 // Flat, labeled sections (template style) — every item routes to a real page.
 const SECTIONS = [
   { key: 'platform', label: 'Platform', items: [
-    { label: 'Getting Started', to: '/docs', icon: Compass },
+    { label: 'Documentation', to: '/docs', icon: Compass },
     { label: 'Overview', to: '/dashboard', icon: LayoutDashboard },
     { label: 'Projects', to: '/projects', icon: FolderGit2 },
     { label: 'Stacks', to: '/stacks', icon: Layers },
