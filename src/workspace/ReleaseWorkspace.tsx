@@ -232,7 +232,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
   };
 
   return(
-    <div className="flex flex-row h-full" style={{minHeight:'calc(100vh - 130px)'}}>
+    <div className="flex flex-row lg:h-full lg:[min-height:calc(100vh-130px)]">
 
       {/* ── STAGE NAV — vertical side rail: slim (numbers) on mobile, full on desktop ── */}
       <div className="w-[68px] lg:w-48 shrink-0 border-r border-gray-100 bg-gray-50/60 flex flex-col py-3 lg:py-4 px-1.5 lg:px-2 gap-1.5 lg:gap-1">
@@ -262,10 +262,10 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
       </div>
 
       {/* ── CENTER — Main Workspace ──────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 overflow-y-auto">
+      <div className="flex-1 min-w-0 lg:overflow-y-auto">
 
         {/* Release Header — always visible */}
-        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 px-6 py-4 backdrop-blur">
+        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 px-3 sm:px-6 py-3 sm:py-4 backdrop-blur">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4 min-w-0">
               <div className="min-w-0">
@@ -295,7 +295,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
         </div>
 
         {/* Stage content */}
-        <div className="px-6 py-5">
+        <div className="px-3 sm:px-6 py-4 sm:py-5">
 
           {/* UNDERSTAND — AI Release Review */}
           {stage==='changes'&&(()=>{
@@ -804,7 +804,14 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
 
       {/* ── RIGHT PANEL — Persistent Intelligence ────────────────────────── */}
       {sidebarOpen&&(stage!=='changes'||advisorForced)&&(
-        <div className="w-72 shrink-0 border-l border-gray-100 bg-gray-50/30 flex flex-col overflow-y-auto">
+        // Below lg this was a fixed w-72 (288px) column stealing width from
+        // the center content — on a ~375px phone that left ~19px for
+        // everything you were actually trying to look at (findings, the
+        // release header, all of it). It's now a slide-over panel on
+        // mobile so the AI advisor no longer competes with the page for
+        // width; lg: reverts to the original inline column, unchanged.
+        <div className="fixed inset-0 z-40 flex justify-end bg-black/40 lg:static lg:inset-auto lg:z-auto lg:flex lg:justify-end lg:bg-transparent" onClick={e=>{if(e.target===e.currentTarget){setSidebarOpen(false);setAdvisorForced(false);}}}>
+        <div className="h-full w-[86vw] max-w-sm lg:h-auto lg:w-72 shrink-0 border-l border-gray-100 bg-white lg:bg-gray-50/30 flex flex-col overflow-y-auto">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5"><Sparkles size={11}/>AI Release Advisor</span>
             <button onClick={()=>{setSidebarOpen(false);setAdvisorForced(false);}} className="text-gray-400 hover:text-gray-600 p-1"><X size={14}/></button>
@@ -883,6 +890,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               </div>
             </div>
           </div>
+        </div>
         </div>
       )}
 

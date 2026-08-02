@@ -19,7 +19,8 @@ const CSS = `
 .stk-btn.pri:hover{filter:brightness(1.06)}
 .stk-btn.gho{background:transparent;color:var(--lh-text2);border-color:var(--lh-border)}
 .stk-btn.gho:hover{background:var(--lh-surface2);color:var(--lh-text)}
-.stk-row{display:flex;align-items:center;gap:14px;padding:15px 18px;border-top:1px solid var(--lh-border)}
+.stk-row{display:flex;align-items:center;gap:10px 14px;padding:15px 18px;border-top:1px solid var(--lh-border);flex-wrap:wrap}
+@media(max-width:640px){.stk-row{padding:12px 14px}.stk-card{border-radius:12px}.stk{padding:0 2px}}
 .stk-row:first-child{border-top:none}
 .stk-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--c,var(--lh-accent)) 14%,transparent);color:var(--c,var(--lh-accent));flex-shrink:0}
 .stk-n{font-size:14.5px;font-weight:600;color:var(--lh-text)}
@@ -34,8 +35,10 @@ const CSS = `
 .stk-ring{position:relative;width:104px;height:104px;flex-shrink:0}
 .stk-ring .num{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;font-weight:700;color:var(--lh-text)}
 .stk-ov{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,#04070c 55%,transparent);backdrop-filter:blur(4px)}
+@media(max-width:1024px){.stk-ov{backdrop-filter:none}}
 .stk-modal{width:min(94vw,540px);max-height:88vh;overflow-y:auto;background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:16px}
 .stk-mtop{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 22px 6px}
+@media(max-width:480px){.stk-mtop{padding:16px 16px 4px}}
 .stk-mtop h2{font-size:19px;font-weight:700;color:var(--lh-text)}
 .stk-mtop p{font-size:13px;color:var(--lh-text3);margin-top:2px}
 .stk-x{width:32px;height:32px;border-radius:9px;border:1px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text2);cursor:pointer}
@@ -152,7 +155,7 @@ export function StacksPage() {
         <div className="stk-grid2">
           <div className="stk-card">
             <div className="stk-ctop">Stack readiness <span className="stk-pill" style={{ '--c': rc }}>{s.status === 'validated' ? 'Validated' : 'Not analyzed'}</span></div>
-            <div style={{ padding: 20, display: 'flex', gap: 22, alignItems: 'center' }}>
+            <div style={{ padding: 20, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
               {ring(s.readiness != null ? s.readiness : null)}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 11, fontSize: 14, color: 'var(--lh-text)' }}>
                 <div>{bad ? `${bad} project${bad > 1 ? 's' : ''} need attention` : 'All projects clean'}</div>
