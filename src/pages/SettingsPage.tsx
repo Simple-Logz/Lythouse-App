@@ -212,9 +212,9 @@ export function SettingsPage(){
     <PageHeader title="Account Settings" description="Manage your personal account, notifications, and security preferences."/>
 
     {/* Tabs */}
-    <div className="mb-6 flex gap-1 border-b border-gray-200">
+    <div className="mb-6 flex gap-1 border-b border-gray-200 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
       {TABS.map(t=>(
-        <button key={t.id} onClick={()=>setTab(t.id as any)} className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab===t.id?'tab-active':'tab-inactive'}`}>
+        <button key={t.id} onClick={()=>setTab(t.id as any)} className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${tab===t.id?'tab-active':'tab-inactive'}`}>
           <t.icon size={15}/>{t.label}
         </button>
       ))}
