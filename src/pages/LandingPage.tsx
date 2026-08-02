@@ -332,6 +332,24 @@ const BRAND = {
 // glowing validation layers, with your tools (GitHub, GitLab, AWS, Azure)
 // orbiting the check and feeding evidence into it along flowing connectors.
 function HeroArt() {
+  // The medal's "swivel in, then steady" spin is a one-shot CSS animation
+  // (ha-spin360, fill-mode both, runs once on mount). On desktop the hero
+  // art sits beside the headline and is on-screen immediately, so it plays
+  // right in front of you. On mobile the layout stacks to one column and
+  // HeroArt renders *below* the hero text — by the time you actually
+  // scroll down to it, the 2.1s one-shot animation already fired and
+  // finished back when the page first mounted, off-screen. It never
+  // "doesn't rotate" on mobile — it rotates before you can see it. Fix:
+  // only mount the spin class once this SVG actually scrolls into view.
+  const rootRef = useRef(null);
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') { setEntered(true); return; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setEntered(true); io.disconnect(); } }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const plane = (cy: number, i: number) => (
     <g key={i} className="ha-layer" style={{ animationDelay: `${i * 0.5}s` }}>
       <path d={`M125 ${cy} L300 ${cy + 88} L300 ${cy + 108} L125 ${cy + 20} Z`} fill="rgba(124,92,230,.16)" stroke="rgba(196,181,253,.2)" />
@@ -362,7 +380,7 @@ function HeroArt() {
     </g>
   );
   return (
-    <svg viewBox="0 0 600 540" width="100%" className="max-w-[540px]" fill="none" aria-hidden="true">
+    <svg ref={rootRef} viewBox="0 0 600 540" width="100%" className="max-w-[540px]" fill="none" aria-hidden="true">
       <style>{`
         .ha-layer{transform-box:fill-box;transform-origin:center;animation:ha-breathe 5.6s ease-in-out infinite}
         .ha-medal{transform-box:fill-box;transform-origin:center;animation:ha-float 6.5s ease-in-out infinite}
@@ -381,6 +399,7 @@ function HeroArt() {
         @keyframes ha-spin{to{transform:rotate(360deg)}}
         @keyframes ha-spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @media (prefers-reduced-motion: reduce){.ha-layer,.ha-medal,.ha-node,.ha-rise,.ha-chip,.ha-flow,.ha-orbit,.ha-spin1{animation:none}}
+        @media (max-width:1024px){.ha-layer,.ha-node,.ha-rise,.ha-chip,.ha-flow,.ha-orbit{animation:none}}
       `}</style>
       <defs>
         <radialGradient id="hglow" cx="50%" cy="42%" r="55%">
@@ -425,7 +444,7 @@ function HeroArt() {
       {chip(474, 214, g(BRAND.azure, '#4cc2ff', 1.04), 3)}
       {/* slowly rotating orbit ring for depth */}
       <circle className="ha-orbit" cx="300" cy="120" r="64" fill="none" stroke="rgba(196,181,253,.28)" strokeWidth="1.2" strokeDasharray="2 9" />
-      <g className="ha-spin1">
+      <g className={entered ? 'ha-spin1' : ''}>
         <g className="ha-medal">
           <circle cx="300" cy="120" r="78" fill="url(#hglow)" />
           <circle cx="300" cy="120" r="46" fill="url(#hmed)" stroke="rgba(196,181,253,.65)" strokeWidth="1.5" />
@@ -514,11 +533,27 @@ function ProductTour() {
   const [clickKey, setClickKey] = useState(0);
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+  // This autoplay was a bare setInterval with no visibility check — it
+  // reran a React state update + CSS transitions every 3s for as long as
+  // the page was open, including while this section sat off-screen (it's
+  // well down the page) or the tab was backgrounded. That's continuous,
+  // pointless main-thread work competing with real taps/scrolls for a
+  // slice of every frame. Now it only runs while the frame is actually
+  // visible and the tab is in the foreground.
+  const wrapRef = useRef(null);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    if (reduced) return;
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') { setVisible(true); return; }
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  useEffect(() => {
+    if (reduced || !visible || (typeof document !== 'undefined' && document.hidden)) return;
     const id = setInterval(() => setStep((s) => (s + 1) % PT_NAV.length), PT_STEP_MS);
     return () => clearInterval(id);
-  }, [reduced]);
+  }, [reduced, visible]);
   useEffect(() => {
     setClickKey((k) => k + 1);
     const t = setTimeout(() => setScene(step), 640);
@@ -529,7 +564,7 @@ function ProductTour() {
   const active = PT_NAV[scene].id;
 
   return (
-    <div className="pt-wrap"><style>{PT_CSS}</style>
+    <div className="pt-wrap" ref={wrapRef}><style>{PT_CSS}</style>
       <div className="pt-glow" />
       <div className="pt-frame">
         <div className="pt-top">
