@@ -5,6 +5,7 @@ import{PageHeader,EmptyState,Spinner}from'../lib/ui';
 import{useRouter,Link}from'../lib/router';
 import{PinButton}from'../lib/pins';
 import{useRole}from'../lib/useRole';
+import{useAuth}from'../lib/auth';
 import { FolderGit2, Plus, X, GitFork as Github, Loader as Loader2, Search, ChevronRight } from 'lucide-react';
 import { CreateProjectWizard } from './CreateProjectWizard';
 
@@ -12,6 +13,7 @@ const hostFrom=(u:string)=>{try{return new URL(u).hostname.replace(/^www\./,'');
 
 export function ProjectsPage(){
 const{navigate}=useRouter();
+const{user}=useAuth();
 const perms=useRole();
 const canCreate=perms.can('projects.create');
 const[loading,setLoading]=useState(true);
@@ -42,6 +44,20 @@ const[repoSearch,setRepoSearch]=useState('');
 const[importingId,setImportingId]=useState<number|string>('');
 const[showToken,setShowToken]=useState(false);
 const GH_CLIENT_ID=(import.meta as any).env?.VITE_GITHUB_CLIENT_ID as string|undefined;
+
+// Which of the two import paths is showing, and the workspace this import
+// should land in (scoped to the modal — doesn't change the page's active
+// workspace, only which one the new project gets created under).
+const[importTab,setImportTab]=useState<'manual'|'browse'>('manual');
+const[importWs,setImportWs]=useState('');
+const[manName,setManName]=useState('');
+const[manGitUrl,setManGitUrl]=useState('');
+const[manBranch,setManBranch]=useState('main');
+const[manFolder,setManFolder]=useState('');
+const[manToken,setManToken]=useState('');
+const[manSaving,setManSaving]=useState(false);
+const[manError,setManError]=useState('');
+const manDerivedName=manGitUrl.trim().replace(/\.git$/,'').replace(/\/+$/,'').split('/').filter(Boolean).pop()||'';
 
 const wsId=()=>selectedWs||localStorage.getItem('sandbox.activeWs')||'';
 
@@ -81,6 +97,11 @@ useEffect(()=>{
   if(params.get('new')==='1'){setCreating(true);window.history.replaceState({},'',window.location.pathname);}
 },[]);
 
+// Default the import modal's workspace picker to whatever's currently active.
+useEffect(()=>{
+  if(importing&&!importWs)setImportWs(wsId());
+},[importing]); // eslint-disable-line react-hooks/exhaustive-deps
+
 // After the OAuth redirect back, exchange ?code= for a token
 useEffect(()=>{
   const params=new URLSearchParams(window.location.search);
@@ -101,7 +122,7 @@ useEffect(()=>{
 },[]);
 
 const importRepo=async(repo:any)=>{
-  const wid=wsId();
+  const wid=importWs||wsId();
   if(!wid){setGhError('Select a workspace first (create one under Workspaces).');return;}
   if(projects.find(p=>p.name.trim().toLowerCase()===String(repo.name).toLowerCase())){setGhError(`A project named "${repo.name}" already exists in this workspace.`);return;}
   setImportingId(repo.id);setGhError('');
@@ -118,10 +139,40 @@ const importRepo=async(repo:any)=>{
   }).select().single();
   if(error){setGhError(error.message);setImportingId('');return;}
   setProjects(prev=>[data,...prev]);
+  resetImport();
   navigate(`/projects/${data.id}`);
 };
 
-const resetImport=()=>{setImporting(false);setGhToken('');setGhError('');setGhUser(null);setRepos([]);setRepoSearch('');setImportingId('');setShowToken(false);};
+// Manual path: paste a repo URL directly (any git host) instead of browsing
+// a GitHub-account repo list — same projects-table insert the wizard and
+// the browse-flow both use, just entered by hand.
+const importManual=async()=>{
+  const wid=importWs;
+  if(!wid){setManError('Select a workspace first (create one under Workspaces).');return;}
+  if(!manGitUrl.trim()){setManError('Enter the repository URL.');return;}
+  const finalName=(manName.trim()||manDerivedName).trim();
+  if(!finalName){setManError('Could not determine a project name from that URL — enter one above.');return;}
+  if(projects.find(p=>p.name.trim().toLowerCase()===finalName.toLowerCase())){setManError(`A project named "${finalName}" already exists in this workspace.`);return;}
+  setManSaving(true);setManError('');
+  const{data,error}=await supabase.from('projects').insert({
+    workspace_id:wid,
+    name:finalName,
+    description:null,
+    git_url:manGitUrl.trim(),
+    git_branch:manBranch.trim()||'main',
+    repo_folder:manFolder.trim()||'',
+    github_token:manToken.trim()||null,
+    language:null,
+    status:'active',
+  }).select().single();
+  if(error){setManError(error.message);setManSaving(false);return;}
+  setProjects(prev=>[data,...prev]);
+  setManSaving(false);
+  resetImport();
+  navigate(`/projects/${data.id}`);
+};
+
+const resetImport=()=>{setImporting(false);setGhToken('');setGhError('');setGhUser(null);setRepos([]);setRepoSearch('');setImportingId('');setShowToken(false);setImportTab('manual');setManName('');setManGitUrl('');setManBranch('main');setManFolder('');setManToken('');setManError('');setManSaving(false);};
 
 const load=async()=>{
   setLoading(true);
@@ -237,58 +288,94 @@ return<div>
 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={resetImport}>
 <div className="w-full max-w-lg animate-scale-in rounded-xl bg-white p-5 shadow-xl overflow-y-auto max-h-[90vh]" onClick={e=>e.stopPropagation()}>
 <div className="mb-1 flex items-center justify-between"><h2 className="text-lg font-semibold flex items-center gap-2"><Github size={18}/>Import from GitHub</h2><button onClick={resetImport} className="btn-ghost p-1"><X size={16}/></button></div>
-<p className="text-sm text-gray-500 mb-4">Connect your GitHub account and import a repository as a project — no manual setup.</p>
-{ghError&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{ghError}</div>}
+<p className="text-sm text-gray-500 mb-4">Import a repository as a project — paste a URL directly, or browse your GitHub account.</p>
 
-{!ghUser?(
+<label className="label">Workspace {workspaces.length>1&&<span className="text-danger-600">*</span>}</label>
+{workspaces.length===0
+  ?<div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">No workspaces yet — <Link to="/workspaces" onClick={resetImport} className="underline font-medium">create one</Link> first.</div>
+  :<select className="input mb-3" value={importWs} onChange={e=>setImportWs(e.target.value)}>
+    {workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
+  </select>}
+
+<div className="mb-4 flex rounded-lg border border-gray-200 p-0.5 text-xs font-semibold">
+  <button onClick={()=>setImportTab('manual')} className={`flex-1 rounded-md py-1.5 transition-colors ${importTab==='manual'?'bg-navy-900 text-white':'text-gray-500 hover:text-navy-900'}`}>Enter repository details</button>
+  <button onClick={()=>setImportTab('browse')} className={`flex-1 rounded-md py-1.5 transition-colors ${importTab==='browse'?'bg-navy-900 text-white':'text-gray-500 hover:text-navy-900'}`}>Browse GitHub</button>
+</div>
+
+{importTab==='manual'?(
   <>
-    <button onClick={loginWithGithub} disabled={ghConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1f2328] px-4 py-3 text-sm font-semibold text-white hover:bg-[#32383f] transition-colors disabled:opacity-60">
-      {ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Continue with GitHub
-    </button>
-    <p className="text-xs text-gray-400 mt-2 text-center">You'll sign in on GitHub, then pick a repository to import.</p>
-
-    <div className="my-4 flex items-center gap-3"><div className="h-px flex-1 bg-gray-200"/><span className="text-xs text-gray-400">or</span><div className="h-px flex-1 bg-gray-200"/></div>
-
-    {!showToken?(
-      <button onClick={()=>setShowToken(true)} className="w-full text-center text-xs text-gray-500 hover:text-gray-700 underline">Advanced: use a personal access token instead</button>
-    ):(
-      <>
-        <label className="label">GitHub Personal Access Token</label>
-        <input className="input mb-1" type="password" value={ghToken} onChange={e=>{setGhToken(e.target.value);setGhError('');}} placeholder="ghp_xxxxxxxxxxxx" onKeyDown={e=>{if(e.key==='Enter')connectGithub();}}/>
-        <p className="text-xs text-gray-400 mb-3">Token needs <span className="font-medium">repo</span> access. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Lythouse" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create one →</a></p>
-        <div className="flex justify-end gap-2">
-          <button onClick={resetImport} className="btn-secondary">Cancel</button>
-          <button onClick={connectGithub} disabled={ghConnecting||!ghToken.trim()} className="btn-primary">{ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Connect</button>
-        </div>
-      </>
-    )}
+    {manError&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{manError}</div>}
+    <label className="label">Repository URL <span className="text-danger-600">*</span></label>
+    <input className="input mb-3" value={manGitUrl} onChange={e=>{setManGitUrl(e.target.value);setManError('');}} placeholder="https://github.com/org/repo" onKeyDown={e=>{if(e.key==='Enter')importManual();}}/>
+    <label className="label">Project name <span className="text-gray-400 font-normal">(optional — defaults to the repo name)</span></label>
+    <input className="input mb-3" value={manName} onChange={e=>setManName(e.target.value)} placeholder={manDerivedName||'my-project'}/>
+    <div className="grid grid-cols-2 gap-3 mb-3">
+      <div><label className="label">Branch</label><input className="input" value={manBranch} onChange={e=>setManBranch(e.target.value)} placeholder="main"/></div>
+      <div><label className="label">Subfolder <span className="text-gray-400 font-normal">(optional)</span></label><input className="input" value={manFolder} onChange={e=>setManFolder(e.target.value)} placeholder="root"/></div>
+    </div>
+    <label className="label">Personal access token <span className="text-gray-400 font-normal">(optional — required for private repos)</span></label>
+    <input className="input mb-1" type="password" value={manToken} onChange={e=>setManToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx"/>
+    <p className="text-xs text-gray-400 mb-3">Token needs <span className="font-medium">repo</span> access. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Lythouse" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create one →</a></p>
+    {user?.email&&<p className="text-xs text-gray-400 mb-1">Managed by <span className="font-medium text-gray-600">{user.email}</span> — the account you're signed in with.</p>}
+    <div className="flex justify-end gap-2 mt-3">
+      <button onClick={resetImport} className="btn-secondary">Cancel</button>
+      <button onClick={importManual} disabled={manSaving||!manGitUrl.trim()||!importWs} className="btn-primary">{manSaving?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Import repository</button>
+    </div>
   </>
 ):(
   <>
-    <div className="mb-3 flex items-center justify-between rounded-lg bg-brand-50 border border-brand-200 px-3 py-2">
-      <span className="text-sm text-brand-700 flex items-center gap-2">{ghUser.avatar_url&&<img src={ghUser.avatar_url} alt="" className="w-5 h-5 rounded-full"/>}Connected as <span className="font-semibold">@{ghUser.login}</span></span>
-      <button onClick={()=>{setGhUser(null);setRepos([]);setRepoSearch('');}} className="text-xs text-gray-500 hover:text-gray-700 underline">Switch</button>
-    </div>
-    <input className="input mb-3" value={repoSearch} onChange={e=>setRepoSearch(e.target.value)} placeholder="Search your repositories…"/>
-    <div className="space-y-1.5 max-h-[46vh] overflow-y-auto -mx-1 px-1">
-      {repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).map(r=>(
-        <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-navy-900 truncate">{r.name}</span>
-              <span className={`chip text-[10px] ${r.private?'bg-amber-50 text-amber-700 border border-amber-200':'bg-gray-100 text-gray-500 border border-gray-200'}`}>{r.private?'private':'public'}</span>
+    {ghError&&<div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-danger-600">{ghError}</div>}
+    {!ghUser?(
+      <>
+        <button onClick={loginWithGithub} disabled={ghConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1f2328] px-4 py-3 text-sm font-semibold text-white hover:bg-[#32383f] transition-colors disabled:opacity-60">
+          {ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Continue with GitHub
+        </button>
+        <p className="text-xs text-gray-400 mt-2 text-center">You'll sign in on GitHub, then pick a repository to import.</p>
+
+        <div className="my-4 flex items-center gap-3"><div className="h-px flex-1 bg-gray-200"/><span className="text-xs text-gray-400">or</span><div className="h-px flex-1 bg-gray-200"/></div>
+
+        {!showToken?(
+          <button onClick={()=>setShowToken(true)} className="w-full text-center text-xs text-gray-500 hover:text-gray-700 underline">Advanced: use a personal access token instead</button>
+        ):(
+          <>
+            <label className="label">GitHub Personal Access Token</label>
+            <input className="input mb-1" type="password" value={ghToken} onChange={e=>{setGhToken(e.target.value);setGhError('');}} placeholder="ghp_xxxxxxxxxxxx" onKeyDown={e=>{if(e.key==='Enter')connectGithub();}}/>
+            <p className="text-xs text-gray-400 mb-3">Token needs <span className="font-medium">repo</span> access. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Lythouse" target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">Create one →</a></p>
+            <div className="flex justify-end gap-2">
+              <button onClick={resetImport} className="btn-secondary">Cancel</button>
+              <button onClick={connectGithub} disabled={ghConnecting||!ghToken.trim()} className="btn-primary">{ghConnecting?<Loader2 size={16} className="animate-spin"/>:<Github size={16}/>} Connect</button>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
-              <span className="truncate">{r.full_name}</span>
-              {r.language&&<span className="shrink-0">· {r.language}</span>}
-            </div>
-          </div>
-          <button onClick={()=>importRepo(r)} disabled={!!importingId} className="btn-primary text-xs shrink-0">{importingId===r.id?<Loader2 size={13} className="animate-spin"/>:<Plus size={13}/>} Import</button>
+          </>
+        )}
+      </>
+    ):(
+      <>
+        <div className="mb-3 flex items-center justify-between rounded-lg bg-brand-50 border border-brand-200 px-3 py-2">
+          <span className="text-sm text-brand-700 flex items-center gap-2">{ghUser.avatar_url&&<img src={ghUser.avatar_url} alt="" className="w-5 h-5 rounded-full"/>}Connected as <span className="font-semibold">@{ghUser.login}</span></span>
+          <button onClick={()=>{setGhUser(null);setRepos([]);setRepoSearch('');}} className="text-xs text-gray-500 hover:text-gray-700 underline">Switch</button>
         </div>
-      ))}
-      {repos.length===0&&<p className="text-sm text-gray-400 py-6 text-center">No repositories found for this account.</p>}
-      {repos.length>0&&repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).length===0&&<p className="text-sm text-gray-400 py-6 text-center">No repositories match "{repoSearch}".</p>}
-    </div>
+        <input className="input mb-3" value={repoSearch} onChange={e=>setRepoSearch(e.target.value)} placeholder="Search your repositories…"/>
+        <div className="space-y-1.5 max-h-[46vh] overflow-y-auto -mx-1 px-1">
+          {repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).map(r=>(
+            <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-navy-900 truncate">{r.name}</span>
+                  <span className={`chip text-[10px] ${r.private?'bg-amber-50 text-amber-700 border border-amber-200':'bg-gray-100 text-gray-500 border border-gray-200'}`}>{r.private?'private':'public'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                  <span className="truncate">{r.full_name}</span>
+                  {r.language&&<span className="shrink-0">· {r.language}</span>}
+                </div>
+              </div>
+              <button onClick={()=>importRepo(r)} disabled={!!importingId} className="btn-primary text-xs shrink-0">{importingId===r.id?<Loader2 size={13} className="animate-spin"/>:<Plus size={13}/>} Import</button>
+            </div>
+          ))}
+          {repos.length===0&&<p className="text-sm text-gray-400 py-6 text-center">No repositories found for this account.</p>}
+          {repos.length>0&&repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).length===0&&<p className="text-sm text-gray-400 py-6 text-center">No repositories match "{repoSearch}".</p>}
+        </div>
+      </>
+    )}
   </>
 )}
 </div>
