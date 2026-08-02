@@ -7,7 +7,7 @@ import {
   ArrowRight, Zap, Lock, TrendingUp, Sparkles, ChevronLeft, ChevronRight, ExternalLink, ChevronDown,
   BookOpen, LifeBuoy, Mail, Info, Briefcase, Accessibility,
   Boxes, Layers, Package, Key, Network, Scale, Radar, XCircle, BadgeCheck, AlertTriangle,
-  Cloud, MessageSquare, FileCode, LayoutDashboard, Check,
+  Cloud, MessageSquare, FileCode, LayoutDashboard, Check, Menu, X,
 } from 'lucide-react';
 
 // ── "Works with your stack" integration tiles (generic icons, honest set) ──
@@ -625,6 +625,7 @@ export function LandingPage() {
   const [email, setEmail] = useState('');
   const [slide, setSlide] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const startTrial = () => navigate('/signup');
   const goTo = (to) => () => { if (to.startsWith('#')) document.querySelector(to)?.scrollIntoView({ behavior: 'smooth' }); else navigate(to); };
 
@@ -640,11 +641,15 @@ export function LandingPage() {
     <div className="dark relative min-h-screen overflow-x-hidden text-[#eeecf6]" style={{ background: 'linear-gradient(180deg,#1f1b2c 0%,#171423 100%)' }}>
       {/* soft gradient aurora wash behind the whole page */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[560px] w-[880px] -translate-x-1/2 rounded-full blur-[120px]"
+        {/* Smaller blur radius under lg: a 120px blur on 3 full-viewport-fixed
+            layers is expensive to recomposite on repaint, which shows up as
+            scroll jank on phones. 60px reads almost identically but is much
+            cheaper on mobile GPUs. */}
+        <div className="absolute -top-40 left-1/2 h-[560px] w-[880px] -translate-x-1/2 rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(167,139,250,.42), transparent 70%)' }} />
-        <div className="absolute -top-24 right-[6%] h-[420px] w-[420px] rounded-full blur-[120px]"
+        <div className="absolute -top-24 right-[6%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(147,197,253,.40), transparent 70%)' }} />
-        <div className="absolute top-24 left-[4%] h-[420px] w-[420px] rounded-full blur-[120px]"
+        <div className="absolute top-24 left-[4%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(240,171,214,.38), transparent 70%)' }} />
       </div>
 
@@ -652,7 +657,7 @@ export function LandingPage() {
         {/* fixed frosted-glass pill nav — stays pinned to the top on scroll */}
         <div className="fixed inset-x-0 top-0 z-40 px-4 pt-3">
           <header
-            className="mx-auto max-w-6xl rounded-2xl border border-white/60 bg-white/70 backdrop-blur-xl backdrop-saturate-150"
+            className="mx-auto max-w-6xl rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md lg:backdrop-blur-xl backdrop-saturate-150"
             style={{ boxShadow: '0 1px 0 rgba(255,255,255,.7) inset, 0 10px 30px -10px rgba(16,24,40,.14), 0 24px 60px -24px rgba(124,92,230,.24)' }}>
             <div className="px-5 h-14 flex items-center justify-between">
               <Logo size={25} />
@@ -668,10 +673,53 @@ export function LandingPage() {
                 <button onClick={go('/signin')} className="hidden sm:inline text-sm font-semibold text-navy-800 hover:text-brand-700 transition-colors px-1">Sign in</button>
                 <button onClick={go('/demo')} className="hidden sm:inline-flex rounded-full border border-gray-300/80 bg-white/50 px-4 py-2 text-sm font-semibold text-navy-800 hover:bg-white transition-colors">Book a demo</button>
                 <Dark onClick={go('/signup')}>Free trial</Dark>
+                {/* Below lg the nav above is `hidden`, so this is the only way to
+                    reach Product/How it works/Resources/About/Docs/Pricing on a
+                    phone — previously there was no mobile equivalent at all. */}
+                <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden -mr-1 rounded-lg p-2 text-navy-800" aria-label="Open menu"><Menu size={22} /></button>
               </div>
             </div>
           </header>
         </div>
+
+        {/* mobile nav drawer — every link the desktop pill nav has, reachable below lg */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+            <div className="absolute inset-x-3 top-3 max-h-[calc(100vh-24px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#1f1b2c] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 px-5 h-14">
+                <Logo size={22} />
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-white/70" aria-label="Close menu"><X size={20} /></button>
+              </div>
+              <div className="px-3 py-3">
+                {[
+                  { label: 'Product', items: PRODUCT_MENU },
+                  { label: 'How it works', items: HOW_MENU },
+                  { label: 'Resources', items: RESOURCES_MENU },
+                  { label: 'About', items: ABOUT_MENU },
+                ].map((sec) => (
+                  <div key={sec.label} className="mb-1">
+                    <p className="px-3 pb-1 pt-3 text-[11px] font-bold uppercase tracking-widest text-white/40">{sec.label}</p>
+                    {sec.items.map((it) => (
+                      <button key={it.t} onClick={() => { setMobileMenuOpen(false); goTo(it.to)(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-white/85 hover:bg-white/5">
+                        <it.icon size={16} className="shrink-0 text-white/50" /><span className="text-sm font-medium">{it.t}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                <div className="mt-2 border-t border-white/10 pt-2">
+                  <button onClick={() => { setMobileMenuOpen(false); goTo('/docs')(); }} className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 hover:bg-white/5">Docs</button>
+                  <button onClick={() => { setMobileMenuOpen(false); goTo('/plans')(); }} className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 hover:bg-white/5">Pricing</button>
+                </div>
+                <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-3">
+                  <button onClick={() => { setMobileMenuOpen(false); go('/signin')(); }} className="w-full rounded-xl border border-white/15 py-2.5 text-sm font-semibold text-white/90">Sign in</button>
+                  <button onClick={() => { setMobileMenuOpen(false); go('/demo')(); }} className="w-full rounded-xl border border-white/15 py-2.5 text-sm font-semibold text-white/90">Book a demo</button>
+                  <Dark onClick={() => { setMobileMenuOpen(false); go('/signup')(); }} className="w-full">Free trial</Dark>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* hero — text left, isometric validation art right */}
         <section className="mx-auto max-w-6xl px-5 pt-32 pb-20">
