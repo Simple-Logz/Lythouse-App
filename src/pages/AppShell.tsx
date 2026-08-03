@@ -1,10 +1,10 @@
 // @ts-nocheck
-import { useEffect, useState, type ReactNode, createContext, useContext } from 'react'
+import { useEffect, useState, useRef, type ReactNode, createContext, useContext } from 'react'
 import {
-  LayoutDashboard, ChartBar as BarChart3, FolderGit2, Server, Boxes, LogOut, BookOpen,
-  Menu, Sparkles, Scale, Rocket, Compass, ShieldCheck, Zap, Activity, GitBranch,
+  ChartBar as BarChart3, FolderGit2, Server, Boxes, LogOut, BookOpen,
+  Menu, Sparkles, Scale, Rocket, ShieldCheck, Zap, Activity,
   Plug, Bug, ClipboardCheck, FileWarning, ScrollText, Users, CreditCard, Settings as SettingsIcon,
-  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X
+  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight
 } from 'lucide-react'
 import { supabase, type Workspace, type Organization, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins'
@@ -16,38 +16,42 @@ import { AskAiPanel } from './AskAiPanel'
 const PlanContext = createContext<PlanId>('free')
 export function usePlanId(): PlanId { return useContext(PlanContext) }
 
-// Flat, labeled sections (template style) — every item routes to a real page.
+// Workflow-oriented navigation: users think "I need to build / ship / watch /
+// approve / configure / manage" — not "projects / deployments / findings /
+// integrations". Home and Documentation are standalone (no group, no
+// disclosure needed); everything else lives under six workflow groups, only
+// one of which is ever expanded at a time (see openSection state below).
+const NAV_HOME = { label: 'Home', to: '/dashboard', icon: House }
+const NAV_DOCS = { label: 'Documentation', to: '/docs', icon: BookOpen }
 const SECTIONS = [
-  { key: 'platform', label: 'Platform', items: [
-    { label: 'Documentation', to: '/docs', icon: Compass },
-    { label: 'Overview', to: '/dashboard', icon: LayoutDashboard },
+  { key: 'platform', label: 'Platform', icon: Boxes, items: [
     { label: 'Projects', to: '/projects', icon: FolderGit2 },
-    { label: 'Stacks', to: '/stacks', icon: Layers },
     { label: 'Workspaces', to: '/workspaces', icon: Building2 },
+    { label: 'Stacks', to: '/stacks', icon: Layers },
   ] },
-  { key: 'rel', label: 'Release Intelligence', items: [
-    { label: 'Release Pipeline', to: '/pipeline', icon: Workflow },
-    { label: 'Executive View', to: '/executive', icon: BarChart3 },
+  { key: 'delivery', label: 'Delivery', icon: Rocket, items: [
+    { label: 'Pipelines', to: '/pipeline', icon: Workflow },
     { label: 'Deployments', to: '/deployments', icon: Rocket },
-    { label: 'Deployment Simulator', to: '/simulator', icon: Zap },
-    { label: 'Analytics', to: '/analytics', icon: Activity },
-    { label: 'Policy Studio', to: '/policies', icon: ShieldCheck },
+    { label: 'Simulator', to: '/simulator', icon: Zap },
   ] },
-  { key: 'env', label: 'Environment Validation', items: [
+  { key: 'ops', label: 'Operations', icon: BarChart3, items: [
+    { label: 'Analytics', to: '/analytics', icon: Activity },
+    { label: 'Findings', to: '/findings', icon: Bug },
+    { label: 'Executive View', to: '/executive', icon: BarChart3 },
+  ] },
+  { key: 'gov', label: 'Governance', icon: ShieldCheck, items: [
+    { label: 'Approvals', to: '/approvals', icon: ClipboardCheck },
+    { label: 'Compliance', to: '/compliance', icon: Scale },
+    { label: 'Incidents', to: '/incidents', icon: FileWarning },
+    { label: 'Policy Studio', to: '/policies', icon: ShieldCheck },
+    { label: 'Audit', to: '/audit', icon: ScrollText },
+  ] },
+  { key: 'config', label: 'Configuration', icon: SettingsIcon, items: [
     { label: 'Environment', to: '/environment', icon: Server },
     { label: 'Integrations', to: '/integrations', icon: Plug },
     { label: 'Plugins', to: '/plugins', icon: Boxes },
   ] },
-  { key: 'ai', label: 'AI Remediation', items: [
-    { label: 'Findings', to: '/findings', icon: Bug },
-  ] },
-  { key: 'gov', label: 'Governance', items: [
-    { label: 'Approvals', to: '/approvals', icon: ClipboardCheck },
-    { label: 'Compliance', to: '/compliance', icon: Scale },
-    { label: 'Incidents', to: '/incidents', icon: FileWarning },
-    { label: 'Audit', to: '/audit', icon: ScrollText },
-  ] },
-  { key: 'org', label: 'Organization', items: [
+  { key: 'org', label: 'Organization', icon: Users, items: [
     { label: 'Organizations', to: '/organizations', icon: Building2 },
     { label: 'Team', to: '/team', icon: Users },
     { label: 'Plans', to: '/plans', icon: CreditCard },
@@ -143,6 +147,29 @@ const CSS = `
 .lh-pinrow .lh-unpin:hover{background:var(--lh-border);color:var(--lh-text)}
 .lh-pinrow .ic{color:var(--lh-accent)}
 .lh-sec-empty{font-size:12px;color:var(--lh-text3);padding:4px 11px 8px;line-height:1.5}
+
+/* ── Workflow nav redesign: Level 1 (group headers) vs Level 2 (pages) ──
+   Only one group is ever expanded (see openSection state) — that's the
+   actual fix for the "too many things at once" complaint, not just restyling.
+   Connecting stroke is a single soft 1px border-left, not a heavy line. */
+.lh-toplink{font-weight:600;margin-bottom:1px}
+.lh-grp{margin-bottom:1px}
+.lh-sec2{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border:none;background:none;border-radius:8px;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--lh-text2);cursor:pointer;transition:background .12s,color .12s;text-align:left}
+.lh-sec2:hover{background:var(--lh-surface2);color:var(--lh-text)}
+.lh-sec2 .gic{color:var(--lh-text3);flex-shrink:0;transition:color .14s}
+.lh-sec2 .gl{flex:1}
+.lh-sec2 .cv{flex-shrink:0;color:var(--lh-text3);transition:transform .2s ease-in-out}
+.lh-sec2.open .cv{transform:rotate(90deg)}
+.lh-sec2.open,.lh-sec2.has-active{color:var(--lh-text)}
+.lh-sec2.open .gic,.lh-sec2.has-active .gic{color:var(--lh-accent)}
+.lh-sec2.has-active:not(.open){box-shadow:inset 3px 0 0 -1px var(--lh-accent)}
+/* fr-unit grid trick: animates real layout height without JS measuring the
+   content, so it works for any number of child items with one CSS rule. */
+.lh-grp-items{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease-in-out}
+.lh-grp-items.open{grid-template-rows:1fr}
+.lh-grp-items-inner{overflow:hidden;min-height:0;margin:2px 0 4px 20px;padding-left:11px;border-left:1px solid var(--lh-border);display:flex;flex-direction:column;gap:1px}
+.lh-grp-items-inner .lh-item{padding:6.5px 9px;font-size:13px}
+.lh-grp-items-inner .lh-item .ic{width:15px;height:15px}
 .lh-foot{border-top:1px solid var(--lh-border);padding:10px 12px}
 .lh-user{display:flex;align-items:center;gap:9px;padding:4px}
 .lh-ua{width:30px;height:30px;border-radius:50%;background:var(--lh-accent);color:var(--lh-accent-contrast);display:grid;place-items:center;font-weight:700;font-size:12px;overflow:hidden;flex-shrink:0}
@@ -246,13 +273,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [aiOpen, setAiOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('lh.theme') as 'light' | 'dark') || 'light')
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
-  const [openSec, setOpenSec] = useState<Record<string, boolean>>(() => {
-    try { return JSON.parse(localStorage.getItem('lh.nav') || '{}') } catch { return {} }
-  })
-  const toggleSec = (k: string) => setOpenSec((o) => { const n = { ...o, [k]: o[k] === false ? true : false }; try { localStorage.setItem('lh.nav', JSON.stringify(n)) } catch {}; return n })
-  const pins = usePins()
-
+  // Progressive disclosure: only one workflow group is ever expanded.
+  // Whichever group contains the current route stays in sync automatically
+  // (so navigating to a page via the command palette, a card link, etc.
+  // still shows you where you are in the sidebar) — manually clicking a
+  // different group header lets you browse without navigating away.
   const isPathActive = (to: string) => path === to || path.startsWith(to + '/')
+  const sectionForPath = (p: string) => SECTIONS.find((s) => s.items.some((i) => p === i.to || p.startsWith(i.to + '/')))?.key ?? null
+  const [openSection, setOpenSection] = useState<string | null>(() => sectionForPath(path))
+  useEffect(() => {
+    const active = sectionForPath(path)
+    if (active) setOpenSection(active)
+  }, [path])
+  const toggleSection = (k: string) => setOpenSection((cur) => (cur === k ? null : k))
+  const [pinnedOpen, setPinnedOpen] = useState(true)
+  const pins = usePins()
+  const activeItemRef = useRef<HTMLAnchorElement | null>(null)
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [openSection])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -353,48 +392,68 @@ export function AppShell({ children }: { children: ReactNode }) {
           )
         })()}
       </div>
-      <nav className="lh-nav">
-        {pins.length > 0 && (() => {
-          const open = openSec['pinned'] !== false
-          return (
-            <div>
-              <button className={`lh-sec col ${open ? 'open' : ''}`} onClick={() => toggleSec('pinned')}>
-                <Pin size={11} style={{ marginRight: 2 }} /> Pinned
-                <svg className="cv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="m9 6 6 6-6 6"/></svg>
-              </button>
-              {open && pins.map((p) => {
-                const Icon = PIN_ICONS[p.type] || FolderGit2
-                return (
-                  <Link key={pinKey(p.type, p.id)} to={p.to} onClick={go} className={`lh-item lh-pinrow ${isPathActive(p.to) ? 'active' : ''}`}>
-                    <Icon size={16} className="ic" />
-                    <span className="lh-pinlabel">{p.label}</span>
-                    <span
-                      role="button" tabIndex={0} title="Unpin" aria-label={`Unpin ${p.label}`}
-                      className="lh-unpin"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); removePin(p.type, p.id) }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); removePin(p.type, p.id) } }}
-                    ><X size={13} /></span>
-                  </Link>
-                )
-              })}
-            </div>
-          )
-        })()}
-        {SECTIONS.map((s) => {
-          const open = openSec[s.key] !== false
-          return (
-            <div key={s.key}>
-              <button className={`lh-sec col ${open ? 'open' : ''}`} onClick={() => toggleSec(s.key)}>
-                {s.label}<svg className="cv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="m9 6 6 6-6 6"/></svg>
-              </button>
-              {open && s.items.map((i) => (
-                <Link key={i.to} to={i.to} onClick={go} className={`lh-item ${isPathActive(i.to) ? 'active' : ''}`}>
-                  <i.icon size={16} className="ic" /> {i.label}
+      <nav className="lh-nav" aria-label="Main">
+        <Link to={NAV_HOME.to} onClick={go} className={`lh-item lh-toplink ${isPathActive(NAV_HOME.to) ? 'active' : ''}`}
+          ref={isPathActive(NAV_HOME.to) ? activeItemRef : undefined} aria-current={isPathActive(NAV_HOME.to) ? 'page' : undefined}>
+          <NAV_HOME.icon size={16} className="ic" /> {NAV_HOME.label}
+        </Link>
+
+        {pins.length > 0 && (
+          <div className="lh-grp">
+            <button className={`lh-sec col ${pinnedOpen ? 'open' : ''}`} onClick={() => setPinnedOpen((v) => !v)} aria-expanded={pinnedOpen}>
+              <Pin size={11} style={{ marginRight: 2 }} /> Pinned
+              <svg className="cv" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+            {pinnedOpen && pins.map((p) => {
+              const Icon = PIN_ICONS[p.type] || FolderGit2
+              return (
+                <Link key={pinKey(p.type, p.id)} to={p.to} onClick={go} className={`lh-item lh-pinrow ${isPathActive(p.to) ? 'active' : ''}`}>
+                  <Icon size={16} className="ic" />
+                  <span className="lh-pinlabel">{p.label}</span>
+                  <span
+                    role="button" tabIndex={0} title="Unpin" aria-label={`Unpin ${p.label}`}
+                    className="lh-unpin"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removePin(p.type, p.id) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); removePin(p.type, p.id) } }}
+                  ><X size={13} /></span>
                 </Link>
-              ))}
+              )
+            })}
+          </div>
+        )}
+
+        {/* Workflow groups — one expanded at a time. The active group's
+            header stays visually marked even while collapsed (has-active)
+            so switching groups never loses your place. */}
+        {SECTIONS.map((s) => {
+          const open = openSection === s.key
+          const hasActive = s.items.some((i) => isPathActive(i.to))
+          return (
+            <div key={s.key} className="lh-grp">
+              <button className={`lh-sec2 ${open ? 'open' : ''} ${hasActive ? 'has-active' : ''}`} onClick={() => toggleSection(s.key)}
+                aria-expanded={open} aria-controls={`lh-grp-${s.key}`}>
+                <s.icon size={15} className="gic" />
+                <span className="gl">{s.label}</span>
+                <ChevronRight size={14} className="cv" />
+              </button>
+              <div id={`lh-grp-${s.key}`} className={`lh-grp-items ${open ? 'open' : ''}`}>
+                <div className="lh-grp-items-inner">
+                  {s.items.map((i) => (
+                    <Link key={i.to} to={i.to} onClick={go} className={`lh-item ${isPathActive(i.to) ? 'active' : ''}`}
+                      ref={isPathActive(i.to) ? activeItemRef : undefined} aria-current={isPathActive(i.to) ? 'page' : undefined}>
+                      <i.icon size={15} className="ic" /> {i.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
           )
         })}
+
+        <Link to={NAV_DOCS.to} onClick={go} className={`lh-item lh-toplink ${isPathActive(NAV_DOCS.to) ? 'active' : ''}`}
+          ref={isPathActive(NAV_DOCS.to) ? activeItemRef : undefined} aria-current={isPathActive(NAV_DOCS.to) ? 'page' : undefined}>
+          <NAV_DOCS.icon size={16} className="ic" /> {NAV_DOCS.label}
+        </Link>
       </nav>
       <div className="lh-foot">
         <div className="lh-user">

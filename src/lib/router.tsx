@@ -1,4 +1,4 @@
-import{createContext,useContext,useEffect,useState,type ReactNode}from'react';
+import{createContext,forwardRef,useContext,useEffect,useState,type ReactNode}from'react';
 type Ctx={path:string;navigate:(to:string)=>void};
 const R=createContext<Ctx|undefined>(undefined);
 export function RouterProvider({children}:{children:ReactNode}){
@@ -8,6 +8,11 @@ function n(t:string){window.history.pushState({},'',t);setP(t);window.dispatchEv
 return<R.Provider value={{path:p,navigate:n}}>{children}</R.Provider>;
 }
 export function useRouter(){const c=useContext(R);if(!c)throw new Error('useRouter');return c;}
-export function Link({to,children,className,onClick}:{to:string;children:ReactNode;className?:string;onClick?:()=>void}){
-const{navigate}=useRouter();return<a href={to} className={className} onClick={e=>{e.preventDefault();navigate(to);onClick?.();}}>{children}</a>;
-}
+// forwardRef + ...rest so callers can attach a ref (e.g. scrollIntoView on the
+// active nav item) or pass through aria-* attributes — previously both were
+// silently dropped since this only destructured a fixed prop list.
+export const Link=forwardRef<HTMLAnchorElement,{to:string;children:ReactNode;className?:string;onClick?:()=>void;[key:string]:any}>(
+function Link({to,children,className,onClick,...rest},ref){
+const{navigate}=useRouter();
+return<a ref={ref} href={to} className={className} onClick={e=>{e.preventDefault();navigate(to);onClick?.();}} {...rest}>{children}</a>;
+});
