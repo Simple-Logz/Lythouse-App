@@ -52,6 +52,7 @@ const DocsPage=lazy(()=>import('./pages/DocsPage').then(m=>({default:m.DocsPage}
 const OnboardingPage=lazy(()=>import('./pages/OnboardingPage').then(m=>({default:m.OnboardingPage})));
 const FindingsPage=lazy(()=>import('./pages/FindingsPage').then(m=>({default:m.FindingsPage})));
 const ApprovalsPage=lazy(()=>import('./pages/ApprovalsPage').then(m=>({default:m.ApprovalsPage})));
+const ChangeManagementPage=lazy(()=>import('./pages/ChangeManagementPage').then(m=>({default:m.ChangeManagementPage})));
 const StacksPage=lazy(()=>import('./pages/StacksPage').then(m=>({default:m.StacksPage})));
 const ReleasePipelinePage=lazy(()=>import('./pages/ReleasePipelinePage').then(m=>({default:m.ReleasePipelinePage})));
 const PluginsPage=lazy(()=>import('./pages/PluginsPage').then(m=>({default:m.PluginsPage})));
@@ -77,6 +78,7 @@ else if(seg[0]==='policies')c=<PolicyPage/>;
 else if(seg[0]==='audit')c=<AuditLogPage/>;
 else if(seg[0]==='findings')c=<FindingsPage/>;
 else if(seg[0]==='approvals')c=<ApprovalsPage/>;
+else if(seg[0]==='change-management')c=<ChangeManagementPage/>;
 else if(seg[0]==='stacks')c=<StacksPage/>;
 else if(seg[0]==='pipeline')c=<ReleasePipelinePage/>;
 else if(seg[0]==='plugins')c=<PluginsPage/>;

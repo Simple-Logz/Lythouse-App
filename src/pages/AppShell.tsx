@@ -4,7 +4,7 @@ import {
   ChartBar as BarChart3, FolderGit2, Server, Boxes, LogOut, BookOpen,
   Menu, Sparkles, Scale, Rocket, ShieldCheck, Zap, Activity,
   Plug, Bug, ClipboardCheck, FileWarning, ScrollText, Users, CreditCard, Settings as SettingsIcon,
-  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight
+  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight, FileText
 } from 'lucide-react'
 import { supabase, type Workspace, type Organization, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins'
@@ -40,6 +40,7 @@ const SECTIONS = [
     { label: 'Executive View', to: '/executive', icon: BarChart3 },
   ] },
   { key: 'gov', label: 'Governance', icon: ShieldCheck, items: [
+    { label: 'Change Management', to: '/change-management', icon: FileText },
     { label: 'Approvals', to: '/approvals', icon: ClipboardCheck },
     { label: 'Compliance', to: '/compliance', icon: Scale },
     { label: 'Incidents', to: '/incidents', icon: FileWarning },
@@ -65,7 +66,7 @@ const TITLES: Record<string, string> = {
   '/dashboard': 'Overview', '/executive': 'Executive View', '/projects': 'Projects',
   '/deployments': 'Deployments', '/simulator': 'Deployment Simulator', '/analytics': 'Analytics',
   '/policies': 'Policy Studio', '/environment': 'Environment Validation', '/integrations': 'Integrations',
-  '/findings': 'Findings', '/approvals': 'Approvals', '/compliance': 'Compliance', '/incidents': 'Incidents', '/audit': 'Audit',
+  '/findings': 'Findings', '/change-management': 'Change Management', '/approvals': 'Approvals', '/compliance': 'Compliance', '/incidents': 'Incidents', '/audit': 'Audit',
   '/workspaces': 'Workspaces', '/organizations': 'Organizations', '/team': 'Team', '/plans': 'Plans', '/settings': 'Settings', '/docs': 'Documentation',
   '/stacks': 'Stacks', '/plugins': 'Plugins', '/pipeline': 'Release Pipeline',
 }
