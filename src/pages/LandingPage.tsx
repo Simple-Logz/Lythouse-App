@@ -794,8 +794,8 @@ export function LandingPage() {
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur"><ShieldCheck size={12} />Pre-deployment intelligence platform</span>
               <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06]">
-                Verify every release<br />
-                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">before you deploy.</span>
+                Validate every change you make<br />
+                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">before it reaches production.</span>
               </h1>
 
               {/* Three-step path. Uses a plain straight connecting line rather
