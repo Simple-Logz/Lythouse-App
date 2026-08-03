@@ -138,6 +138,8 @@ export function ChangeManagementPage(){
   const[commentText,setCommentText]=useState('');
   const[saving,setSaving]=useState(false);
   const[showNew,setShowNew]=useState(false);
+  const[latestValidations,setLatestValidations]=useState<Record<string,any>>({});
+  const[draftingId,setDraftingId]=useState('');
   const wsId=()=>localStorage.getItem('sandbox.activeWs');
 
   const load=useCallback(async()=>{
@@ -147,8 +149,17 @@ export function ChangeManagementPage(){
       supabase.from('projects').select('id,name,git_branch').eq('workspace_id',wid).order('name'),
       supabase.from('change_requests').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(100),
     ]);
-    setProjects(pr.data??[]);
+    const projectList=pr.data??[];
+    setProjects(projectList);
     setRequests(cr.data??[]);
+    if(projectList.length){
+      const{data:vals}=await supabase.from('validations').select('id,project_id,risk_score,severity,critical_count,high_count,medium_count,low_count,total_findings,commit_sha,completed_at,created_at').in('project_id',projectList.map((p:any)=>p.id)).eq('status','completed').order('completed_at',{ascending:false});
+      const byProject:Record<string,any>={};
+      for(const v of vals??[]){if(!byProject[v.project_id])byProject[v.project_id]=v;}
+      setLatestValidations(byProject);
+    }else{
+      setLatestValidations({});
+    }
     setLoading(false);
   },[]);
   useEffect(()=>{load();},[load]);
@@ -168,12 +179,12 @@ export function ChangeManagementPage(){
   },[]);
   useEffect(()=>{if(selProjectId)loadContext(selProjectId);},[selProjectId,loadContext]);
 
-  const generatePlan=async()=>{
-    const wid=wsId();const project=projects.find(p=>p.id===selProjectId);
-    if(!wid||!project)return;
-    setGenerating(true);
-    const v=context?.validation;
-    const findings=context?.findings??[];
+  // Shared drafting logic — takes whatever real validation/findings data is
+  // available for a project and turns it into a change_requests row. Used by
+  // both the "Generate from latest validation" panel and the one-click
+  // "Draft change request" action on each project in the empty state.
+  const draftFromData=async(project:any,v:any,findings:any[])=>{
+    const wid=wsId();if(!wid||!project)return null;
     const riskLevel=riskFromCounts(v);
     const scope=[...new Set(findings.map((f:any)=>f.category).filter(Boolean))];
     const summary=v
@@ -192,11 +203,32 @@ export function ChangeManagementPage(){
       risk_assessment:riskAssessment,rollback_plan:rollbackPlan,
       validation_snapshot:validationSnapshot,status:'draft',
     }).select().single();
+    return error?null:data;
+  };
+
+  const generatePlan=async()=>{
+    const project=projects.find(p=>p.id===selProjectId);
+    if(!project)return;
+    setGenerating(true);
+    const data=await draftFromData(project,context?.validation,context?.findings??[]);
     setGenerating(false);
-    if(!error&&data){
-      await load();
-      setActive(data);setShowNew(false);
+    if(data){await load();setActive(data);setShowNew(false);}
+  };
+
+  // One-click draft straight from a project card in the "ready to draft"
+  // list — reuses whatever validation LytHouse already has on file rather
+  // than making the user open the panel and re-select the same project.
+  const quickDraft=async(project:any)=>{
+    setDraftingId(project.id);
+    const v=latestValidations[project.id]||null;
+    let findings:any[]=[];
+    if(v){
+      const{data}=await supabase.from('findings').select('*').eq('validation_id',v.id).eq('status','open').in('severity',['critical','high']).order('severity');
+      findings=data??[];
     }
+    const cr=await draftFromData(project,v,findings);
+    setDraftingId('');
+    if(cr){await load();setActive(cr);}
   };
 
   const openRequest=async(cr:any)=>{
@@ -364,24 +396,70 @@ export function ChangeManagementPage(){
     )}
 
     {requests.length===0?(
-      <EmptyState icon={<FileText size={22}/>} title="No change requests yet" description="Start one above — LytHouse drafts the summary, risk assessment, and rollback plan from your project's real validation data so nobody has to write it from scratch." action={<button onClick={()=>setShowNew(true)} className="btn-primary">New change request</button>}/>
-    ):(
-      <div className="card p-0">
-        <div className="divide-y divide-gray-100">
-          {requests.map((r:any)=>(
-            <button key={r.id} onClick={()=>openRequest(r)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50">
-              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${RISK_CLS[r.risk_level]||RISK_CLS.unknown}`}>
-                {r.status==='approved'?<CheckCircle2 size={16}/>:r.status==='rejected'?<XCircle size={16}/>:r.status==='pending_approval'?<Clock size={16}/>:<FileText size={16}/>}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-navy-900">{r.title}</p>
-                <p className="flex items-center gap-1 text-xs text-gray-500"><GitBranch size={10}/>{projectName(r.project_id)} · {timeAgo(r.created_at)}</p>
-              </div>
-              <span className={`chip ${STATUS_CLS[r.status]||STATUS_CLS.draft}`}>{STATUS_LABEL[r.status]||r.status}</span>
-            </button>
-          ))}
+      <>
+        <div className="card mb-5">
+          <p className="mb-4 text-sm font-semibold text-navy-900">How change management works in LytHouse</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <HowStep icon={<GitBranch size={16}/>} title="1. We already track your risk" desc="Every project's latest validation — risk score, open findings, commit — is already in LytHouse."/>
+            <HowStep icon={<Sparkles size={16}/>} title="2. We draft the plan" desc="Summary, risk assessment, and rollback plan are generated from that data. Nobody writes it from scratch."/>
+            <HowStep icon={<Send size={16}/>} title="3. Route it for sign-off" desc="Send it to an approver, track the decision, and export a branded PDF for the record."/>
+          </div>
         </div>
-      </div>
+
+        {projects.length>0?(
+          <div className="card p-0">
+            <p className="px-4 pt-4 pb-1 text-sm font-semibold text-navy-900">Ready to draft, from your real validation data</p>
+            <p className="px-4 pb-3 text-xs text-gray-500">One click drafts a full change request for any of these projects using their latest validation on file.</p>
+            <div className="divide-y divide-gray-100">
+              {projects.map((p:any)=>{
+                const v=latestValidations[p.id];
+                const risk=v?riskFromCounts(v):'unknown';
+                return<div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${RISK_CLS[risk]}`}><GitBranch size={16}/></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-navy-900">{p.name}</p>
+                    {v?(
+                      <p className="text-xs text-gray-500">{v.risk_score??'—'}/100 risk · {v.critical_count} critical · {v.high_count} high · validated {timeAgo(v.completed_at||v.created_at)}</p>
+                    ):(
+                      <p className="flex items-center gap-1 text-xs text-amber-600"><AlertTriangle size={11}/>No completed validation yet — plan will note this</p>
+                    )}
+                  </div>
+                  <button onClick={()=>quickDraft(p)} disabled={draftingId===p.id} className="btn-secondary text-xs flex shrink-0 items-center gap-1.5 disabled:opacity-50">
+                    {draftingId===p.id?<><Spinner size={11}/>Drafting…</>:<><Sparkles size={11}/>Draft change request</>}
+                  </button>
+                </div>;
+              })}
+            </div>
+          </div>
+        ):(
+          <EmptyState icon={<FileText size={22}/>} title="No projects connected yet" description="Connect a project first — LytHouse drafts change requests straight from its validation history, no typing required."/>
+        )}
+      </>
+    ):(
+      <>
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Total requests" value={requests.length}/>
+          <StatCard label="Pending approval" value={requests.filter((r:any)=>r.status==='pending_approval').length}/>
+          <StatCard label="Approved" value={requests.filter((r:any)=>r.status==='approved').length}/>
+          <StatCard label="Scheduled" value={requests.filter((r:any)=>r.status==='scheduled').length}/>
+        </div>
+        <div className="card p-0">
+          <div className="divide-y divide-gray-100">
+            {requests.map((r:any)=>(
+              <button key={r.id} onClick={()=>openRequest(r)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${RISK_CLS[r.risk_level]||RISK_CLS.unknown}`}>
+                  {r.status==='approved'?<CheckCircle2 size={16}/>:r.status==='rejected'?<XCircle size={16}/>:r.status==='pending_approval'?<Clock size={16}/>:<FileText size={16}/>}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-navy-900">{r.title}</p>
+                  <p className="flex items-center gap-1 text-xs text-gray-500"><GitBranch size={10}/>{projectName(r.project_id)} · {timeAgo(r.created_at)}</p>
+                </div>
+                <span className={`chip ${STATUS_CLS[r.status]||STATUS_CLS.draft}`}>{STATUS_LABEL[r.status]||r.status}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </>
     )}
   </div>;
 }
@@ -394,6 +472,23 @@ function Field({label,value,onSave,multiline,disabled}:{label:string;value:strin
     <label className="label">{label}</label>
     <Tag className="input" rows={multiline?5:undefined} value={v} disabled={disabled}
       onChange={(e:any)=>setV(e.target.value)} onBlur={()=>{if(v!==value)onSave(v);}}/>
+  </div>;
+}
+
+function StatCard({label,value}:{label:string;value:number}){
+  return<div className="card py-3.5">
+    <p className="text-2xl font-bold text-navy-900">{value}</p>
+    <p className="text-xs text-gray-500">{label}</p>
+  </div>;
+}
+
+function HowStep({icon,title,desc}:{icon:any;title:string;desc:string}){
+  return<div className="flex gap-3">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">{icon}</span>
+    <div>
+      <p className="text-sm font-semibold text-navy-900">{title}</p>
+      <p className="mt-0.5 text-xs text-gray-500">{desc}</p>
+    </div>
   </div>;
 }
 
