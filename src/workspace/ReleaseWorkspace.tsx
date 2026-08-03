@@ -293,7 +293,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 {running?<><Loader2 size={12} className="animate-spin"/>Scanning…</>:<><Shield size={12}/>Revalidate</>}
               </button>
               {!isBlocked&&readiness!==null&&readiness>=80&&(
-                <button className="btn-brand text-xs flex items-center gap-1.5"><Play size={12}/>Deploy</button>
+                <button onClick={()=>setStage('deployment')} className="btn-brand text-xs flex items-center gap-1.5"><Play size={12}/>Deploy</button>
               )}
               {/* Kept independently conditioned (not else-if'd against Deploy) —
                   a release can be readiness-ready and still need approval
@@ -777,10 +777,9 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                   </>
                 ):(
                   <>
-                    <Play size={32} className="mx-auto text-green-400 mb-3"/>
-                    <p className="text-sm font-semibold text-green-700 mb-1">Ready to Deploy</p>
-                    <p className="text-xs text-gray-500 mb-4">All release policy gates are satisfied. Connect your CI/CD pipeline in Environment → Assets to trigger deployments from LytHouse and see real-time build logs here.</p>
-                    <button className="btn-primary text-sm flex items-center gap-2 mx-auto"><Play size={13}/>Deploy to Production</button>
+                    <CheckCircle2 size={32} className="mx-auto text-green-400 mb-3"/>
+                    <p className="text-sm font-semibold text-green-700 mb-1">Cleared to deploy</p>
+                    <p className="text-xs text-gray-500 mb-1 max-w-sm mx-auto">All policy gates passed. LytHouse validates releases — it doesn't trigger your deploy. Ship through your normal pipeline now.</p>
                   </>
                 )}
               </div>
