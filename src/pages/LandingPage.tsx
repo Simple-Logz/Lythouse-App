@@ -792,14 +792,38 @@ export function LandingPage() {
         <section className="mx-auto max-w-6xl px-5 pt-32 pb-24">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur"><Sparkles size={12} />AI release decisions</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur"><ShieldCheck size={12} />Pre-deployment intelligence platform</span>
               <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06]">
-                Verify every release{' '}
-                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">before you deploy.</span>
+                Ship with confidence.<br />
+                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">Every deployment.</span>
               </h1>
-              <p className="mt-5 max-w-xl text-lg text-navy-400 leading-relaxed">
-                Simulate deployments, analyze infrastructure, validate code changes, detect configuration drift, and uncover risks before they reach production.
+
+              {/* Three-step path. Uses a plain straight connecting line rather
+                  than a curved/dashed one, so this is our own visual
+                  treatment rather than a copy of the reference layout. */}
+              <div className="relative mt-9">
+                <div className="absolute left-5 top-3 bottom-3 w-px bg-white/12" aria-hidden="true" />
+                <div className="space-y-6">
+                  {[
+                    { icon: GitBranch, t: 'Connect any Git repository', d: 'GitHub, GitLab, Bitbucket — any branch, any folder.' },
+                    { icon: Sparkles, t: 'AI-powered pre-deployment scanning', d: 'Secrets, CVEs, static analysis, and dependency audits in one run.' },
+                    { icon: ShieldCheck, t: 'Risk score before every deploy', d: 'A single readiness verdict your team can act on immediately.' },
+                  ].map((s) => (
+                    <div key={s.t} className="relative z-10 flex items-start gap-4">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-[#211c33] text-brand-300"><s.icon size={17} /></span>
+                      <div className="pt-1.5">
+                        <div className="text-[15px] font-semibold text-white">{s.t}</div>
+                        <div className="mt-0.5 text-sm text-navy-400">{s.d}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <p className="mt-8 text-lg font-semibold text-white">
+                Ship on evidence, <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">not on hope.</span>
               </p>
+
               <div className="mt-8 flex max-w-md flex-col sm:flex-row items-stretch gap-2">
                 <input
                   value={email} onChange={(e) => setEmail(e.target.value)}
@@ -807,9 +831,6 @@ export function LandingPage() {
                   type="email" placeholder="Enter your business email"
                   className="flex-1 rounded-full border border-gray-200 bg-white/80 px-5 py-3 text-sm text-navy-900 placeholder:text-gray-400 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100" />
                 <Dark onClick={startTrial} className="px-6 py-3">Start free<ArrowRight size={15} /></Dark>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-navy-400">
-                <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} className="text-brand-500" />Connect a repo in seconds</span>
               </div>
             </div>
             <div className="relative flex justify-center lg:justify-end">
