@@ -8,9 +8,10 @@ import {
   House, ShieldCheck, Bell, User, ChevronLeft, ChevronRight, CheckCircle2,
   XCircle, AlertTriangle, GitBranch, Loader as Loader2, LogOut, Shield, Check,
   Clock, RefreshCw, Monitor, Menu, X, LayoutDashboard, ChartBar, FolderGit2,
-  Webhook, Boxes, Users, Sparkles, Settings as SettingsIcon, Server,
+  Boxes, Users, Sparkles, Settings as SettingsIcon, Server,
   Building2, Bug, Layers, Pin, ChevronsUpDown,
-  Compass, Workflow, Rocket, Zap, Activity, ClipboardCheck, Scale, FileWarning, ScrollText,
+  Workflow, Rocket, Zap, Activity, ClipboardCheck, Scale, FileWarning, ScrollText,
+  BookOpen, Plug, FileText, CreditCard,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -23,31 +24,51 @@ import { getHeadSha } from '../workspace/repoCache';
 // pages/AppShell.tsx) — kept in sync by hand so nothing on the web is
 // unreachable on mobile. Selecting one renders the real page inside the
 // mobile chrome.
-const MENU = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/docs', label: 'Documentation', icon: Compass },
-  { to: '/projects', label: 'Projects', icon: FolderGit2 },
-  { to: '/stacks', label: 'Stacks', icon: Layers },
-  { to: '/pipeline', label: 'Release Pipeline', icon: Workflow },
-  { to: '/executive', label: 'Executive View', icon: ChartBar },
-  { to: '/deployments', label: 'Deployments', icon: Rocket },
-  { to: '/simulator', label: 'Deployment Simulator', icon: Zap },
-  { to: '/analytics', label: 'Analytics', icon: Activity },
-  { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
-  { to: '/environment', label: 'Environment', icon: Server },
-  { to: '/integrations', label: 'Integrations', icon: Webhook },
-  { to: '/plugins', label: 'Plugins', icon: Boxes },
-  { to: '/findings', label: 'Findings', icon: Bug },
-  { to: '/approvals', label: 'Approvals', icon: ClipboardCheck },
-  { to: '/compliance', label: 'Compliance', icon: Scale },
-  { to: '/incidents', label: 'Incidents', icon: FileWarning },
-  { to: '/audit', label: 'Audit', icon: ScrollText },
-  { to: '/organizations', label: 'Organizations', icon: Building2 },
-  { to: '/workspaces', label: 'Workspaces', icon: Boxes },
-  { to: '/team', label: 'Team', icon: Users },
-  { to: '/plans', label: 'Plans', icon: Sparkles },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+// Mirrors AppShell.tsx's NAV_HOME / SECTIONS / NAV_DOCS exactly — same
+// labels, routes, icons, and grouping — so the mobile drawer and the
+// desktop sidebar are the same IA, not two nav systems that drift apart.
+const NAV_HOME = { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard };
+const NAV_DOCS = { to: '/docs', label: 'Documentation', icon: BookOpen };
+const SECTIONS = [
+  { key: 'platform', label: 'Platform', icon: Boxes, items: [
+    { to: '/projects', label: 'Projects', icon: FolderGit2 },
+    { to: '/workspaces', label: 'Workspaces', icon: Building2 },
+    { to: '/stacks', label: 'Stacks', icon: Layers },
+  ] },
+  { key: 'delivery', label: 'Delivery', icon: Rocket, items: [
+    { to: '/pipeline', label: 'Pipelines', icon: Workflow },
+    { to: '/deployments', label: 'Deployments', icon: Rocket },
+    { to: '/simulator', label: 'Simulator', icon: Zap },
+  ] },
+  { key: 'ops', label: 'Operations', icon: ChartBar, items: [
+    { to: '/analytics', label: 'Analytics', icon: Activity },
+    { to: '/findings', label: 'Findings', icon: Bug },
+    { to: '/executive', label: 'Executive View', icon: ChartBar },
+  ] },
+  { key: 'gov', label: 'Governance', icon: ShieldCheck, items: [
+    { to: '/change-management', label: 'Change Management', icon: FileText },
+    { to: '/approvals', label: 'Approvals', icon: ClipboardCheck },
+    { to: '/compliance', label: 'Compliance', icon: Scale },
+    { to: '/incidents', label: 'Incidents', icon: FileWarning },
+    { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
+    { to: '/audit', label: 'Audit', icon: ScrollText },
+  ] },
+  { key: 'config', label: 'Configuration', icon: SettingsIcon, items: [
+    { to: '/environment', label: 'Environment', icon: Server },
+    { to: '/integrations', label: 'Integrations', icon: Plug },
+    { to: '/plugins', label: 'Plugins', icon: Boxes },
+  ] },
+  { key: 'org', label: 'Organization', icon: Users, items: [
+    { to: '/organizations', label: 'Organizations', icon: Building2 },
+    { to: '/team', label: 'Team', icon: Users },
+    { to: '/plans', label: 'Plans', icon: CreditCard },
+    { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  ] },
 ];
+// Flat lookup (all items across every group, plus the two standalone links)
+// — used for things like "what's the title of the page currently open",
+// where the grouping doesn't matter, just the full route→label mapping.
+const ALL_NAV_ITEMS = [NAV_HOME, NAV_DOCS, ...SECTIONS.flatMap((s) => s.items)];
 // Pinned items reuse the same type→icon mapping as the desktop sidebar.
 const PIN_ICONS: Record<PinType, any> = {
   workspace: Boxes, project: FolderGit2, finding: Bug, stack: Layers, environment: Server,
@@ -84,6 +105,10 @@ export function MobileApp({ renderPage }) {
   const pins = usePins();
   const [tab, setTab] = useState('home');
   const [menuOpen, setMenuOpen] = useState(false);
+  // Which Governance/Platform/etc. group is expanded — same one-at-a-time
+  // accordion behavior as the desktop sidebar, auto-opens to whichever
+  // group contains the current route.
+  const [openSection, setOpenSection] = useState(() => SECTIONS.find((s) => s.items.some((i) => path.startsWith(i.to)))?.key ?? null);
   const [browsing, setBrowsing] = useState(false); // true = showing a real desktop page
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
@@ -203,12 +228,44 @@ export function MobileApp({ renderPage }) {
                   <div className="mx-4 my-2 border-t border-gray-100" />
                 </>
               )}
-              <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">All features</p>
-              {MENU.map((m) => (
-                <button key={m.to} onClick={() => { navigate(m.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-navy-800 active:bg-gray-50">
-                  <m.icon size={17} className="text-gray-400" />{m.label}
-                </button>
-              ))}
+              <button onClick={() => { navigate(NAV_HOME.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-navy-800 active:bg-gray-50">
+                <NAV_HOME.icon size={17} className="text-brand-500" />{NAV_HOME.label}
+              </button>
+              <div className="mx-4 my-1 border-t border-gray-100" />
+              {SECTIONS.map((s) => {
+                const isOpen = openSection === s.key;
+                const hasActive = s.items.some((i) => path.startsWith(i.to));
+                return (
+                  <div key={s.key}>
+                    <button
+                      onClick={() => setOpenSection(isOpen ? null : s.key)}
+                      aria-expanded={isOpen}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold active:bg-gray-50 ${hasActive ? 'text-brand-700' : 'text-navy-800'}`}
+                    >
+                      <s.icon size={17} className={hasActive ? 'text-brand-500' : 'text-gray-400'} />
+                      <span className="flex-1 text-left">{s.label}</span>
+                      <ChevronRight size={15} className={`text-gray-300 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="pb-1">
+                        {s.items.map((m) => {
+                          const active = path.startsWith(m.to);
+                          return (
+                            <button key={m.to} onClick={() => { navigate(m.to); setBrowsing(true); setMenuOpen(false); }}
+                              className={`w-full flex items-center gap-3 pl-11 pr-4 py-2.5 text-sm active:bg-gray-50 ${active ? 'text-brand-700 font-medium' : 'text-navy-700'}`}>
+                              <m.icon size={15} className={active ? 'text-brand-500' : 'text-gray-400'} />{m.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="mx-4 my-1 border-t border-gray-100" />
+              <button onClick={() => { navigate(NAV_DOCS.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-navy-800 active:bg-gray-50">
+                <NAV_DOCS.icon size={17} className="text-gray-400" />{NAV_DOCS.label}
+              </button>
             </div>
             <div className="border-t border-gray-100 p-3">
               <button onClick={() => { setBrowsing(false); setMenuOpen(false); setTab('home'); }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-brand-50 text-brand-700 text-sm font-semibold"><House size={16} />Back to release view</button>
@@ -223,7 +280,7 @@ export function MobileApp({ renderPage }) {
         <div className="fixed inset-0 z-40 bg-gray-50 flex flex-col">
           <header className="sticky top-0 bg-white border-b border-gray-100 h-14 flex items-center gap-2 px-3 shrink-0">
             <button onClick={() => setBrowsing(false)} className="p-2 -ml-1 text-gray-500 active:text-brand-600"><ChevronLeft size={20} /></button>
-            <span className="font-semibold text-navy-900 truncate">{(MENU.find((m) => path.startsWith(m.to))?.label) || 'Details'}</span>
+            <span className="font-semibold text-navy-900 truncate">{(ALL_NAV_ITEMS.find((m) => path.startsWith(m.to))?.label) || 'Details'}</span>
             <button onClick={() => setMenuOpen(true)} className="ml-auto p-2 -mr-1 text-gray-500"><Menu size={20} /></button>
           </header>
           <div className={`flex-1 overflow-y-auto overflow-x-hidden ${path.startsWith('/projects/') && path.split('/').filter(Boolean).length >= 2 ? '' : 'px-3 py-4'}`}>
