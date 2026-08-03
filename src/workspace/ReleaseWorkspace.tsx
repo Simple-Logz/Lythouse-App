@@ -280,16 +280,29 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                 </div>
               </div>
             </div>
+            {/* One clear hierarchy: Deploy (or, when it's not ready yet,
+                Request Approval) is the single branded action; everything
+                else is a quiet utility. Previously Edit Files and Deploy
+                were both solid black — visually tied for "most important,"
+                which is wrong when one is a file browser and the other
+                ships to production. */}
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={()=>setFileBrowserOpen(true)} className="btn-primary text-xs flex items-center gap-1.5"><FolderOpen size={12}/>Edit Files</button>
+              <button onClick={()=>setFileBrowserOpen(true)} className="btn-secondary text-xs flex items-center gap-1.5"><FolderOpen size={12}/>Edit Files</button>
               <button onClick={load} className="btn-secondary text-xs flex items-center gap-1.5"><RefreshCw size={12}/>Refresh</button>
               <button onClick={runValidation} disabled={running} className="btn-secondary text-xs flex items-center gap-1.5">
                 {running?<><Loader2 size={12} className="animate-spin"/>Scanning…</>:<><Shield size={12}/>Revalidate</>}
               </button>
               {!isBlocked&&readiness!==null&&readiness>=80&&(
-                <button className="btn-primary text-xs flex items-center gap-1.5"><Play size={12}/>Deploy</button>
+                <button className="btn-brand text-xs flex items-center gap-1.5"><Play size={12}/>Deploy</button>
               )}
-              {approvals.length===0&&<button onClick={createRelease} className="btn-secondary text-xs flex items-center gap-1.5"><Users size={12}/>Request Approval</button>}
+              {/* Kept independently conditioned (not else-if'd against Deploy) —
+                  a release can be readiness-ready and still need approval
+                  requested, so both can legitimately show together. When they
+                  do, Deploy stays the one solid brand button and this one is
+                  a lighter brand-tinted outline so it doesn't compete with it. */}
+              {approvals.length===0&&(
+                <button onClick={createRelease} className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-700 transition-all hover:bg-brand-100 active:scale-[0.98]"><Users size={12}/>Request Approval</button>
+              )}
             </div>
           </div>
         </div>

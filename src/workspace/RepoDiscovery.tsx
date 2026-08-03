@@ -322,17 +322,17 @@ function confidencePenalty(cx) {
 
 const CHANGE_STATE = {
   blocker: {
-    tone: 'bg-[#fde3e3] border-[#f5a3a3]', title: 'text-[#b3261e]', icon: 'text-[#d61f1f]',
+    tone: 'bg-[#fde3e3] border-[#f5a3a3]', title: 'text-[#b3261e]', icon: 'text-[#d61f1f]', bar: '#d61f1f',
     heading: 'Release approval suspended', chipCls: 'bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]', chip: 'Immediate blocker',
     line: 'These changes invalidate the previous release decision — re-assess before promoting.',
   },
   assess: {
-    tone: 'bg-[#fff7e9] border-[#f9c777]', title: 'text-[#8a5a00]', icon: 'text-[#e07600]',
+    tone: 'bg-[#fff7e9] border-[#f9c777]', title: 'text-[#8a5a00]', icon: 'text-[#e07600]', bar: '#e07600',
     heading: 'Assessment out of date', chipCls: 'bg-[#fff0d9] text-[#e07600] border border-[#f9c777]', chip: 'Assessment required',
     line: 'The current release decision may no longer be valid.',
   },
   low: {
-    tone: 'bg-[#eef4ff] border-[#b9cffb]', title: 'text-[#1e40af]', icon: 'text-[#2f66e0]',
+    tone: 'bg-[#eef4ff] border-[#b9cffb]', title: 'text-[#1e40af]', icon: 'text-[#2f66e0]', bar: '#2f66e0',
     heading: 'Minor changes since last assessment', chipCls: 'bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]', chip: 'Low impact',
     line: 'Only documentation or tests changed — the previous release decision remains valid.',
   },
@@ -465,6 +465,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
   const r = result;
   const recTone = { red: 'text-[#e11d1d]', amber: 'text-[#ea7a00]', green: 'text-[#12a150]' }[r.recommendation.tone];
   const recBg = { red: 'bg-[#fde3e3] border-[#f5a3a3]', amber: 'bg-[#fff0d9] border-[#f9c777]', green: 'bg-[#e3f7ea] border-[#9adcb4]' }[r.recommendation.tone];
+  const recBar = { red: '#d61f1f', amber: '#e07600', green: '#0f9a4c' }[r.recommendation.tone];
   // Vivid-but-tasteful semantic red/amber/green — explicit hex so the indigo
   // theme remap doesn't flatten these traffic-light severity signals.
   const SEV = {
@@ -523,7 +524,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         ];
 
         return (
-          <div className={`card !p-3 border ${st.tone}`}>
+          <div className={`card !p-3 border ${st.tone}`} style={{ borderLeftWidth: 4, borderLeftColor: st.bar }}>
             {/* collapsed header — always visible, click to expand */}
             <button onClick={() => setChangeOpen((v) => !v)} className="w-full flex items-center justify-between gap-3 text-left">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -538,7 +539,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
                 <span onClick={(e) => e.stopPropagation()} className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-brand-200 bg-brand-50 hover:bg-brand-100 transition-colors">
                   <InfoHint align="right" text="Continuous validation. LytHouse watches your connected Git repository and detects new commits pushed after the last assessment — then tells you what changed, which review areas need revalidating, and whether your previous release decision is still valid." />
                 </span>
-                <span onClick={(e) => { e.stopPropagation(); reanalyze(); }} className="btn-primary text-xs cursor-pointer"><Shield size={13} />{btnLabel}</span>
+                <span onClick={(e) => { e.stopPropagation(); reanalyze(); }} className="btn-brand text-xs cursor-pointer"><Shield size={13} />{btnLabel}</span>
                 <ChevronDown size={16} className={`text-gray-400 transition-transform ${changeOpen ? 'rotate-180' : ''}`} />
               </div>
             </button>
@@ -647,13 +648,17 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
       })()}
 
       {/* ── RELEASE DECISION (foldable; teaser visible when collapsed) ─────── */}
-      <div className={`card !p-0 border ${recBg} overflow-hidden`}>
+      {/* The single most consequential line on this page — given real
+          visual weight instead of the same card treatment as everything
+          else: a left accent bar in the verdict's own color, and the
+          verdict itself set larger/bolder than any other text here. */}
+      <div className={`card !p-0 border ${recBg} overflow-hidden relative`} style={{ borderLeftWidth: 4, borderLeftColor: recBar }}>
         {/* collapsed header — always visible, click to expand */}
         <button onClick={() => setDecisionOpen((v) => !v)} className="w-full text-left p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Release Decision</p>
-              <div className={`text-2xl font-bold ${recTone} mt-0.5`}>{r.recommendation.verdict}</div>
+              <div className={`text-3xl font-extrabold tracking-tight ${recTone} mt-0.5`}>{r.recommendation.verdict}</div>
               <p className="text-xs text-gray-500 mt-0.5">Release candidate · {r.appType}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -714,7 +719,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         })()}
 
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <button onClick={onRunValidation} className="btn-primary text-sm"><Shield size={14} />Assess Release</button>
+          <button onClick={onRunValidation} className="btn-brand text-sm"><Shield size={14} />Assess Release</button>
           {r.infra === 'Terraform' && onConnect && <button onClick={onConnect} className="btn-secondary text-sm"><Cloud size={13} />Verify {r.cloud[0] || 'cloud'} infra</button>}
           <button onClick={reanalyze} className="btn-ghost text-xs ml-auto" title="Re-read the repository and recompute">Re-analyze</button>
         </div>
@@ -742,7 +747,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
                     try { const res = await createFixPR({ project, fixes }); setPr({ state: 'done', url: res.url, applied: res.applied, error: null }); }
                     catch (e) { setPr({ state: 'error', url: null, applied: [], error: e.message }); }
                   }}
-                  className="btn-primary text-sm shrink-0">
+                  className="btn-brand text-sm shrink-0">
                   {pr.state === 'running' ? <><Loader2 size={14} className="animate-spin" />Opening PR…</> : <><ArrowRight size={14} />Generate Fix PR</>}
                 </button>
               )}
