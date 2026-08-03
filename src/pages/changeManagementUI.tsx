@@ -8,7 +8,8 @@
 // None of these components invent placeholder content — where there's
 // nothing to show, they render an explicit "not generated yet" / "no data"
 // state instead of a plausible-looking fake one.
-import{Sparkles,ShieldAlert,GitBranch,Calendar,Clock,CheckCircle2,XCircle,AlertTriangle,MessageSquareWarning,RotateCcw,ListChecks,Layers,History}from'lucide-react';
+import{useState}from'react';
+import{Sparkles,ShieldAlert,GitBranch,Calendar,Clock,CheckCircle2,XCircle,AlertTriangle,MessageSquareWarning,RotateCcw,ListChecks,Layers,History,TrendingUp,TrendingDown,Minus,Download,FileDown,Copy,Link2,Lightbulb,Activity,CalendarClock,ThumbsUp}from'lucide-react';
 import{RiskGauge,StepIcon,SeverityBadge,Spinner,timeAgo}from'../lib/ui';
 
 const RISK_CLS: Record<string,string> = {
@@ -91,13 +92,16 @@ export function ImpactAnalysisCard({cr,onGenerate,loading}:{cr:any;onGenerate:()
 }
 
 // ── 3. Enhanced risk assessment ─────────────────────────────────────────
-export function RiskAssessmentCard({cr}:{cr:any}){
+export function RiskAssessmentCard({cr,trendPoints}:{cr:any;trendPoints?:{risk_score:number;completed_at:string}[]}){
   const snap=cr.validation_snapshot||{};
   const score=typeof snap.risk_score==='number'?snap.risk_score:null;
   const contributors=cr.ai_risk_contributors&&cr.ai_risk_contributors.length?cr.ai_risk_contributors:fallbackContributors(snap);
   return<Section icon={<ShieldAlert size={14} className="text-brand-600"/>} title="Risk assessment">
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-      <RiskGauge score={score} size={104}/>
+      <div className="shrink-0 text-center">
+        <RiskGauge score={score} size={104}/>
+        {trendPoints&&<RiskTrendMini points={trendPoints}/>}
+      </div>
       <div className="min-w-0 flex-1">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">High-risk contributors</p>
         {contributors.length?(
@@ -261,8 +265,8 @@ export function WhatsChangingCard({steps,findings}:{steps:any[];findings:any[]})
 }
 
 // ── 8. Previous similar changes ─────────────────────────────────────────
-export function PreviousChangesCard({items,loading}:{items:any[];loading:boolean}){
-  return<Section icon={<History size={14} className="text-brand-600"/>} title="Previous changes for this project">
+export function PreviousChangesCard({items,loading,title}:{items:any[];loading:boolean;title?:string}){
+  return<Section icon={<History size={14} className="text-brand-600"/>} title={title||'Similar previous deployments'}>
     {loading?(
       <div className="flex items-center gap-2 py-3 text-xs text-gray-400"><Spinner size={12}/>Loading history…</div>
     ):items.length===0?(
@@ -270,16 +274,153 @@ export function PreviousChangesCard({items,loading}:{items:any[];loading:boolean
     ):(
       <div className="divide-y divide-gray-100">
         {items.map((it:any)=>(
-          <div key={it.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+          <div key={it.id} className="py-2.5 first:pt-0 last:pb-0">
+            <div className="flex items-center gap-3">
+              <span className={`chip shrink-0 ${RISK_CLS[it.risk_level]||RISK_CLS.unknown}`}>{(it.risk_level||'unknown').toUpperCase()}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-navy-800">{it.title}</p>
+                <p className="text-2xs text-gray-400">{timeAgo(it.created_at)}</p>
+              </div>
+              <span className={`chip shrink-0 ${STATUS_CLS[it.status]||STATUS_CLS.draft}`}>{STATUS_LABEL[it.status]||it.status}</span>
+              <span className={`shrink-0 text-2xs font-medium ${it.status==='rolled_back'?'text-orange-600':it.status==='completed'?'text-green-600':'text-gray-300'}`}>
+                {it.status==='rolled_back'?'Rollback: Yes':it.status==='completed'?'Rollback: No':'—'}
+              </span>
+            </div>
+            {it.decision_note&&(it.status==='completed'||it.status==='rolled_back')&&(
+              <p className="mt-1 pl-1 text-2xs italic leading-relaxed text-gray-400">"{it.decision_note}"</p>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+  </Section>;
+}
+
+// ── Risk trend ────────────────────────────────────────────────────────────
+// A small sparkline over this project's real historical validation risk
+// scores. Trend direction is a plain slope comparison — no AI involved, no
+// numbers beyond what's actually in the validations table.
+export function RiskTrendMini({points}:{points:{risk_score:number;completed_at:string}[]}){
+  if(!points||points.length<2){
+    return<div className="mt-3 flex items-center gap-1.5 text-2xs text-gray-400"><Activity size={11}/>Not enough validation history yet for a trend.</div>;
+  }
+  const scores=points.map(p=>p.risk_score??0);
+  const max=Math.max(...scores,1),min=Math.min(...scores,0);
+  const w=140,h=28,range=Math.max(1,max-min);
+  const pts=scores.map((s,i)=>`${(i/(scores.length-1))*w},${h-((s-min)/range)*h}`).join(' ');
+  const delta=scores[scores.length-1]-scores[0];
+  const trend=delta>5?{icon:<TrendingUp size={12}/>,label:'Rising',cls:'text-danger-600'}:delta<-5?{icon:<TrendingDown size={12}/>,label:'Improving',cls:'text-green-600'}:{icon:<Minus size={12}/>,label:'Stable',cls:'text-gray-500'};
+  return<div className="mt-3 flex items-center gap-3">
+    <svg width={w} height={h} className="shrink-0"><polyline points={pts} fill="none" stroke="#7c5ce6" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    <span className={`flex items-center gap-1 text-2xs font-semibold ${trend.cls}`}>{trend.icon}{trend.label}</span>
+    <span className="text-2xs text-gray-400">over last {points.length} validations</span>
+  </div>;
+}
+
+// ── Export toolbar ───────────────────────────────────────────────────────
+export function ExportToolbar({onExportPdf,onExportMarkdown,summaryText}:{onExportPdf:()=>void;onExportMarkdown:()=>void;summaryText:string}){
+  const[copied,setCopied]=useState('');
+  const doCopy=async(key:string,text:string)=>{
+    try{await navigator.clipboard.writeText(text);setCopied(key);setTimeout(()=>setCopied(''),2000);}catch{/* clipboard may be blocked */}
+  };
+  return<div className="card">
+    <p className="mb-3 text-sm font-semibold text-navy-900">Export & share</p>
+    <div className="flex flex-wrap gap-2">
+      <button onClick={onExportPdf} className="btn-secondary text-xs flex items-center gap-1.5"><Download size={12}/>Export PDF</button>
+      <button onClick={onExportMarkdown} className="btn-secondary text-xs flex items-center gap-1.5"><FileDown size={12}/>Download Markdown</button>
+      <button onClick={()=>doCopy('summary',summaryText||'No summary available yet.')} className="btn-secondary text-xs flex items-center gap-1.5"><Copy size={12}/>{copied==='summary'?'Copied!':'Copy executive summary'}</button>
+      <button onClick={()=>doCopy('link',window.location.href)} className="btn-secondary text-xs flex items-center gap-1.5"><Link2 size={12}/>{copied==='link'?'Link copied!':'Share link'}</button>
+    </div>
+  </div>;
+}
+
+// ── Dashboard: metric card ───────────────────────────────────────────────
+export function MetricCard({icon,label,value,sub}:{icon:any;label:string;value:string;sub?:string}){
+  return<div className="card py-4">
+    <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">{icon}{label}</p>
+    <p className="mt-1.5 text-2xl font-bold text-navy-900">{value}</p>
+    {sub&&<p className="mt-0.5 text-2xs text-gray-400">{sub}</p>}
+  </div>;
+}
+
+// ── Dashboard: recent activity feed ──────────────────────────────────────
+export function RecentActivityFeed({items}:{items:{id:string;label:string;at:string;icon:any}[]}){
+  return<Section icon={<Activity size={14} className="text-brand-600"/>} title="Recent activity">
+    {items.length===0?(
+      <p className="text-xs text-gray-400">No activity yet — it'll show up here as changes are created and decided.</p>
+    ):(
+      <div className="space-y-3">
+        {items.map((it)=>(
+          <div key={it.id} className="flex items-start gap-2.5">
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-50 text-gray-400">{it.icon}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-navy-800">{it.label}</p>
+              <p className="text-2xs text-gray-400">{timeAgo(it.at)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </Section>;
+}
+
+// ── Dashboard: upcoming deployments ──────────────────────────────────────
+export function UpcomingDeploymentsCard({items,onOpen}:{items:any[];onOpen:(id:string)=>void}){
+  return<Section icon={<CalendarClock size={14} className="text-brand-600"/>} title="Upcoming deployments">
+    {items.length===0?(
+      <p className="text-xs text-gray-400">Nothing scheduled right now.</p>
+    ):(
+      <div className="space-y-2.5">
+        {items.map((it:any)=>(
+          <button key={it.id} onClick={()=>onOpen(it.id)} className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-gray-50">
             <span className={`chip shrink-0 ${RISK_CLS[it.risk_level]||RISK_CLS.unknown}`}>{(it.risk_level||'unknown').toUpperCase()}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-navy-800">{it.title}</p>
-              <p className="text-2xs text-gray-400">{timeAgo(it.created_at)}</p>
+              <p className="text-2xs text-gray-400">{new Date(it.scheduled_start).toLocaleString()}</p>
             </div>
-            <span className={`chip shrink-0 ${STATUS_CLS[it.status]||STATUS_CLS.draft}`}>{STATUS_LABEL[it.status]||it.status}</span>
-            <span className={`shrink-0 text-2xs font-medium ${it.status==='rolled_back'?'text-orange-600':it.status==='completed'?'text-green-600':'text-gray-300'}`}>
-              {it.status==='rolled_back'?'Rollback: Yes':it.status==='completed'?'Rollback: No':'—'}
-            </span>
+          </button>
+        ))}
+      </div>
+    )}
+  </Section>;
+}
+
+// ── Dashboard: recent approvals ──────────────────────────────────────────
+export function RecentApprovalsCard({items,onOpen}:{items:any[];onOpen:(id:string)=>void}){
+  return<Section icon={<ThumbsUp size={14} className="text-brand-600"/>} title="Recent approvals">
+    {items.length===0?(
+      <p className="text-xs text-gray-400">No decisions recorded yet.</p>
+    ):(
+      <div className="space-y-2.5">
+        {items.map((it:any)=>(
+          <button key={it.id} onClick={()=>onOpen(it.id)} className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-gray-50">
+            {it.status==='approved'?<CheckCircle2 size={14} className="shrink-0 text-green-600"/>:<XCircle size={14} className="shrink-0 text-danger-500"/>}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-navy-800">{it.title}</p>
+              <p className="text-2xs text-gray-400">{timeAgo(it.decided_at)}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    )}
+  </Section>;
+}
+
+// ── Dashboard: AI recommendations ────────────────────────────────────────
+export function AIRecommendationsCard({items,loading,unavailable}:{items:string[];loading:boolean;unavailable:string}){
+  return<Section icon={<Lightbulb size={14} className="text-brand-600"/>} title="AI recommendations">
+    {loading?(
+      <div className="flex items-center gap-2 py-3 text-xs text-gray-400"><Spinner size={12}/>Analyzing recent activity…</div>
+    ):unavailable?(
+      <p className="flex items-start gap-1.5 text-xs text-amber-600"><AlertTriangle size={13} className="mt-0.5 shrink-0"/>{unavailable}</p>
+    ):items.length===0?(
+      <p className="text-xs text-gray-400">Nothing stands out right now — no unusual patterns in recent change requests.</p>
+    ):(
+      <div className="space-y-2">
+        {items.map((r,i)=>(
+          <div key={i} className="flex items-start gap-2 rounded-xl bg-brand-50/60 border border-brand-100 px-3 py-2">
+            <Lightbulb size={12} className="mt-0.5 shrink-0 text-brand-600"/>
+            <p className="text-xs leading-relaxed text-navy-800">{r}</p>
           </div>
         ))}
       </div>
