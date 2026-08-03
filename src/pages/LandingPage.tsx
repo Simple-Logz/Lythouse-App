@@ -807,7 +807,7 @@ export function LandingPage() {
                   {[
                     { icon: GitBranch, t: 'Connect any Git repository', d: 'GitHub, GitLab, Bitbucket — any branch, any folder.' },
                     { icon: Sparkles, t: 'AI-powered pre-deployment scanning', d: 'Secrets, CVEs, static analysis, and dependency audits in one run.' },
-                    { icon: ShieldCheck, t: 'Risk score before every deploy', d: 'A single readiness verdict your team can act on immediately.' },
+                    { icon: Activity, t: 'Continuous validation', d: 'Every change is continuously validated before it reaches production — not just checked once at release time.' },
                   ].map((s) => (
                     <div key={s.t} className="relative z-10 flex items-start gap-4">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-[#211c33] text-brand-300"><s.icon size={17} /></span>
@@ -821,7 +821,7 @@ export function LandingPage() {
               </div>
 
               <p className="mt-8 text-lg font-semibold text-white">
-                Ship on evidence, <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">not on hope.</span>
+                Every deploy, <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">backed by evidence.</span>
               </p>
 
               <div className="mt-8 flex max-w-md flex-col sm:flex-row items-stretch gap-2">
