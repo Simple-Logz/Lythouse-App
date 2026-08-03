@@ -793,9 +793,9 @@ export function LandingPage() {
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur"><Sparkles size={12} />AI release decisions</span>
-              <h1 className="mt-6 text-5xl sm:text-6xl font-bold tracking-tight leading-[1.06]">
-                Release validation that gets smarter with{' '}
-                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">every deploy.</span>
+              <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06]">
+                Know if your release is{' '}
+                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">safe to ship.</span>
               </h1>
               <p className="mt-5 max-w-xl text-lg text-navy-400 leading-relaxed">
                 LytHouse reads your repository, validates every release against your policies, and tells you — in plain language — whether it's safe to ship.
