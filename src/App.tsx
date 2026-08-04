@@ -29,6 +29,7 @@ const AuditLogPage=lazy(()=>import('./pages/AuditLogPage').then(m=>({default:m.A
 const TeamPage=lazy(()=>import('./pages/TeamPage').then(m=>({default:m.TeamPage})));
 const SettingsPage=lazy(()=>import('./pages/SettingsPage').then(m=>({default:m.SettingsPage})));
 const PlansPage=lazy(()=>import('./pages/PlansPage').then(m=>({default:m.PlansPage})));
+const UsagePage=lazy(()=>import('./pages/UsagePage').then(m=>({default:m.UsagePage})));
 const WorkspacesPage=lazy(()=>import('./pages/WorkspacesPage').then(m=>({default:m.WorkspacesPage})));
 const OrganizationsPage=lazy(()=>import('./pages/OrganizationsPage').then(m=>({default:m.OrganizationsPage})));
 const CompliancePage=lazy(()=>import('./pages/CompliancePage'));
@@ -85,6 +86,7 @@ else if(seg[0]==='pipeline')c=<ReleasePipelinePage/>;
 else if(seg[0]==='plugins')c=<PluginsPage/>;
 else if(seg[0]==='team')c=<TeamPage/>;
 else if(seg[0]==='plans')c=<PlansPage/>;
+else if(seg[0]==='usage')c=<UsagePage/>;
 else if(seg[0]==='compliance')c=<CompliancePage/>;
 else if(seg[0]==='incidents')c=<IncidentPage/>;
 else if(seg[0]==='integrations')c=<IntegrationsPage/>;

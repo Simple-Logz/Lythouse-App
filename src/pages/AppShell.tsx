@@ -4,7 +4,7 @@ import {
   ChartBar as BarChart3, FolderGit2, Server, Boxes, LogOut, BookOpen,
   Menu, Sparkles, Scale, Rocket, ShieldCheck, Zap, Activity,
   Plug, Bug, ClipboardCheck, FileWarning, ScrollText, Users, CreditCard, Settings as SettingsIcon,
-  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight, FileText
+  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight, FileText, Gauge
 } from 'lucide-react'
 import { supabase, type Workspace, type Organization, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins'
@@ -55,6 +55,7 @@ const SECTIONS = [
   { key: 'org', label: 'Organization', icon: Users, items: [
     { label: 'Organizations', to: '/organizations', icon: Building2 },
     { label: 'Team', to: '/team', icon: Users },
+    { label: 'Usage', to: '/usage', icon: Gauge },
     { label: 'Plans', to: '/plans', icon: CreditCard },
     { label: 'Settings', to: '/settings', icon: SettingsIcon },
   ] },
@@ -67,7 +68,7 @@ const TITLES: Record<string, string> = {
   '/deployments': 'Deployments', '/simulator': 'Deployment Simulator', '/analytics': 'Analytics',
   '/policies': 'Policy Studio', '/environment': 'Environment Validation', '/integrations': 'Integrations',
   '/findings': 'Findings', '/change-management': 'Change Management', '/approvals': 'Approvals', '/compliance': 'Compliance', '/incidents': 'Incidents', '/audit': 'Audit',
-  '/workspaces': 'Workspaces', '/organizations': 'Organizations', '/team': 'Team', '/plans': 'Plans', '/settings': 'Settings', '/docs': 'Documentation',
+  '/workspaces': 'Workspaces', '/organizations': 'Organizations', '/team': 'Team', '/usage': 'Usage', '/plans': 'Plans', '/settings': 'Settings', '/docs': 'Documentation',
   '/stacks': 'Stacks', '/plugins': 'Plugins', '/pipeline': 'Release Pipeline',
 }
 

@@ -7,7 +7,8 @@ import { Link, useRouter } from '../lib/router'
 import {
   Check, AlertTriangle, XCircle, Lock, Users, Server, Layers,
   ShieldCheck, ChevronRight, Play, RefreshCw, Loader as Loader2,
-  GitBranch, ArrowRight, Clock, Activity, ChevronDown
+  GitBranch, ArrowRight, Clock, Activity, ChevronDown,
+  UserPlus, Circle, CheckCircle2, Rocket, BarChart3, Gauge
 } from 'lucide-react'
 
 // Deterministic, transparent confidence — from real signals only.
@@ -97,6 +98,38 @@ a.kpi:hover{border-color:var(--lh-border2);transform:translateY(-1px)}
 .act-tx .al{font-size:13.5px;color:var(--lh-text);line-height:1.35}
 .act-tx .at{font-size:11.5px;color:var(--lh-text3);margin-top:1px}
 .dv-empty{padding:34px 20px;text-align:center;color:var(--lh-text3);font-size:13.5px}
+
+/* Row of state-summary / mission / team widgets — the "arriving somewhere"
+   layer: quantified per-category tiles rather than one flat empty state. */
+.dv-grid3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px}
+@media(max-width:1000px){.dv-grid3{grid-template-columns:1fr}}
+.dv-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:18px 20px}
+@media(max-width:480px){.dv-tiles{grid-template-columns:repeat(2,1fr)}}
+.dv-tile{border:1px solid var(--lh-border);border-radius:11px;padding:12px 13px;display:flex;flex-direction:column;gap:6px;text-decoration:none;transition:.14s}
+.dv-tile:hover{border-color:var(--lh-border2);background:var(--lh-surface2)}
+.dv-tile .tt{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--lh-text2)}
+.dv-tile .td{width:7px;height:7px;border-radius:50%;background:var(--c);flex-shrink:0}
+.dv-tile .tv{font-size:24px;font-weight:700;color:var(--lh-text);letter-spacing:-.02em}
+.miss{padding:6px 20px 16px}
+.miss-bar{height:6px;border-radius:20px;background:var(--lh-border);overflow:hidden;margin:2px 20px 4px}
+.miss-bar i{display:block;height:100%;background:var(--lh-accent);border-radius:20px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.miss-sum{padding:12px 20px 2px;font-size:12.5px;color:var(--lh-text3);display:flex;align-items:center;justify-content:space-between}
+.miss-row{display:flex;align-items:center;gap:10px;padding:10px 20px;text-decoration:none;border-top:1px solid var(--lh-border);transition:.12s}
+.miss-row:first-child{border-top:none}
+.miss-row:hover{background:var(--lh-surface2)}
+.miss-row .mi{flex-shrink:0;color:var(--lh-text3)}
+.miss-row.done .mi{color:#34d399}
+.miss-row .ml2{flex:1;font-size:13.5px;color:var(--lh-text);font-weight:500}
+.miss-row.done .ml2{color:var(--lh-text3);text-decoration:line-through;text-decoration-color:var(--lh-border2)}
+.miss-row .mc{flex-shrink:0;color:var(--lh-text3)}
+.team-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.team-count{display:flex;align-items:center;gap:12px}
+.team-avs{display:flex}
+.team-avs span{width:30px;height:30px;border-radius:50%;background:var(--lh-accent-weak);color:var(--lh-accent);display:grid;place-items:center;font-size:12px;font-weight:700;border:2px solid var(--lh-surface);margin-left:-8px}
+.team-avs span:first-child{margin-left:0}
+.team-num{font-size:22px;font-weight:700;color:var(--lh-text);letter-spacing:-.02em}
+.team-lbl{font-size:12px;color:var(--lh-text3)}
+.team-pend{font-size:12.5px;color:var(--lh-text2);display:flex;align-items:center;gap:6px}
 `
 
 function Ring({ value }: { value: number | null }) {
@@ -129,18 +162,29 @@ export function DashboardPage() {
   const [approvals, setApprovals] = useState<any[]>([])
   const [connections, setConnections] = useState<any[]>([])
   const [selProj, setSelProj] = useState<string>('')
+  const [vCounts, setVCounts] = useState({ completed: 0, running: 0, failed: 0, total: 0 })
+  const [memberCount, setMemberCount] = useState<number | null>(null)
+  const [pendingInviteCount, setPendingInviteCount] = useState(0)
   const wsId = () => localStorage.getItem('sandbox.activeWs')
 
   const load = useCallback(async () => {
     const wid = wsId()
     if (!wid) { setLoading(false); return }
-    const [wr, pr, vl, fn, ap, ec] = await Promise.all([
+    const [wr, pr, vl, fn, ap, ec, vTotal, vDone, vRun, vFail, mem, inv] = await Promise.all([
       supabase.from('workspaces').select('name').eq('id', wid).single(),
       supabase.from('projects').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }),
       supabase.from('validations').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }).limit(50),
       supabase.from('findings').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }),
       supabase.from('release_approvals').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }).limit(10),
       supabase.from('environment_connections').select('*').eq('workspace_id', wid),
+      // Real, un-truncated counts — separate from the 50-row sample above so
+      // the state tiles reflect the whole workspace, not just recent runs.
+      supabase.from('validations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid),
+      supabase.from('validations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid).eq('status', 'completed'),
+      supabase.from('validations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid).eq('status', 'running'),
+      supabase.from('validations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid).eq('status', 'failed'),
+      supabase.from('workspace_members').select('id', { count: 'exact', head: true }).eq('workspace_id', wid),
+      supabase.from('workspace_invitations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid).eq('status', 'pending'),
     ])
     setWs(wr.data)
     setProjects(pr.data ?? [])
@@ -148,6 +192,9 @@ export function DashboardPage() {
     setFindings(fn.data ?? [])
     setApprovals(ap.data ?? [])
     setConnections(ec.data ?? [])
+    setVCounts({ total: vTotal.count ?? 0, completed: vDone.count ?? 0, running: vRun.count ?? 0, failed: vFail.count ?? 0 })
+    setMemberCount(mem.count ?? null)
+    setPendingInviteCount(inv.count ?? 0)
     setSelProj((p) => p || (pr.data?.[0]?.id ?? ''))
     setLoading(false)
   }, [])
@@ -276,6 +323,26 @@ export function DashboardPage() {
 
   const wsName = ws?.name || 'your workspace'
 
+  // Getting-started missions — every step reflects a real, checkable fact
+  // about this workspace (no fabricated timers or progress percentages).
+  const missions = [
+    { label: 'Connect your first project', done: projects.length > 0, to: '/projects', icon: GitBranch },
+    { label: 'Run your first validation', done: vCounts.total > 0, to: projects.length ? '/projects' : '/projects', icon: Rocket },
+    { label: 'Connect an environment', done: connections.length > 0, to: '/environment', icon: Server },
+    { label: 'Invite a teammate', done: (memberCount ?? 0) > 1, to: '/team', icon: UserPlus },
+  ]
+  const missionsDone = missions.filter((m) => m.done).length
+
+  // Validation-run state tiles — mirrors the "which of my runs need me"
+  // pattern, driven entirely by real counts fetched above.
+  const vOther = Math.max(0, vCounts.total - vCounts.completed - vCounts.running - vCounts.failed)
+  const vTiles = [
+    { label: 'Completed', value: vCounts.completed, tone: 'ok' },
+    { label: 'Running', value: vCounts.running, tone: 'warn' },
+    { label: 'Failed', value: vCounts.failed, tone: 'bad' },
+    { label: 'Other', value: vOther, tone: 'off' },
+  ]
+
   return (
     <div className="dv">
       <style>{CSS}</style>
@@ -315,6 +382,68 @@ export function DashboardPage() {
             </span>
           </Link>
         ))}
+      </div>
+
+      {/* Validation runs / Getting started / Team — real state, quantified */}
+      <div className="dv-grid3">
+        <div className="dv-card">
+          <div className="rc-top">
+            <div className="rc-title"><BarChart3 size={15} style={{ color: 'var(--lh-text3)' }} /> Validation runs</div>
+            <Link to="/analytics" style={{ fontSize: 12.5, color: 'var(--lh-text2)', fontWeight: 500, textDecoration: 'none' }}>View analytics</Link>
+          </div>
+          {vCounts.total === 0 ? (
+            <div className="dv-empty">No validations run yet. They'll appear here the moment you run one.</div>
+          ) : (
+            <div className="dv-tiles">
+              {vTiles.map((t) => (
+                <Link to="/analytics" key={t.label} className={`dv-tile ${t.tone}`}>
+                  <span className="tt"><span className="td" />{t.label}</span>
+                  <span className="tv">{t.value}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="dv-card">
+          <div className="rc-top">
+            <div className="rc-title"><Gauge size={15} style={{ color: 'var(--lh-text3)' }} /> Getting started</div>
+          </div>
+          <div className="miss-sum"><span>{missionsDone} of {missions.length} complete</span></div>
+          <div className="miss-bar"><i style={{ width: `${(missionsDone / missions.length) * 100}%` }} /></div>
+          <div className="miss">
+            {missions.map((m) => (
+              <Link to={m.to} key={m.label} className={`miss-row ${m.done ? 'done' : ''}`}>
+                <span className="mi">{m.done ? <CheckCircle2 size={16} /> : <Circle size={16} />}</span>
+                <span className="ml2">{m.label}</span>
+                {!m.done && <ChevronRight size={14} className="mc" />}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="dv-card">
+          <div className="rc-top">
+            <div className="rc-title"><Users size={15} style={{ color: 'var(--lh-text3)' }} /> Team &amp; access</div>
+          </div>
+          <div className="team-body">
+            <div className="team-count">
+              <div className="team-avs">
+                {Array.from({ length: Math.min(memberCount ?? 0, 4) }).map((_, i) => (
+                  <span key={i}>{String.fromCharCode(65 + i)}</span>
+                ))}
+              </div>
+              <div>
+                <div className="team-num">{memberCount ?? 0}</div>
+                <div className="team-lbl">{memberCount === 1 ? 'member' : 'members'} in {wsName}</div>
+              </div>
+            </div>
+            {pendingInviteCount > 0 && (
+              <div className="team-pend"><Clock size={13} /> {pendingInviteCount} pending invitation{pendingInviteCount !== 1 ? 's' : ''}</div>
+            )}
+            <Link to="/team" className="btn-a pri" style={{ justifyContent: 'center' }}><UserPlus size={14} /> Invite teammate</Link>
+          </div>
+        </div>
       </div>
 
       {/* Latest release + Environment posture */}
