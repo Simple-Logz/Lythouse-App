@@ -44,26 +44,26 @@ const CSS = `
 /* Same ink-black border color as the rest of the app (--lh-border, set in
    AppShell), at the normal 1px weight everything else uses — the previous
    1.5px was heavier than intended. */
-.rn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:11px;background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;padding:13px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.rn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:11px;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;padding:13px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
 .rn-lbl{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--lh-text);display:flex;align-items:center;gap:5px;margin-right:-2px}
 .rn-lbl svg{color:var(--lh-text2)}
 .rn-chips{display:flex;gap:6px;flex-wrap:wrap}
-.rn-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;border:1px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text2);cursor:pointer;transition:.12s;font-family:inherit}
+.rn-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;border:0.5px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text2);cursor:pointer;transition:.12s;font-family:inherit}
 .rn-chip .cd{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
 .rn-chip.on{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
 .rn-chip.on .cd{opacity:1}
 .rn-sel{display:flex;align-items:center;gap:6px;position:relative}
-.rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
+.rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
 .rn-sel svg{position:absolute;right:8px;pointer-events:none;color:var(--lh-text2)}
 .rn-custom{display:flex;align-items:center;gap:6px}
-.rn-custom input{font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:8px;padding:5px 8px}
+.rn-custom input{font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:8px;padding:5px 8px}
 .rn-spacer{flex:1}
 .rn-clear{font-size:12.5px;font-weight:700;color:var(--lh-text);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
 .rn-clear:hover{color:var(--lh-accent)}
 .rn-count{font-size:12.5px;font-weight:600;color:var(--lh-text2)}
-.rn-card{background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;overflow:hidden}
-.rn-grp-h{padding:10px 18px;background:var(--lh-surface2);border-bottom:1px solid var(--lh-border);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--lh-text3);display:flex;align-items:center;justify-content:space-between}
-.rn-row{display:grid;grid-template-columns:1.7fr .9fr 1fr .9fr .8fr .9fr;gap:12px;align-items:center;padding:12px 18px;border-top:1px solid var(--lh-border);text-decoration:none;transition:.12s}
+.rn-card{background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;overflow:hidden}
+.rn-grp-h{padding:10px 18px;background:var(--lh-surface2);border-bottom:0.5px solid var(--lh-border);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--lh-text3);display:flex;align-items:center;justify-content:space-between}
+.rn-row{display:grid;grid-template-columns:1.7fr .9fr 1fr .9fr .8fr .9fr;gap:12px;align-items:center;padding:12px 18px;border-top:0.5px solid var(--lh-border);text-decoration:none;transition:.12s}
 .rn-row:first-child{border-top:none}
 .rn-row:hover{background:var(--lh-surface2)}
 .rn-row.hd{padding:8px 18px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--lh-text3);border-top:none;cursor:default}
@@ -78,7 +78,7 @@ const CSS = `
 .rn-dur{font-size:12.5px;color:var(--lh-text2);font-family:'JetBrains Mono',monospace}
 .rn-time{font-size:12.5px;color:var(--lh-text3);text-align:right}
 .rn-empty{padding:56px 20px;text-align:center;color:var(--lh-text3)}
-.rn-empty .ic{width:52px;height:52px;border-radius:14px;background:var(--lh-surface2);border:1px solid var(--lh-border);display:grid;place-items:center;margin:0 auto 14px;color:var(--lh-text3)}
+.rn-empty .ic{width:52px;height:52px;border-radius:14px;background:var(--lh-surface2);border:0.5px solid var(--lh-border);display:grid;place-items:center;margin:0 auto 14px;color:var(--lh-text3)}
 .rn-empty h3{font-size:15px;font-weight:600;color:var(--lh-text);margin-bottom:4px}
 .rn-empty p{font-size:13px;max-width:360px;margin:0 auto}
 `

@@ -19,12 +19,12 @@ const PALETTE_CSS = `
 @keyframes lhcp-in{from{opacity:0;transform:translateY(-6px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes lhcp-fade{from{opacity:0}to{opacity:1}}
 .lhcp-overlay{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;background:color-mix(in srgb,#05070a 46%,transparent);backdrop-filter:blur(4px);animation:lhcp-fade .12s ease}
-.lhcp{--lh-surface:#282b32;--lh-surface2:#31343c;--lh-border:#3a3e49;--lh-text:#f4f5f8;--lh-text2:#c6cad3;--lh-text3:#8f94a1;width:min(92vw,640px);max-height:64vh;display:flex;flex-direction:column;background:var(--lh-surface,#fff);border:1px solid var(--lh-border,#e7e9ec);border-radius:16px;box-shadow:0 24px 64px -12px rgba(6,10,16,.5),0 0 0 1px rgba(6,10,16,.04);overflow:hidden;animation:lhcp-in .16s cubic-bezier(.2,.8,.2,1)}
-.lhcp-top{display:flex;align-items:center;gap:11px;padding:15px 17px;border-bottom:1px solid var(--lh-border,#e7e9ec)}
+.lhcp{--lh-surface:#282b32;--lh-surface2:#31343c;--lh-border:#3a3e49;--lh-text:#f4f5f8;--lh-text2:#c6cad3;--lh-text3:#8f94a1;width:min(92vw,640px);max-height:64vh;display:flex;flex-direction:column;background:var(--lh-surface,#fff);border:0.5px solid var(--lh-border,#e7e9ec);border-radius:16px;box-shadow:0 24px 64px -12px rgba(6,10,16,.5),0 0 0 1px rgba(6,10,16,.04);overflow:hidden;animation:lhcp-in .16s cubic-bezier(.2,.8,.2,1)}
+.lhcp-top{display:flex;align-items:center;gap:11px;padding:15px 17px;border-bottom:0.5px solid var(--lh-border,#e7e9ec)}
 .lhcp-top svg.mag{color:var(--lh-text3,#8a909a);flex-shrink:0}
 .lhcp-input{flex:1;border:none;outline:none;background:transparent;font-size:15.5px;color:var(--lh-text,#15171a);font-family:inherit}
 .lhcp-input::placeholder{color:var(--lh-text3,#8a909a)}
-.lhcp-esc{font-size:11px;color:var(--lh-text3,#8a909a);border:1px solid var(--lh-border,#e7e9ec);border-radius:6px;padding:2px 7px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.lhcp-esc{font-size:11px;color:var(--lh-text3,#8a909a);border:0.5px solid var(--lh-border,#e7e9ec);border-radius:6px;padding:2px 7px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
 .lhcp-list{overflow-y:auto;padding:7px}
 .lhcp-sec{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--lh-text3,#8a909a);padding:10px 11px 5px}
 .lhcp-row{display:flex;align-items:center;gap:12px;padding:9px 11px;border-radius:9px;cursor:pointer;color:var(--lh-text2,#5b616b);scroll-margin:8px}
@@ -36,9 +36,9 @@ const PALETTE_CSS = `
 .lhcp-row.on .ci{background:var(--lh-accent,#0f9e88);color:var(--lh-accent-contrast,#fff)}
 .lhcp-row.on .cgo{opacity:1}
 .lhcp-empty{padding:34px 16px;text-align:center;color:var(--lh-text3,#8a909a);font-size:13.5px}
-.lhcp-foot{display:flex;align-items:center;gap:16px;padding:9px 15px;border-top:1px solid var(--lh-border,#e7e9ec);font-size:11.5px;color:var(--lh-text3,#8a909a)}
+.lhcp-foot{display:flex;align-items:center;gap:16px;padding:9px 15px;border-top:0.5px solid var(--lh-border,#e7e9ec);font-size:11.5px;color:var(--lh-text3,#8a909a)}
 .lhcp-foot .k{display:inline-flex;align-items:center;gap:5px}
-.lhcp-foot kbd{border:1px solid var(--lh-border,#e7e9ec);border-radius:5px;padding:1px 5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;display:inline-grid;place-items:center;min-width:18px;color:var(--lh-text2,#5b616b)}
+.lhcp-foot kbd{border:0.5px solid var(--lh-border,#e7e9ec);border-radius:5px;padding:1px 5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;display:inline-grid;place-items:center;min-width:18px;color:var(--lh-text2,#5b616b)}
 `
 
 export function CommandPalette({ open, onClose, theme, onToggleTheme, onSignOut }:{

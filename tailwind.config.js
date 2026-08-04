@@ -82,6 +82,15 @@ export default {
         // Inter so any lingering font-display usage stays on-brand.
         display: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
+      // Every plain `border`/`border-t`/etc utility in the app (the .card,
+      // .input, .btn-secondary base classes, plus every literal
+      // border-[#18181b] usage from the site-wide border-color pass) was
+      // still 1px, which read as too heavy once the color went dark. This
+      // is the one place to thin all of them at once, in every direction,
+      // without re-touching every file again.
+      borderWidth: {
+        DEFAULT: '0.5px',
+      },
       boxShadow: {
         glossy: '0 1px 0 0 rgba(255,255,255,.3) inset, 0 8px 20px -6px rgba(16,24,40,.20)',
         soft: '0 1px 2px rgba(16,24,40,.04), 0 12px 28px -12px rgba(16,24,40,.16)',

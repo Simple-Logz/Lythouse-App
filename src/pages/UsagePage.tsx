@@ -18,7 +18,7 @@ const CSS = `
 .us-wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .us-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 @media(max-width:800px){.us-grid{grid-template-columns:1fr}}
-.us-card{background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;padding:18px 20px}
+.us-card{background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;padding:18px 20px}
 .us-top{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--lh-text2)}
 .us-top .ic{color:var(--lh-accent)}
 .us-val{display:flex;align-items:baseline;gap:6px;margin-top:10px}
@@ -33,7 +33,7 @@ const CSS = `
 .us-plan-sub{font-size:12.5px;color:var(--lh-text3);margin-top:2px}
 .us-upgrade{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--lh-accent-contrast);background:var(--lh-accent);border-radius:9px;padding:9px 15px;text-decoration:none}
 .us-list{display:flex;flex-direction:column}
-.us-row{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;border-top:1px solid var(--lh-border);font-size:13.5px}
+.us-row{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;border-top:0.5px solid var(--lh-border);font-size:13.5px}
 .us-row:first-child{border-top:none}
 .us-row .rl{color:var(--lh-text2)}
 .us-row .rv{color:var(--lh-text);font-weight:600}
@@ -126,7 +126,7 @@ export function UsagePage() {
       </div>
 
       <div className="us-card" style={{ padding: 0 }}>
-        <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--lh-border)', fontSize: 15, fontWeight: 600, color: 'var(--lh-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '15px 20px', borderBottom: '0.5px solid var(--lh-border)', fontSize: 15, fontWeight: 600, color: 'var(--lh-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Gauge size={15} style={{ color: 'var(--lh-text3)' }} /> Findings snapshot
         </div>
         <div className="us-list">

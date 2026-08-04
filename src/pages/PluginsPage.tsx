@@ -7,12 +7,12 @@ const CSS = `
 .plg .sub{font-size:14.5px;color:var(--lh-text2);margin-top:6px}
 .plg-note{background:var(--lh-accent-weak);border:1px solid color-mix(in srgb,var(--lh-accent) 28%,transparent);color:var(--lh-text2);border-radius:12px;padding:12px 15px;font-size:13.5px;margin:20px 0;line-height:1.55}
 .plg-note b{color:var(--lh-text)}
-.plg-feat{background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center;margin-bottom:22px}
+.plg-feat{background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center;margin-bottom:22px}
 @media(max-width:760px){.plg-feat{grid-template-columns:1fr}}
 .plg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media(max-width:1000px){.plg-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.plg-grid{grid-template-columns:1fr}}
-.plg-card{background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;padding:18px;display:flex;flex-direction:column}
+.plg-card{background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;padding:18px;display:flex;flex-direction:column}
 .plg-top{display:flex;align-items:flex-start;justify-content:space-between}
 .plg-logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0}
 .plg-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
@@ -66,7 +66,7 @@ export function PluginsPage() {
         ))}
       </div>
       {wait && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--lh-surface)', border: '1px solid var(--lh-border)', borderRadius: 12, padding: '12px 18px', boxShadow: '0 24px 64px -16px rgba(0,0,0,.5)', fontSize: 13.5, color: 'var(--lh-text)', zIndex: 100 }} onAnimationEnd={() => {}}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--lh-surface)', border: '0.5px solid var(--lh-border)', borderRadius: 12, padding: '12px 18px', boxShadow: '0 24px 64px -16px rgba(0,0,0,.5)', fontSize: 13.5, color: 'var(--lh-text)', zIndex: 100 }} onAnimationEnd={() => {}}>
           ✓ Added to the {wait} waitlist <button onClick={() => setWait('')} style={{ marginLeft: 10, background: 'none', border: 'none', color: 'var(--lh-text3)', cursor: 'pointer' }}>✕</button>
         </div>
       )}

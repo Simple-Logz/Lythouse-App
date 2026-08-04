@@ -101,11 +101,11 @@ const CSS = `
     #fbfaff;
   background-attachment:fixed;
 }
-.lh-sb{background:var(--lh-sidebar);border-right:1px solid var(--lh-border);display:flex;flex-direction:column;height:100%}
+.lh-sb{background:var(--lh-sidebar);border-right:0.5px solid var(--lh-border);display:flex;flex-direction:column;height:100%}
 .lh-brand{display:flex;align-items:center;gap:9px;padding:14px 16px;font-weight:700;font-size:16px;letter-spacing:-.02em}
 .lh-mk{width:27px;height:27px;border-radius:7px;background:var(--lh-accent);display:grid;place-items:center;color:var(--lh-accent-contrast)}
 .lh-wswrap{position:relative;margin:0 12px 6px}
-.lh-ws{width:100%;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--lh-border);border-radius:9px;background:var(--lh-surface);font-size:13px;font-family:inherit;color:var(--lh-text);cursor:pointer;text-align:left;transition:.12s}
+.lh-ws{width:100%;display:flex;align-items:center;gap:9px;padding:8px 10px;border:0.5px solid var(--lh-border);border-radius:9px;background:var(--lh-surface);font-size:13px;font-family:inherit;color:var(--lh-text);cursor:pointer;text-align:left;transition:.12s}
 .lh-ws:hover{background:var(--lh-surface2);border-color:var(--lh-border2)}
 .lh-ws-org{margin-top:2px;background:var(--lh-accent-weak);border-color:color-mix(in srgb,var(--lh-accent) 32%,transparent)}
 .lh-ws-org:hover{border-color:var(--lh-accent)}
@@ -117,7 +117,7 @@ const CSS = `
 .lh-ws .wn{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lh-ws .cv{color:var(--lh-text3);flex-shrink:0}
 .lh-wsm-ov{position:fixed;inset:0;z-index:39}
-.lh-wsm{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:11px;box-shadow:0 22px 54px -18px rgba(4,8,14,.55);padding:6px;animation:lh-pop .14s ease}
+.lh-wsm{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:11px;box-shadow:0 22px 54px -18px rgba(4,8,14,.55);padding:6px;animation:lh-pop .14s ease}
 .lh-wsm-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--lh-text3);padding:6px 8px 5px}
 .lh-wsm-i{display:flex;align-items:center;gap:9px;width:100%;padding:8px;border-radius:8px;cursor:pointer;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--lh-text);text-align:left}
 .lh-wsm-i:hover{background:var(--lh-surface2)}
@@ -128,16 +128,16 @@ const CSS = `
 .lh-wsm-i.add .ic{width:22px;height:22px;border-radius:6px;border:1px dashed var(--lh-border2);display:grid;place-items:center;flex-shrink:0}
 .lh-wsm-sep{height:1px;background:var(--lh-border);margin:6px 4px}
 .lh-orgov{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,#05070a 45%,transparent);backdrop-filter:blur(3px)}
-.lh-orgm{width:min(94vw,420px);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:16px;padding:22px;box-shadow:0 30px 80px -20px rgba(4,8,14,.6)}
+.lh-orgm{width:min(94vw,420px);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:16px;padding:22px;box-shadow:0 30px 80px -20px rgba(4,8,14,.6)}
 .lh-orgm h3{font-size:17px;font-weight:700;color:var(--lh-text)}
 .lh-orgm p{font-size:13px;color:var(--lh-text3);margin-top:3px}
-.lh-orgm input{width:100%;margin-top:14px;background:var(--lh-surface2);border:1px solid var(--lh-border);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;color:var(--lh-text);outline:none}
+.lh-orgm input{width:100%;margin-top:14px;background:var(--lh-surface2);border:0.5px solid var(--lh-border);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;color:var(--lh-text);outline:none}
 .lh-orgm input:focus{border-color:var(--lh-accent)}
 .lh-orgm .row{display:flex;gap:9px;margin-top:16px;justify-content:flex-end}
-.lh-orgm .b{border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--lh-border);background:transparent;color:var(--lh-text2)}
+.lh-orgm .b{border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;border:0.5px solid var(--lh-border);background:transparent;color:var(--lh-text2)}
 .lh-orgm .b.pri{background:var(--lh-accent);color:var(--lh-accent-contrast);border-color:transparent}
 .lh-orgm .b:disabled{opacity:.5;cursor:default}
-.lh-chip{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--lh-accent-weak);color:var(--lh-accent);border:1px solid var(--lh-border);flex-shrink:0}
+.lh-chip{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--lh-accent-weak);color:var(--lh-accent);border:0.5px solid var(--lh-border);flex-shrink:0}
 .lh-nav{flex:1;overflow-y:auto;padding:8px 10px 12px}
 .lh-sec{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--lh-text3);padding:14px 11px 6px}
 .lh-sec.col{display:flex;align-items:center;gap:6px;width:100%;background:none;border:none;font-family:inherit;cursor:pointer;transition:.12s}
@@ -176,20 +176,20 @@ const CSS = `
    content, so it works for any number of child items with one CSS rule. */
 .lh-grp-items{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease-in-out}
 .lh-grp-items.open{grid-template-rows:1fr}
-.lh-grp-items-inner{overflow:hidden;min-height:0;margin:2px 0 4px 20px;padding-left:11px;border-left:1px solid var(--lh-border);display:flex;flex-direction:column;gap:1px}
+.lh-grp-items-inner{overflow:hidden;min-height:0;margin:2px 0 4px 20px;padding-left:11px;border-left:0.5px solid var(--lh-border);display:flex;flex-direction:column;gap:1px}
 .lh-grp-items-inner .lh-item{padding:6.5px 9px;font-size:13px}
 .lh-grp-items-inner .lh-item .ic{width:15px;height:15px}
-.lh-foot{border-top:1px solid var(--lh-border);padding:10px 12px}
+.lh-foot{border-top:0.5px solid var(--lh-border);padding:10px 12px}
 .lh-user{display:flex;align-items:center;gap:9px;padding:4px}
 .lh-ua{width:30px;height:30px;border-radius:50%;background:var(--lh-accent);color:var(--lh-accent-contrast);display:grid;place-items:center;font-weight:700;font-size:12px;overflow:hidden;flex-shrink:0}
 .lh-un{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lh-ue{font-size:11px;color:var(--lh-text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lh-iconbtn{width:34px;height:34px;border-radius:8px;border:1px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text);cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+.lh-iconbtn{width:34px;height:34px;border-radius:8px;border:0.5px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text);cursor:pointer;display:grid;place-items:center;flex-shrink:0}
 .lh-iconbtn:hover{background:var(--lh-surface2)}
-.lh-tb{position:sticky;top:0;z-index:10;height:56px;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid var(--lh-border);background:color-mix(in srgb,var(--lh-bg) 86%,transparent);backdrop-filter:blur(10px)}
+.lh-tb{position:sticky;top:0;z-index:10;height:56px;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:0.5px solid var(--lh-border);background:color-mix(in srgb,var(--lh-bg) 86%,transparent);backdrop-filter:blur(10px)}
 .lh-title{font-size:16px;font-weight:600;letter-spacing:-.01em}
-.lh-search{align-items:center;gap:8px;width:260px;padding:7px 11px;border:1px solid var(--lh-border);border-radius:9px;background:var(--lh-surface);color:var(--lh-text3);font-size:13px}
-.lh-kbd{margin-left:auto;font-size:11px;border:1px solid var(--lh-border);border-radius:5px;padding:1px 5px;font-family:'JetBrains Mono',monospace}
+.lh-search{align-items:center;gap:8px;width:260px;padding:7px 11px;border:0.5px solid var(--lh-border);border-radius:9px;background:var(--lh-surface);color:var(--lh-text3);font-size:13px}
+.lh-kbd{margin-left:auto;font-size:11px;border:0.5px solid var(--lh-border);border-radius:5px;padding:1px 5px;font-family:'JetBrains Mono',monospace}
 .lh-search{cursor:pointer;transition:.14s}
 .lh-search:hover{border-color:var(--lh-border2);background:var(--lh-surface2);color:var(--lh-text2)}
 .lh-item,.lh-gp{position:relative}
@@ -384,7 +384,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {orgSwitchOpen && (
                   others.length ? others.map((o) => (
                     <button key={o.id} className="lh-wsm-i sub" onClick={() => switchOrganization(o.id)}>
-                      <span className="wa" style={{ background: 'transparent', border: '1px solid var(--lh-border)', color: 'var(--lh-text3)' }}>{(o.name || 'O').charAt(0).toUpperCase()}</span>
+                      <span className="wa" style={{ background: 'transparent', border: '0.5px solid var(--lh-border)', color: 'var(--lh-text3)' }}>{(o.name || 'O').charAt(0).toUpperCase()}</span>
                       <span className="nm">{o.name}</span>
                     </button>
                   )) : <div style={{ padding: '2px 12px 8px 40px', fontSize: 12, color: 'var(--lh-text3)' }}>No other organizations</div>
@@ -394,7 +394,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <span className="ic"><Plus size={13} /></span>Create organization
                 </button>
                 <button className="lh-wsm-i" onClick={() => { setOrgMenuOpen(false); setOrgSwitchOpen(false); navigate('/organizations') }}>
-                  <span className="wa" style={{ background: 'transparent', border: '1px solid var(--lh-border)', color: 'var(--lh-text3)' }}><Building2 size={12} /></span>Manage organizations
+                  <span className="wa" style={{ background: 'transparent', border: '0.5px solid var(--lh-border)', color: 'var(--lh-text3)' }}><Building2 size={12} /></span>Manage organizations
                 </button>
               </div>
             </>
