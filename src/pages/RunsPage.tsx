@@ -61,14 +61,21 @@ const CSS = `
 .rn-custom-trig{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:9px;padding:7px 11px;cursor:pointer}
 .rn-custom-trig:hover{border-color:var(--lh-border2)}
 .rn-cal-wrap{position:relative}
-.rn-cal-ov{position:fixed;inset:0;z-index:39}
+/* z-index above AppShell's floating "Ask AI" button (.lh-ai, z-index:60) —
+   the popover previously sat at z-index:40, so on shorter viewports where
+   its bottom edge landed near the bottom-right corner, the Ask AI button
+   rendered on top of it, visually slicing off the Apply/Clear row. The
+   overlay goes just under the popover so an outside click over the Ask AI
+   button's spot simply closes the calendar instead of also opening the AI
+   panel underneath. */
+.rn-cal-ov{position:fixed;inset:0;z-index:61}
 /* position:fixed + top/left set in JS (clamped to the viewport against the
    trigger's real bounding rect) instead of position:absolute anchored to
    the trigger — a plain absolute popover could get sliced off by an
    ancestor's overflow or simply render past the edge of a narrow viewport.
    transition is just a quick fade-in once JS has placed it; it starts
    opacity:0 off-screen for one frame while it measures itself. */
-.rn-cal-pop{position:fixed;z-index:40;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;box-shadow:0 22px 54px -18px rgba(4,8,14,.35);padding:14px;width:296px;transition:opacity .1s ease-out}
+.rn-cal-pop{position:fixed;z-index:62;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;box-shadow:0 22px 54px -18px rgba(4,8,14,.35);padding:14px;width:296px;transition:opacity .1s ease-out}
 .rn-cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .rn-cal-hd .mo{font-size:13.5px;font-weight:700;color:var(--lh-text)}
 .rn-cal-hd button{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:none;background:none;color:var(--lh-text2);cursor:pointer}
