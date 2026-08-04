@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component {
     if (this.state.error) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-          <div className="max-w-md w-full rounded-2xl border border-[#a1a1aa] bg-white p-8 text-center shadow-sm">
+          <div className="max-w-md w-full rounded-2xl border border-[#d4d4d8] bg-white p-8 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-[#dc2626] text-xl font-bold">!</div>
             <h1 className="text-lg font-bold text-navy-900">Something went wrong</h1>
             <p className="mt-1.5 text-sm text-gray-500">The page hit an unexpected error. Reloading usually fixes it. If it keeps happening, let us know.</p>

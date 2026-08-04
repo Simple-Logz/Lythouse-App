@@ -250,7 +250,7 @@ export function TeamPage(){
                       <p className="text-sm font-semibold text-navy-900">{m.profiles?.full_name||m.profiles?.email||m.user_id.slice(0,8)}</p>
                       {m.profiles?.email&&<p className="text-xs text-gray-500">{m.profiles.email}</p>}
                     </div>
-                    <span className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa] capitalize text-xs">{m.role}</span>
+                    <span className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8] capitalize text-xs">{m.role}</span>
                     <button onClick={()=>removeMemberFromGroup(gm.id)} className="btn-ghost p-1.5 text-gray-400 hover:text-danger-600"><X size={13}/></button>
                   </div>
                 );
@@ -346,7 +346,7 @@ export function TeamPage(){
       )}
 
       {/* Tabs */}
-      <div className="mb-5 flex gap-1 border-b border-[#a1a1aa]">
+      <div className="mb-5 flex gap-1 border-b border-[#d4d4d8]">
         {[{id:'members',label:`Members (${members.length})`,icon:Users},{id:'groups',label:`Groups (${groups.length})`,icon:Users2}].map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id as any)} className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab===t.id?'tab-active':'tab-inactive'}`}>
             <t.icon size={15}/>{t.label}
@@ -428,7 +428,7 @@ export function TeamPage(){
                       ?<p className="text-sm text-gray-400 py-2">No members in this group yet.</p>
                       :<div className="space-y-2 mb-3">
                         {gms.map(gm=>(
-                          <div key={gm.id} className="flex items-center justify-between rounded-lg bg-white border border-[#a1a1aa] px-3 py-2">
+                          <div key={gm.id} className="flex items-center justify-between rounded-lg bg-white border border-[#d4d4d8] px-3 py-2">
                             <div className="flex items-center gap-2">
                               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-50 text-brand-700 text-xs font-bold">
                                 {getMemberName(gm.user_id).charAt(0).toUpperCase()}
@@ -479,7 +479,7 @@ export function TeamPage(){
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700"><Check size={15}/>Invite link ready.</div>
                 <label className="label">Share this link</label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate rounded-lg border border-[#a1a1aa] bg-gray-50 px-3 py-2 text-xs text-navy-800">{lastLink}</code>
+                  <code className="flex-1 truncate rounded-lg border border-[#d4d4d8] bg-gray-50 px-3 py-2 text-xs text-navy-800">{lastLink}</code>
                   <button onClick={()=>copyLink(lastLink,'modal')} className="btn-secondary text-xs">
                     {copied==='modal'?<><Check size={13}/>Copied</>:<><Copy size={13}/>Copy</>}
                   </button>
@@ -497,7 +497,7 @@ export function TeamPage(){
             <label className="label">Role</label>
             <div className="space-y-2 mb-5">
               {ASSIGNABLE_ROLES.map(r=>(
-                <label key={r} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${inviteRole===r?'border-brand-300 bg-brand-50':'border-[#a1a1aa] hover:bg-gray-50'}`}>
+                <label key={r} className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${inviteRole===r?'border-brand-300 bg-brand-50':'border-[#d4d4d8] hover:bg-gray-50'}`}>
                   <input type="radio" name="role" value={r} checked={inviteRole===r} onChange={()=>setInviteRole(r)} className="mt-0.5"/>
                   <div>
                     <p className="text-sm font-medium text-navy-900">{ROLE_LABEL[r]}</p>

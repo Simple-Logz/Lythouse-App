@@ -25,7 +25,7 @@ function StateBadge({state}:{state:string}){
     building.includes(s)?'bg-blue-50 text-blue-700 border-blue-200':
     bad.includes(s)?'bg-red-50 text-red-700 border-red-200':
     warn.includes(s)?'bg-amber-50 text-amber-700 border-amber-200':
-    'bg-gray-50 text-gray-600 border-[#a1a1aa]';
+    'bg-gray-50 text-gray-600 border-[#d4d4d8]';
   return<span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium capitalize ${cls}`}><StateIcon state={state} size={10}/>{state||'unknown'}</span>;
 }
 
@@ -57,7 +57,7 @@ function NetlifyData({data}:{data:any}){
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your Sites</p>
       <div className="space-y-2">
         {data.sites?.map((site:any)=>(
-          <div key={site.id} className="rounded-xl border border-[#a1a1aa] bg-white px-4 py-3">
+          <div key={site.id} className="rounded-xl border border-[#d4d4d8] bg-white px-4 py-3">
             <div className="flex items-start justify-between gap-2 mb-2">
               <div>
                 <p className="text-sm font-semibold text-navy-900">{site.name}</p>
@@ -108,7 +108,7 @@ function GitHubData({data}:{data:any}){
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Workflow Runs</p>
       <div className="space-y-1.5">
         {data.recentRuns.map((r:any,i:number)=>(
-          <div key={i} className="flex items-center gap-3 rounded-lg border border-[#a1a1aa] px-3 py-2">
+          <div key={i} className="flex items-center gap-3 rounded-lg border border-[#d4d4d8] px-3 py-2">
             <StateIcon state={r.conclusion||r.status} size={14}/>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-navy-900 truncate">{r.name}</p>
@@ -124,7 +124,7 @@ function GitHubData({data}:{data:any}){
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Commits</p>
       <div className="space-y-1.5">
         {data.recentCommits.map((c:any,i:number)=>(
-          <div key={i} className="flex items-start gap-3 rounded-lg border border-[#a1a1aa] px-3 py-2">
+          <div key={i} className="flex items-start gap-3 rounded-lg border border-[#d4d4d8] px-3 py-2">
             <code className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 shrink-0 font-mono">{c.sha}</code>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-navy-900 truncate">{c.message}</p>
@@ -138,13 +138,13 @@ function GitHubData({data}:{data:any}){
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Open Pull Requests ({data.openPRs.length})</p>
       <div className="space-y-1.5">
         {data.openPRs.map((pr:any)=>(
-          <div key={pr.number} className="flex items-center gap-2 rounded-lg border border-[#a1a1aa] px-3 py-2">
+          <div key={pr.number} className="flex items-center gap-2 rounded-lg border border-[#d4d4d8] px-3 py-2">
             <GitPullRequest size={13} className="text-purple-500 shrink-0"/>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-navy-900 truncate">{pr.title}</p>
               <p className="text-[10px] text-gray-400">#{pr.number} · {pr.author} · {pr.branch}</p>
             </div>
-            {pr.draft&&<span className="text-[10px] text-gray-400 border border-[#a1a1aa] px-1.5 py-0.5 rounded">Draft</span>}
+            {pr.draft&&<span className="text-[10px] text-gray-400 border border-[#d4d4d8] px-1.5 py-0.5 rounded">Draft</span>}
             <a href={pr.url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-gray-600 shrink-0"><ExternalLink size={11}/></a>
           </div>
         ))}
@@ -164,7 +164,7 @@ function VercelData({data}:{data:any}){
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Recent Deployments</p>
       <div className="space-y-2">
         {data.recentDeploys.map((d:any,i:number)=>(
-          <div key={i} className="rounded-xl border border-[#a1a1aa] px-4 py-3">
+          <div key={i} className="rounded-xl border border-[#d4d4d8] px-4 py-3">
             <div className="flex items-center justify-between mb-1">
               <p className="text-sm font-semibold text-navy-900">{d.name}</p>
               <StateBadge state={d.state||'unknown'}/>
@@ -185,7 +185,7 @@ function VercelData({data}:{data:any}){
 
 function GenericData({data,source}:{data:any;source:string}){
   return<div className="space-y-4">
-    <div className="rounded-xl border border-[#a1a1aa] bg-gray-50 px-4 py-3">
+    <div className="rounded-xl border border-[#d4d4d8] bg-gray-50 px-4 py-3">
       <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Live Data from {source}</p>
       <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">{JSON.stringify(data,null,2)}</pre>
     </div>
@@ -267,7 +267,7 @@ export function AssetDetailPanel({connection,assetMeta,onClose,onDisconnect,onRe
 
         {/* View toggle */}
         <div className="flex items-center gap-2 px-6 pt-3 pb-2 border-b border-gray-100 shrink-0">
-          <div className="flex gap-1 rounded-lg border border-[#a1a1aa] bg-gray-50 p-1">
+          <div className="flex gap-1 rounded-lg border border-[#d4d4d8] bg-gray-50 p-1">
             <button onClick={()=>setView('live')} className={'px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 '+(view==='live'?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
               <Activity size={12}/>Live Data
             </button>
@@ -321,7 +321,7 @@ export function AssetDetailPanel({connection,assetMeta,onClose,onDisconnect,onRe
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Currently monitoring</p>
                 <div className="flex flex-wrap gap-2">
                   {assetMeta.watches.map(w=>(
-                    <span key={w} className="flex items-center gap-1.5 text-xs bg-white border border-[#a1a1aa] text-gray-600 px-3 py-1.5 rounded-full">
+                    <span key={w} className="flex items-center gap-1.5 text-xs bg-white border border-[#d4d4d8] text-gray-600 px-3 py-1.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0"/>{w}
                     </span>
                   ))}
@@ -333,7 +333,7 @@ export function AssetDetailPanel({connection,assetMeta,onClose,onDisconnect,onRe
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Stored credentials</p>
-                <div className="rounded-xl border border-[#a1a1aa] bg-gray-50 px-4 py-3 space-y-2">
+                <div className="rounded-xl border border-[#d4d4d8] bg-gray-50 px-4 py-3 space-y-2">
                   {Object.entries(connection.config).filter(([,v])=>v).map(([k,v])=>(
                     <div key={k} className="flex items-center justify-between gap-4 text-xs">
                       <span className="text-gray-500 capitalize shrink-0">{k.replace(/_/g,' ')}</span>
@@ -344,10 +344,10 @@ export function AssetDetailPanel({connection,assetMeta,onClose,onDisconnect,onRe
                       </span>
                     </div>
                   ))}
-                  <p className="text-[10px] text-gray-400 pt-1 border-t border-[#a1a1aa]">Secrets are never shown in full and are encrypted at rest.</p>
+                  <p className="text-[10px] text-gray-400 pt-1 border-t border-[#d4d4d8]">Secrets are never shown in full and are encrypted at rest.</p>
                 </div>
               </div>
-              <div className="rounded-xl border border-[#a1a1aa] bg-white px-4 py-3 space-y-1 text-xs">
+              <div className="rounded-xl border border-[#d4d4d8] bg-white px-4 py-3 space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-gray-500">Connected</span><span className="text-gray-700">{new Date(connection.created_at).toLocaleString()}</span></div>
                 {connection.last_synced_at&&<div className="flex justify-between"><span className="text-gray-500">Last synced</span><span className="text-gray-700">{new Date(connection.last_synced_at).toLocaleString()}</span></div>}
                 <div className="flex justify-between"><span className="text-gray-500">Source ID</span><span className="font-mono text-gray-400">{connection.id.slice(0,12)}…</span></div>

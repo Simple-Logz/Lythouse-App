@@ -53,7 +53,7 @@ export function TicketModal({ finding, project, onClose }) {
           {providers.map((p) => {
             const active = provider === p.id; const conn = isConnected(p.id);
             return (
-              <button key={p.id} onClick={() => { setProvider(p.id); setResult(null); }} className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2.5 transition-all ${active ? 'border-brand-500 bg-brand-50' : 'border-[#a1a1aa] hover:border-gray-300'}`}>
+              <button key={p.id} onClick={() => { setProvider(p.id); setResult(null); }} className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2.5 transition-all ${active ? 'border-brand-500 bg-brand-50' : 'border-[#d4d4d8] hover:border-gray-300'}`}>
                 {conn && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#0f9a4c]" title="Connected" />}
                 <p.Logo s={22} />
                 <span className={`text-[10px] font-medium leading-tight text-center ${active ? 'text-brand-700' : 'text-gray-600'}`}>{p.name}</span>

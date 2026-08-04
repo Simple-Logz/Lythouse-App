@@ -76,12 +76,9 @@ const TITLES: Record<string, string> = {
 const CSS = `
 :root{
   --lh-bg:#fbfaff;--lh-surface:#ffffff;--lh-surface2:#f4f2fb;--lh-sidebar:#faf9ff;
-  /* Went near-black (#18181b), then a mid charcoal (#71717a) — still too
-     dark/distracting. Settled on a soft neutral grey: clearly more defined
-     than the original near-invisible lavender, but no longer reads as a
-     bold line. --lh-border2 keeps the previous, slightly stronger tone for
-     hover/active emphasis, so there's still a visible step on interaction. */
-  --lh-border:#a1a1aa;--lh-border2:#71717a;--lh-text:#15171a;--lh-text2:#5b616b;--lh-text3:#8a909a;
+  /* One more notch lighter than the previous slate-400 (#a1a1aa): now
+     slate-300 (#d4d4d8). Still a real, visible border — just softer. */
+  --lh-border:#d4d4d8;--lh-border2:#71717a;--lh-text:#15171a;--lh-text2:#5b616b;--lh-text3:#8a909a;
   --lh-accent:#7c5ce6;--lh-accent-weak:#ece8ff;--lh-accent-contrast:#ffffff;--lh-ring:rgba(124,92,230,.22);
 }
 :root[data-theme="dark"]{

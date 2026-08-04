@@ -100,7 +100,7 @@ export function ProjectIntegrationsPage({ projectId, workspaceId, project }) {
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-full z-30 mt-2 max-h-[62vh] w-64 overflow-y-auto rounded-xl border border-[#a1a1aa] bg-white p-1.5 shadow-lift">
+              <div className="absolute right-0 top-full z-30 mt-2 max-h-[62vh] w-64 overflow-y-auto rounded-xl border border-[#d4d4d8] bg-white p-1.5 shadow-lift">
                 <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">Choose an app</div>
                 {PROVIDERS.map((p) => {
                   const conn = isConnected(p.id);
@@ -118,7 +118,7 @@ export function ProjectIntegrationsPage({ projectId, workspaceId, project }) {
 
       {/* connected list */}
       {connected.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-[#a1a1aa] py-14 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-[#d4d4d8] py-14 text-center">
           <Plug size={26} className="mx-auto mb-3 text-gray-200" />
           <p className="text-sm font-medium text-gray-500">No integrations connected yet</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-gray-400">Use <b>Add integration</b> to connect a ticketing or chat tool. Then create and assign tickets to your team right from this project.</p>

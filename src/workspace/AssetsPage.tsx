@@ -219,9 +219,9 @@ function StatusBadge({status}:{status:string}){
     syncing:{color:'text-blue-700',bg:'bg-blue-50',border:'border-blue-200',icon:RefreshCw,label:'Syncing'},
     warning:{color:'text-amber-700',bg:'bg-amber-50',border:'border-amber-200',icon:AlertCircle,label:'Warning'},
     expired:{color:'text-red-700',bg:'bg-red-50',border:'border-red-200',icon:AlertTriangle,label:'Auth Expired'},
-    offline:{color:'text-gray-600',bg:'bg-gray-50',border:'border-[#a1a1aa]',icon:WifiOff,label:'Offline'},
+    offline:{color:'text-gray-600',bg:'bg-gray-50',border:'border-[#d4d4d8]',icon:WifiOff,label:'Offline'},
     error:{color:'text-red-700',bg:'bg-red-50',border:'border-red-200',icon:X,label:'Error'},
-    disconnected:{color:'text-gray-500',bg:'bg-gray-50',border:'border-[#a1a1aa]',icon:WifiOff,label:'Not Connected'},
+    disconnected:{color:'text-gray-500',bg:'bg-gray-50',border:'border-[#d4d4d8]',icon:WifiOff,label:'Not Connected'},
   };
   const c=cfg[status]||cfg.disconnected;
   const Icon=c.icon;
@@ -397,7 +397,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
             <p className="text-sm text-gray-600 mt-1 max-w-2xl leading-relaxed">Connect your GitHub repository so LytHouse <strong>continuously watches for new commits</strong> and keeps your release assessment up to date. Ticketing and notification tools are configured on the <strong>Integrations</strong> page.</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={()=>setNotifications(n=>!n)} title={notifications?'Notifications on':'Notifications off'} className={'p-2 rounded-lg border transition-colors '+(notifications?'border-brand-300 bg-brand-50 text-brand-600':'border-[#a1a1aa] text-gray-400')}>
+            <button onClick={()=>setNotifications(n=>!n)} title={notifications?'Notifications on':'Notifications off'} className={'p-2 rounded-lg border transition-colors '+(notifications?'border-brand-300 bg-brand-50 text-brand-600':'border-[#d4d4d8] text-gray-400')}>
               {notifications?<Bell size={16}/>:<BellOff size={16}/>}
             </button>
           </div>
@@ -435,7 +435,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
           </div>
 
           {connected.length===0?(
-            <div className="rounded-xl border-2 border-dashed border-[#a1a1aa] py-10 text-center">
+            <div className="rounded-xl border-2 border-dashed border-[#d4d4d8] py-10 text-center">
               <Wifi size={28} className="mx-auto text-gray-200 mb-3"/>
               <p className="text-sm font-medium text-gray-500 mb-1">No systems connected</p>
               <p className="text-xs text-gray-400 mb-4">Connect your first system to start continuous monitoring.</p>
@@ -502,14 +502,14 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
             <span className="relative flex h-2 w-2 ml-auto"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"/><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"/></span>
           </h3>
           {changeEvents.length===0?(
-            <div className="rounded-xl border border-[#a1a1aa] bg-gray-50 py-8 text-center">
+            <div className="rounded-xl border border-[#d4d4d8] bg-gray-50 py-8 text-center">
               <Activity size={20} className="mx-auto text-gray-300 mb-2"/>
               <p className="text-xs text-gray-400">Changes will appear here as your connected systems report activity.</p>
             </div>
           ):(
             <div className="space-y-2">
               {changeEvents.slice(0,8).map((evt,i)=>(
-                <div key={evt.id+i} className="rounded-xl border border-[#a1a1aa] bg-white px-3 py-3">
+                <div key={evt.id+i} className="rounded-xl border border-[#d4d4d8] bg-white px-3 py-3">
                   <div className="flex items-start gap-2.5">
                     <span className="text-base shrink-0">{evt.icon}</span>
                     <div className="flex-1 min-w-0">
@@ -574,7 +574,7 @@ export function AssetsPage({projectId,workspaceId}:{projectId:string;workspaceId
                     const isConnected=connectedIds.has(asset.id);
                     const isConnecting=connecting===asset.id;
                     return(
-                      <div key={asset.id} className={'rounded-xl border-2 transition-all '+(isConnected?'border-green-200 bg-green-50/50':isConnecting?'border-brand-400 bg-white shadow-lg ring-2 ring-brand-200':'border-[#a1a1aa] bg-white hover:border-gray-300')}>
+                      <div key={asset.id} className={'rounded-xl border-2 transition-all '+(isConnected?'border-green-200 bg-green-50/50':isConnecting?'border-brand-400 bg-white shadow-lg ring-2 ring-brand-200':'border-[#d4d4d8] bg-white hover:border-gray-300')}>
                         <div className="flex items-center justify-between gap-2 px-3 py-2.5">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="text-xl shrink-0">{asset.icon}</span>

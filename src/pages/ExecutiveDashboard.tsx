@@ -172,19 +172,19 @@ export function ExecutiveDashboard(){
               <input value={projectSearch} onChange={e=>setProjectSearch(e.target.value)} placeholder="Search projects…" className="input pl-8 pr-8 py-1.5 text-sm w-44"/>
               {projectSearch&&<button onClick={()=>setProjectSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
             </div>
-            <button onClick={()=>setShowFilters(f=>!f)} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors '+(showFilters||riskFilter.size>0?'border-brand-500 bg-brand-50 text-brand-700':'border-[#a1a1aa] text-gray-600 hover:bg-gray-50')}>
+            <button onClick={()=>setShowFilters(f=>!f)} className={'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors '+(showFilters||riskFilter.size>0?'border-brand-500 bg-brand-50 text-brand-700':'border-[#d4d4d8] text-gray-600 hover:bg-gray-50')}>
               <Users size={12}/>Filters{riskFilter.size>0?` (${riskFilter.size})`:''}
             </button>
             {(riskFilter.size>0||projectSearch||wsFilter!=='all'||ownerFilter!=='all')&&<button onClick={()=>{setRiskFilter(new Set());setProjectSearch('');setWsFilter('all');setOwnerFilter('all');}} className="text-xs text-gray-400 hover:text-gray-600 underline">Clear all</button>}
           </div>
         </div>
         {showFilters&&(
-          <div className="mb-4 p-4 rounded-xl border border-[#a1a1aa] bg-gray-50 space-y-3">
+          <div className="mb-4 p-4 rounded-xl border border-[#d4d4d8] bg-gray-50 space-y-3">
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Risk Level (select multiple)</p>
               <div className="flex flex-wrap gap-2">
                 {[{id:'critical',label:'Critical',color:'bg-red-100 text-red-700 border-red-300'},{id:'high',label:'High',color:'bg-orange-100 text-orange-700 border-orange-300'},{id:'medium',label:'Medium',color:'bg-amber-100 text-amber-700 border-amber-300'},{id:'low',label:'Low',color:'bg-green-100 text-green-700 border-green-300'}].map(r=>(
-                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?r.color+' ring-2 ring-offset-1 ring-current':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>
+                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?r.color+' ring-2 ring-offset-1 ring-current':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>
                     {riskFilter.has(r.id)?'✓ ':''}{r.label}
                   </button>
                 ))}
@@ -194,7 +194,7 @@ export function ExecutiveDashboard(){
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Has Blockers</p>
               <div className="flex flex-wrap gap-2">
                 {[{id:'has-critical',label:'Has Critical Issues'},{id:'has-high',label:'Has High Issues'},{id:'no-issues',label:'Clean (No Issues)'}].map(r=>(
-                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>
+                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>
                     {riskFilter.has(r.id)?'✓ ':''}{r.label}
                   </button>
                 ))}
@@ -204,7 +204,7 @@ export function ExecutiveDashboard(){
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Scan Status</p>
               <div className="flex flex-wrap gap-2">
                 {[{id:'never-scanned',label:'Never Scanned'},{id:'scanned-today',label:'Scanned Today'},{id:'stale',label:'Stale (7+ days)'}].map(r=>(
-                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>
+                  <button key={r.id} onClick={()=>{const n=new Set(riskFilter);n.has(r.id)?n.delete(r.id):n.add(r.id);setRiskFilter(n);}} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(riskFilter.has(r.id)?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>
                     {riskFilter.has(r.id)?'✓ ':''}{r.label}
                   </button>
                 ))}
@@ -213,9 +213,9 @@ export function ExecutiveDashboard(){
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Workspace</p>
               <div className="flex flex-wrap gap-2">
-                <button onClick={()=>setWsFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>All Workspaces</button>
+                <button onClick={()=>setWsFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>All Workspaces</button>
                 {workspaces.map(w=>(
-                  <button key={w.id} onClick={()=>setWsFilter(w.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter===w.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>
+                  <button key={w.id} onClick={()=>setWsFilter(w.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(wsFilter===w.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>
                     {wsFilter===w.id?'✓ ':''}{w.name}
                   </button>
                 ))}
@@ -224,9 +224,9 @@ export function ExecutiveDashboard(){
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Project Owner</p>
               <div className="flex flex-wrap gap-2">
-                <button onClick={()=>setOwnerFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>All Owners</button>
+                <button onClick={()=>setOwnerFilter('all')} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter==='all'?'border-brand-500 bg-brand-50 text-brand-700':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>All Owners</button>
                 {creators.map(c=>(
-                  <button key={c.id} onClick={()=>setOwnerFilter(c.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter===c.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#a1a1aa] bg-white text-gray-600 hover:bg-gray-100')}>
+                  <button key={c.id} onClick={()=>setOwnerFilter(c.id)} className={'px-3 py-1.5 rounded-lg border text-xs font-medium transition-all '+(ownerFilter===c.id?'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-offset-1 ring-brand-400':'border-[#d4d4d8] bg-white text-gray-600 hover:bg-gray-100')}>
                     {ownerFilter===c.id?'✓ ':''}{c.name}
                   </button>
                 ))}

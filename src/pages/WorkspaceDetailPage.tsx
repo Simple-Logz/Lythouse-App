@@ -95,7 +95,7 @@ export function WorkspaceDetailPage({workspaceId}:{workspaceId:string}){
       </div>
 
       {/* Tabs */}
-      <div className="mb-5 flex gap-1 border-b border-[#a1a1aa]">
+      <div className="mb-5 flex gap-1 border-b border-[#d4d4d8]">
         {TABS.map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id as Tab)} className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab===t.id?'tab-active':'tab-inactive'}`}>
             <t.icon size={15}/>{t.label}
@@ -231,7 +231,7 @@ export function WorkspaceDetailPage({workspaceId}:{workspaceId:string}){
                     <p className="text-sm font-semibold text-navy-900">{m.profile?.full_name||m.profile?.email||m.user_id.slice(0,8)}</p>
                     {m.profile?.email&&<p className="text-xs text-gray-500">{m.profile.email}</p>}
                   </div>
-                  <span className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa] capitalize">{m.role}</span>
+                  <span className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8] capitalize">{m.role}</span>
                 </div>
               ))}
             </div>

@@ -32,16 +32,16 @@ function VerdictChip({ verdict }: { verdict: Verdict | null }) {
     approved: 'bg-brand-50 text-brand-700 border border-brand-200',
     conditionally_approved: 'bg-blue-50 text-blue-600 border border-blue-200',
     rejected: 'bg-red-50 text-danger-600 border border-red-200',
-    inconclusive: 'bg-gray-100 text-gray-500 border border-[#a1a1aa]',
+    inconclusive: 'bg-gray-100 text-gray-500 border border-[#d4d4d8]',
   };
   return <span className={`chip capitalize ${m[verdict] ?? m.inconclusive}`}>{verdict.replace(/_/g, ' ')}</span>;
 }
 
 const ENV_STATUS_CLS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600 border border-[#a1a1aa]',
+  draft: 'bg-gray-100 text-gray-600 border border-[#d4d4d8]',
   ready: 'bg-brand-50 text-brand-700 border border-brand-200',
   validating: 'bg-blue-50 text-blue-600 border border-blue-200',
-  archived: 'bg-gray-100 text-gray-400 border border-[#a1a1aa]',
+  archived: 'bg-gray-100 text-gray-400 border border-[#d4d4d8]',
 };
 
 export function EnvDetailPage({ envId, planId }: { envId: string; planId: PlanId }) {
@@ -129,7 +129,7 @@ export function EnvDetailPage({ envId, planId }: { envId: string; planId: PlanId
       />
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-[#a1a1aa]">
+      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-[#d4d4d8]">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${tab === t.id ? 'tab-active' : 'tab-inactive'}`}>
@@ -240,7 +240,7 @@ export function EnvDetailPage({ envId, planId }: { envId: string; planId: PlanId
                 <div key={bp.id} className="card">
                   <div className="flex items-center justify-between">
                     <span className="chip bg-brand-50 text-brand-700 border border-brand-200">v{bp.version}</span>
-                    <span className={`chip capitalize ${bp.is_stale ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-gray-100 text-gray-500 border border-[#a1a1aa]'}`}>{bp.is_stale ? 'Stale' : bp.status}</span>
+                    <span className={`chip capitalize ${bp.is_stale ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-gray-100 text-gray-500 border border-[#d4d4d8]'}`}>{bp.is_stale ? 'Stale' : bp.status}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-3">
                     <div><p className="text-lg font-bold tabular-nums text-navy-900">{bp.component_count}</p><p className="text-xs text-gray-400">Components</p></div>
@@ -253,7 +253,7 @@ export function EnvDetailPage({ envId, planId }: { envId: string; planId: PlanId
                       <p className="text-xs font-medium text-gray-400">App Groups</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {appGroups.filter(g => g.blueprint_id === bp.id).map(g => (
-                          <span key={g.id} className={`chip ${g.human_confirmed ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-gray-50 text-gray-500 border border-[#a1a1aa]'}`}>{g.name}</span>
+                          <span key={g.id} className={`chip ${g.human_confirmed ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-gray-50 text-gray-500 border border-[#d4d4d8]'}`}>{g.name}</span>
                         ))}
                       </div>
                     </div>

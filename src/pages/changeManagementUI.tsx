@@ -17,17 +17,17 @@ const RISK_CLS: Record<string,string> = {
   high:'bg-amber-50 text-amber-600 border border-amber-200',
   medium:'bg-brand-50 text-brand-700 border border-brand-200',
   low:'bg-green-50 text-green-700 border border-green-200',
-  unknown:'bg-gray-100 text-gray-500 border border-[#a1a1aa]',
+  unknown:'bg-gray-100 text-gray-500 border border-[#d4d4d8]',
 };
 const STATUS_CLS: Record<string,string> = {
-  draft:'bg-gray-100 text-gray-600 border border-[#a1a1aa]',
+  draft:'bg-gray-100 text-gray-600 border border-[#d4d4d8]',
   pending_approval:'bg-amber-50 text-amber-600 border border-amber-200',
   approved:'bg-green-50 text-green-700 border border-green-200',
   rejected:'bg-red-50 text-danger-600 border border-red-200',
   scheduled:'bg-blue-50 text-blue-600 border border-blue-200',
   completed:'bg-brand-50 text-brand-700 border border-brand-200',
   rolled_back:'bg-orange-50 text-orange-600 border border-orange-200',
-  cancelled:'bg-gray-100 text-gray-500 border border-[#a1a1aa]',
+  cancelled:'bg-gray-100 text-gray-500 border border-[#d4d4d8]',
 };
 const STATUS_LABEL: Record<string,string> = {
   draft:'Draft',pending_approval:'Pending approval',approved:'Approved',rejected:'Rejected',
@@ -47,7 +47,7 @@ function Section({icon,title,action,children,muted}:{icon:any;title:string;actio
 }
 
 function NotGenerated({onGenerate,loading,label}:{onGenerate:()=>void;loading:boolean;label:string}){
-  return<div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[#a1a1aa] bg-gray-50 px-3.5 py-3">
+  return<div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-[#d4d4d8] bg-gray-50 px-3.5 py-3">
     <p className="text-xs text-gray-500">{label}</p>
     <button onClick={onGenerate} disabled={loading} className="btn-secondary text-xs shrink-0 flex items-center gap-1.5 disabled:opacity-50">
       {loading?<><Spinner size={11}/>Analyzing…</>:<><Sparkles size={11}/>Generate</>}
@@ -76,7 +76,7 @@ export function ImpactAnalysisCard({cr,onGenerate,loading}:{cr:any;onGenerate:()
       items.length?(
         <div className="space-y-2.5">
           {items.map((it:any,i:number)=>(
-            <div key={i} className="rounded-xl border border-[#a1a1aa] px-3.5 py-2.5">
+            <div key={i} className="rounded-xl border border-[#d4d4d8] px-3.5 py-2.5">
               <p className="text-sm font-semibold text-navy-900">{it.component}</p>
               <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{it.reason}</p>
             </div>
@@ -152,7 +152,7 @@ export function ReadinessChecklist({cr,steps,stepsLoading}:{cr:any;steps:any[];s
 }
 function ChecklistRow({ok,warn,label,detail}:{ok:boolean;warn?:boolean;label:string;detail?:string}){
   return<div className="flex items-start gap-2.5">
-    {ok?<CheckCircle2 size={16} className="mt-0.5 shrink-0 text-green-600"/>:warn?<AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500"/>:<span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-[#a1a1aa]"/>}
+    {ok?<CheckCircle2 size={16} className="mt-0.5 shrink-0 text-green-600"/>:warn?<AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500"/>:<span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-[#d4d4d8]"/>}
     <div className="min-w-0 flex-1">
       <p className={`text-sm ${ok?'text-navy-800':'text-navy-700'}`}>{label}</p>
       {detail&&<p className="mt-0.5 text-xs text-gray-400">{detail}</p>}
@@ -215,7 +215,7 @@ export function DeploymentTimeline({cr}:{cr:any}){
         const isLast=i===stages.length-1;
         return<div key={s.key} className="relative flex gap-3 pb-5 last:pb-0">
           {!isLast&&<div className={`absolute left-[9px] top-6 h-[calc(100%-1.25rem)] w-0.5 ${s.done?'bg-brand-500':'bg-gray-200'} transition-colors`}/>}
-          <span className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full ${s.done?'bg-brand-500 text-white':'border-2 border-[#a1a1aa] bg-white'}`}>{s.done&&<CheckCircle2 size={12}/>}</span>
+          <span className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full ${s.done?'bg-brand-500 text-white':'border-2 border-[#d4d4d8] bg-white'}`}>{s.done&&<CheckCircle2 size={12}/>}</span>
           <div className="min-w-0 flex-1">
             <p className={`text-sm ${s.done?'font-semibold text-navy-900':'text-gray-400'}`}>{s.name}</p>
             {s.detail&&<p className="text-xs text-gray-400">{s.detail}</p>}
@@ -254,7 +254,7 @@ export function WhatsChangingCard({steps,findings}:{steps:any[];findings:any[]})
           <div>
             <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">Flagged areas</p>
             <div className="flex flex-wrap gap-1.5">
-              {areas.map(([area,count])=><span key={area} className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa] font-mono text-2xs">{area}/ <span className="font-sans font-semibold">×{count}</span></span>)}
+              {areas.map(([area,count])=><span key={area} className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8] font-mono text-2xs">{area}/ <span className="font-sans font-semibold">×{count}</span></span>)}
             </div>
           </div>
         )}
@@ -454,7 +454,7 @@ export function ReviewerCommentsCard({cr,onGenerate,loading}:{cr:any;onGenerate:
 // ── 10. Beautiful project card (list view) ──────────────────────────────
 export function ProjectReadyCard({project,validation,openFindings,readinessPct,estWindow,onDraft,drafting}:{project:any;validation:any;openFindings:number;readinessPct:number|null;estWindow:string;onDraft:()=>void;drafting:boolean}){
   const risk=validation?(validation.critical_count>0?'critical':validation.high_count>0?'high':validation.medium_count>0?'medium':'low'):'unknown';
-  return<div className="group relative rounded-2xl border border-[#a1a1aa] bg-white p-4 transition-all duration-200 hover:border-brand-200 hover:shadow-md">
+  return<div className="group relative rounded-2xl border border-[#d4d4d8] bg-white p-4 transition-all duration-200 hover:border-brand-200 hover:shadow-md">
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0">
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${RISK_CLS[risk]}`}><GitBranch size={17}/></span>

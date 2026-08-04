@@ -48,13 +48,13 @@ export function AcceptInvitePage({token}:{token:string}){
 
   return(
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-[#a1a1aa]">
+      <header className="bg-white border-b border-[#d4d4d8]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <button onClick={()=>navigate('/')} className="flex items-center gap-2"><Logo size={28}/></button>
         </div>
       </header>
       <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-[#a1a1aa] bg-white p-8 shadow-sm text-center">
+        <div className="w-full max-w-md rounded-2xl border border-[#d4d4d8] bg-white p-8 shadow-sm text-center">
           {status==='loading'&&<div className="py-8"><Spinner size={28}/></div>}
 
           {status==='need-auth'&&(

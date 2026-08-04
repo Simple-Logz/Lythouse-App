@@ -20,12 +20,12 @@ import { CirclePlay as PlayCircle, Check, X, ChevronRight, ShieldCheck, ShieldAl
 const TERMINAL_STATUSES: ValidationRunStatus[] = ['completed', 'failed', 'cancelled'];
 
 function VerdictBadge({ verdict }: { verdict: Verdict | null }) {
-  if (!verdict) return <span className="chip bg-gray-100 text-gray-500 border border-[#a1a1aa]">No verdict</span>;
+  if (!verdict) return <span className="chip bg-gray-100 text-gray-500 border border-[#d4d4d8]">No verdict</span>;
   const m: Record<Verdict, { label: string; cls: string; icon: typeof ShieldCheck }> = {
     approved: { label: 'Approved', cls: 'bg-brand-50 text-brand-700 border border-brand-200', icon: ShieldCheck },
     conditionally_approved: { label: 'Conditionally Approved', cls: 'bg-blue-50 text-blue-600 border border-blue-200', icon: ShieldCheck },
     rejected: { label: 'Rejected', cls: 'bg-red-50 text-danger-600 border border-red-200', icon: ShieldX },
-    inconclusive: { label: 'Inconclusive', cls: 'bg-gray-100 text-gray-500 border border-[#a1a1aa]', icon: ShieldAlert },
+    inconclusive: { label: 'Inconclusive', cls: 'bg-gray-100 text-gray-500 border border-[#d4d4d8]', icon: ShieldAlert },
   };
   const v = m[verdict];
   const Icon = v.icon;
@@ -64,7 +64,7 @@ function StepTracker({ currentStep, status }: { currentStep: number; status: str
             ? 'border-brand-500 bg-white text-brand-500'
             : failed
             ? 'border-danger-500 bg-danger-500 text-white'
-            : 'border-[#a1a1aa] bg-white text-gray-400';
+            : 'border-[#d4d4d8] bg-white text-gray-400';
           return (
             <div key={i} className="flex items-center gap-3 py-1.5">
               <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 ${cls}`}>
@@ -207,7 +207,7 @@ export function ValidationRunPage({ runId }: { runId: string }) {
             <div className="card">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy-900"><Boxes size={16} /> Proposed Change</h3>
               <div className="flex items-center gap-2 mb-2">
-                <span className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa] capitalize">{change.change_type}</span>
+                <span className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8] capitalize">{change.change_type}</span>
                 {change.artifact_name && <span className="chip bg-blue-50 text-blue-600 border border-blue-200">{change.artifact_name}</span>}
               </div>
               <p className="text-sm text-gray-600">{change.change_description}</p>
@@ -279,7 +279,7 @@ export function ValidationRunPage({ runId }: { runId: string }) {
                   <div key={ev.id} className="flex items-start justify-between rounded-lg border border-gray-100 p-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa]">{ev.evidence_type}</span>
+                        <span className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8]">{ev.evidence_type}</span>
                         {ev.cited_in_verdict && <span className="chip bg-brand-50 text-brand-700 border border-brand-200">Cited</span>}
                       </div>
                       <p className="mt-1 text-sm text-gray-500">{ev.source}</p>
@@ -298,7 +298,7 @@ export function ValidationRunPage({ runId }: { runId: string }) {
             <div className="card">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy-900"><RotateCcw size={16} /> Rollback Result</h3>
               <div className="flex items-center gap-2 mb-3">
-                <span className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa] capitalize">{rollback.rollback_method}</span>
+                <span className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8] capitalize">{rollback.rollback_method}</span>
                 <StatusBadge status={rollback.status === 'completed' ? 'completed' : rollback.status === 'failed' ? 'failed' : 'running'} />
               </div>
               {rollback.baseline_tests_after_rollback && Object.keys(rollback.baseline_tests_after_rollback).length > 0 && (

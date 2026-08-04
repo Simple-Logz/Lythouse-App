@@ -9,7 +9,7 @@ const STATUS_CLS: Record<string, string> = {
   open: 'bg-red-50 text-danger-600 border border-red-200',
   investigating: 'bg-amber-50 text-amber-600 border border-amber-200',
   resolved: 'bg-brand-50 text-brand-700 border border-brand-200',
-  closed: 'bg-gray-100 text-gray-500 border border-[#a1a1aa]',
+  closed: 'bg-gray-100 text-gray-500 border border-[#d4d4d8]',
 };
 
 function IncidentPage() {

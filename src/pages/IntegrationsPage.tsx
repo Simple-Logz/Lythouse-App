@@ -36,8 +36,8 @@ export function IntegrationsPage() {
                     <h3 className="text-sm font-semibold text-navy-900">{p.name}</h3>
                     {connected
                       ? <span className="chip text-[10px] bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]"><Check size={10} />Connected</span>
-                      : <span className="chip text-[10px] bg-gray-100 text-gray-500 border border-[#a1a1aa]">Not connected</span>}
-                    {!p.oneClick && <span className="chip text-[10px] bg-gray-100 text-gray-500 border border-[#a1a1aa]">beta</span>}
+                      : <span className="chip text-[10px] bg-gray-100 text-gray-500 border border-[#d4d4d8]">Not connected</span>}
+                    {!p.oneClick && <span className="chip text-[10px] bg-gray-100 text-gray-500 border border-[#d4d4d8]">beta</span>}
                   </div>
                   <p className="text-xs text-gray-500 mt-1 leading-snug">{p.blurb}</p>
                 </div>

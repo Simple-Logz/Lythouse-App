@@ -94,7 +94,7 @@ function MarkdownRenderer({content}:{content:string}){
         const isHeader=lines[i+1]?.includes('---');
         const isSep=line.includes('---');
         if(isSep)return<div key={i}/>;
-        return<div key={i} className={`grid text-xs gap-2 ${isHeader?'font-bold text-gray-500 uppercase tracking-wide border-b border-[#a1a1aa] pb-1':'text-navy-700 py-0.5'}`} style={{gridTemplateColumns:`repeat(${cells.length},1fr)`}}>
+        return<div key={i} className={`grid text-xs gap-2 ${isHeader?'font-bold text-gray-500 uppercase tracking-wide border-b border-[#d4d4d8] pb-1':'text-navy-700 py-0.5'}`} style={{gridTemplateColumns:`repeat(${cells.length},1fr)`}}>
           {cells.map((c,j)=><span key={j}>{c.trim()}</span>)}
         </div>;
       }
@@ -193,7 +193,7 @@ export default function AIAssistantTab({projectId,workspaceId}:{projectId:string
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-1">
         {messages.length===0&&(
           <div className="py-6">
-            <div className="mb-5 rounded-lg border border-[#a1a1aa] bg-gray-50 px-4 py-3">
+            <div className="mb-5 rounded-lg border border-[#d4d4d8] bg-gray-50 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Project Intelligence Summary</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
@@ -212,7 +212,7 @@ export default function AIAssistantTab({projectId,workspaceId}:{projectId:string
             <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">Quick Analysis</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {QUICK_PROMPTS.map((p,i)=>(
-                <button key={i} onClick={()=>handleSend(p.text)} className="flex items-center gap-3 p-3 rounded-lg border border-[#a1a1aa] hover:border-brand-300 hover:bg-brand-50 transition-all text-left group">
+                <button key={i} onClick={()=>handleSend(p.text)} className="flex items-center gap-3 p-3 rounded-lg border border-[#d4d4d8] hover:border-brand-300 hover:bg-brand-50 transition-all text-left group">
                   <p.icon size={16} className={p.color}/>
                   <span className="text-sm text-navy-700 flex-1">{p.text}</span>
                   <ChevronRight size={14} className="text-gray-300 group-hover:text-brand-500 transition-colors"/>
@@ -224,7 +224,7 @@ export default function AIAssistantTab({projectId,workspaceId}:{projectId:string
 
         {messages.map((m,i)=>(
           <div key={i} className={`flex ${m.role==='user'?'justify-end':'justify-start'}`}>
-            <div className={`max-w-[88%] ${m.role==='user'?'bg-navy-900 text-white rounded-2xl rounded-br-sm':'bg-white border border-[#a1a1aa] rounded-2xl rounded-bl-sm'} p-4 shadow-sm`}>
+            <div className={`max-w-[88%] ${m.role==='user'?'bg-navy-900 text-white rounded-2xl rounded-br-sm':'bg-white border border-[#d4d4d8] rounded-2xl rounded-bl-sm'} p-4 shadow-sm`}>
               {m.role==='assistant'&&(
                 <div className="flex items-center gap-1.5 mb-2.5 pb-2 border-b border-gray-100">
                   <Sparkles size={12} className="text-brand-500"/>
@@ -244,7 +244,7 @@ export default function AIAssistantTab({projectId,workspaceId}:{projectId:string
 
         {loading&&(
           <div className="flex justify-start">
-            <div className="bg-white border border-[#a1a1aa] rounded-2xl rounded-bl-sm p-4 shadow-sm">
+            <div className="bg-white border border-[#d4d4d8] rounded-2xl rounded-bl-sm p-4 shadow-sm">
               <div className="flex items-center gap-2.5">
                 <div className="flex gap-1">
                   {[0,150,300].map(d=><span key={d} className="w-1.5 h-1.5 bg-brand-400 rounded-full animate-bounce" style={{animationDelay:`${d}ms`}}/>)}

@@ -78,7 +78,7 @@ export function AuditLogPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#a1a1aa] bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-[#d4d4d8] bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3 font-medium">Action</th>
                   <th className="px-4 py-3 font-medium">Entity</th>
                   <th className="px-4 py-3 font-medium">Entity ID</th>

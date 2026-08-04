@@ -406,7 +406,7 @@ export function ChangeRequestDetailPage({id}:{id:string}){
 
         {cr.status==='pending_approval'&&<div className="mt-4"><DecisionBar onDecide={decide}/></div>}
         {cr.decided_at&&(
-          <div className="mt-4 rounded-xl border border-[#a1a1aa] p-3 text-xs text-gray-600">
+          <div className="mt-4 rounded-xl border border-[#d4d4d8] p-3 text-xs text-gray-600">
             {STATUS_LABEL[cr.status]} on {new Date(cr.decided_at).toLocaleString()}{cr.decision_note?` — "${cr.decision_note}"`:''}
           </div>
         )}
@@ -439,7 +439,7 @@ export function ChangeRequestDetailPage({id}:{id:string}){
             <label className="label">Scope of change</label>
             <div className="flex flex-wrap gap-1.5">
               {(cr.scope||[]).length===0&&<span className="text-xs text-gray-400">General</span>}
-              {(cr.scope||[]).map((s:string)=><span key={s} className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa]">{s}</span>)}
+              {(cr.scope||[]).map((s:string)=><span key={s} className="chip bg-gray-100 text-gray-600 border border-[#d4d4d8]">{s}</span>)}
             </div>
           </div>
           <Field label="Risk assessment (editable record)" value={cr.risk_assessment} onSave={(v)=>saveField({risk_assessment:v})} multiline disabled={saving}/>

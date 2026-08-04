@@ -11,7 +11,7 @@ import {
   Boxes, Users, Sparkles, Settings as SettingsIcon, Server,
   Building2, Bug, Layers, Pin, ChevronsUpDown,
   Workflow, Rocket, Zap, Activity, ClipboardCheck, Scale, FileWarning, ScrollText,
-  BookOpen, Plug, FileText, CreditCard,
+  BookOpen, Plug, FileText, CreditCard, ListFilter, Gauge,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -32,6 +32,7 @@ const NAV_DOCS = { to: '/docs', label: 'Documentation', icon: BookOpen };
 const SECTIONS = [
   { key: 'platform', label: 'Platform', icon: Boxes, items: [
     { to: '/projects', label: 'Projects', icon: FolderGit2 },
+    { to: '/runs', label: 'Runs', icon: ListFilter },
     { to: '/workspaces', label: 'Workspaces', icon: Building2 },
     { to: '/stacks', label: 'Stacks', icon: Layers },
   ] },
@@ -61,6 +62,7 @@ const SECTIONS = [
   { key: 'org', label: 'Organization', icon: Users, items: [
     { to: '/organizations', label: 'Organizations', icon: Building2 },
     { to: '/team', label: 'Team', icon: Users },
+    { to: '/usage', label: 'Usage', icon: Gauge },
     { to: '/plans', label: 'Plans', icon: CreditCard },
     { to: '/settings', label: 'Settings', icon: SettingsIcon },
   ] },
@@ -289,8 +291,17 @@ export function MobileApp({ renderPage }) {
         </div>
       )}
 
-      {/* bottom nav */}
-      <nav className="fixed bottom-0 inset-x-0 z-20 bg-white border-t border-gray-100 h-16 grid grid-cols-4 pb-[env(safe-area-inset-bottom)]">
+      {/* bottom nav — solid brand-purple bar instead of the previous
+          white-on-white treatment (bg-white + a near-invisible gray-100
+          border blended straight into the page above it). Inactive items
+          are dimmed white so they're still readable against the purple;
+          the active item gets full-white text plus a soft white pill
+          behind its icon, so the bar itself now reads as a distinct,
+          unmissable piece of chrome rather than disappearing. */}
+      <nav
+        className="fixed bottom-0 inset-x-0 z-20 h-16 grid grid-cols-4 pb-[env(safe-area-inset-bottom)]"
+        style={{ background: 'linear-gradient(180deg,#8b6ef2,#7c5ce6)', boxShadow: '0 -6px 20px -6px rgba(88,58,168,.55)' }}
+      >
         {[
           { id: 'home', label: 'Releases', icon: House },
           { id: 'approvals', label: 'Approvals', icon: ShieldCheck, badge: pendingApprovals.length },
@@ -300,9 +311,9 @@ export function MobileApp({ renderPage }) {
           const active = tab === t.id;
           return (
             <button key={t.id} onClick={() => { setTab(t.id); setSelected(null); setBrowsing(false); }} className="relative flex flex-col items-center justify-center gap-1 pt-1.5">
-              <span className={`flex items-center justify-center h-8 w-14 rounded-full transition-all ${active ? 'bg-brand-100 text-brand-700' : 'text-gray-400'}`}><t.icon size={21} strokeWidth={active ? 2.4 : 2} /></span>
-              <span className={`text-[10px] font-semibold ${active ? 'text-brand-700' : 'text-gray-400'}`}>{t.label}</span>
-              {t.badge > 0 && <span className="absolute top-0.5 right-[24%] min-w-4 h-4 px-1 rounded-full bg-[#dc2626] text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white">{t.badge}</span>}
+              <span className={`flex items-center justify-center h-8 w-14 rounded-full transition-all ${active ? 'bg-white/25 text-white' : 'text-white/60'}`}><t.icon size={21} strokeWidth={active ? 2.4 : 2} /></span>
+              <span className={`text-[10px] font-semibold ${active ? 'text-white' : 'text-white/60'}`}>{t.label}</span>
+              {t.badge > 0 && <span className="absolute top-0.5 right-[24%] min-w-4 h-4 px-1 rounded-full bg-[#dc2626] text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-[#7c5ce6]">{t.badge}</span>}
             </button>
           );
         })}

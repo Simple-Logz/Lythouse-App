@@ -50,7 +50,7 @@ export function CommandCenter() {
   analyzed.forEach((r) => r.concerns.forEach((c) => { if (c.sev === 'high' || c.sev === 'medium') riskCount[c.cat] = (riskCount[c.cat] || 0) + 1; }));
   const topRisks = Object.entries(riskCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-  const heatColor = (r) => r.readiness == null ? 'bg-gray-100 text-gray-400 border-[#a1a1aa]' : r.status === 'BLOCKED' ? 'bg-[#fde3e3] text-[#d61f1f] border-[#f5a3a3]' : r.readiness >= 80 ? 'bg-[#e3f7ea] text-[#0f9a4c] border-[#9adcb4]' : 'bg-[#fff0d9] text-[#e07600] border-[#f9c777]';
+  const heatColor = (r) => r.readiness == null ? 'bg-gray-100 text-gray-400 border-[#d4d4d8]' : r.status === 'BLOCKED' ? 'bg-[#fde3e3] text-[#d61f1f] border-[#f5a3a3]' : r.readiness >= 80 ? 'bg-[#e3f7ea] text-[#0f9a4c] border-[#9adcb4]' : 'bg-[#fff0d9] text-[#e07600] border-[#f9c777]';
 
   return (
     <div>
