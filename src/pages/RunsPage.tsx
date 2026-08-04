@@ -10,7 +10,7 @@ import { PageHeader, Spinner, fmtDuration } from '../lib/ui'
 import { Link } from '../lib/router'
 import {
   GitCommitHorizontal, ChevronDown, X, ListFilter, Calendar,
-  ShieldCheck, RefreshCw, GitBranch
+  ShieldCheck, RefreshCw, GitBranch, ChevronLeft, ChevronRight
 } from 'lucide-react'
 
 type Row = Validation & { project_name?: string; project_branch?: string }
@@ -55,8 +55,38 @@ const CSS = `
 .rn-sel{display:flex;align-items:center;gap:6px;position:relative}
 .rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
 .rn-sel svg{position:absolute;right:8px;pointer-events:none;color:var(--lh-text2)}
-.rn-custom{display:flex;align-items:center;gap:6px}
-.rn-custom input{font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:8px;padding:5px 8px}
+/* Single-calendar range picker — replaces the old two-native-datetime-input
+   layout ("mm/dd/yyyy to mm/dd/yyyy" as two separate pickers). One popover,
+   one month grid, click a start day then an end day to select the range. */
+.rn-custom-trig{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:9px;padding:7px 11px;cursor:pointer}
+.rn-custom-trig:hover{border-color:var(--lh-border2)}
+.rn-cal-wrap{position:relative}
+.rn-cal-ov{position:fixed;inset:0;z-index:39}
+.rn-cal-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:40;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;box-shadow:0 22px 54px -18px rgba(4,8,14,.35);padding:14px;width:296px}
+.rn-cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.rn-cal-hd .mo{font-size:13.5px;font-weight:700;color:var(--lh-text)}
+.rn-cal-hd button{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:none;background:none;color:var(--lh-text2);cursor:pointer}
+.rn-cal-hd button:hover{background:var(--lh-surface2);color:var(--lh-text)}
+.rn-cal-wd{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.rn-cal-wd span{font-size:10.5px;font-weight:700;color:var(--lh-text3);text-align:center;padding:4px 0}
+.rn-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.rn-cal-day{position:relative;aspect-ratio:1;display:grid;place-items:center;font-size:12.5px;font-weight:500;color:var(--lh-text);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit}
+.rn-cal-day:hover{background:var(--lh-surface2)}
+.rn-cal-day.empty{cursor:default;visibility:hidden}
+.rn-cal-day.inrange{background:var(--lh-accent-weak);border-radius:0}
+.rn-cal-day.start{background:var(--lh-accent);color:var(--lh-accent-contrast);border-radius:8px 0 0 8px}
+.rn-cal-day.end{background:var(--lh-accent);color:var(--lh-accent-contrast);border-radius:0 8px 8px 0}
+.rn-cal-day.start.end{border-radius:8px}
+.rn-cal-times{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--lh-border)}
+.rn-cal-times .fld{flex:1;display:flex;flex-direction:column;gap:3px}
+.rn-cal-times label{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--lh-text3)}
+.rn-cal-times input{font:inherit;font-size:12.5px;color:var(--lh-text);background:var(--lh-surface2);border:0.5px solid var(--lh-border);border-radius:7px;padding:5px 7px;width:100%}
+.rn-cal-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.rn-cal-ft button{font:inherit;font-size:12.5px;font-weight:700;border-radius:8px;padding:7px 12px;cursor:pointer;border:none}
+.rn-cal-ft .clr{background:none;color:var(--lh-text2)}
+.rn-cal-ft .clr:hover{color:var(--lh-text)}
+.rn-cal-ft .app{background:var(--lh-accent);color:var(--lh-accent-contrast)}
+.rn-cal-ft .app:disabled{opacity:.5;cursor:default}
 .rn-spacer{flex:1}
 .rn-clear{font-size:12.5px;font-weight:700;color:var(--lh-text);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
 .rn-clear:hover{color:var(--lh-accent)}
@@ -86,6 +116,77 @@ const CSS = `
 function toneFor(status: string) {
   return status === 'completed' ? 'ok' : status === 'running' ? 'warn' : status === 'failed' ? 'bad' : 'off'
 }
+const sameDay = (a: Date | null, b: Date | null) => !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+const fmtDateLabel = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
+
+// One month grid, click a start day then an end day to select a range —
+// replaces the previous two-separate-native-datetime-input layout.
+function DateRangeCalendar({ from, to, onApply, onClose }: { from: string; to: string; onApply: (from: string, to: string) => void; onClose: () => void }) {
+  const initFrom = from ? startOfDay(new Date(from)) : null
+  const initTo = to ? startOfDay(new Date(to)) : null
+  const [viewMonth, setViewMonth] = useState(() => initFrom || new Date())
+  const [pendingFrom, setPendingFrom] = useState<Date | null>(initFrom)
+  const [pendingTo, setPendingTo] = useState<Date | null>(initTo)
+  const [fromTime, setFromTime] = useState(() => from ? new Date(from).toTimeString().slice(0, 5) : '00:00')
+  const [toTime, setToTime] = useState(() => to ? new Date(to).toTimeString().slice(0, 5) : '23:59')
+
+  const year = viewMonth.getFullYear(), month = viewMonth.getMonth()
+  const totalDays = new Date(year, month + 1, 0).getDate()
+  const startPad = new Date(year, month, 1).getDay()
+  const cells: (number | null)[] = [...Array(startPad).fill(null), ...Array.from({ length: totalDays }, (_, i) => i + 1)]
+
+  const pickDay = (d: number | null) => {
+    if (!d) return
+    const picked = new Date(year, month, d)
+    if (!pendingFrom || pendingTo || picked < pendingFrom) { setPendingFrom(picked); setPendingTo(null) }
+    else { setPendingTo(picked) }
+  }
+
+  const apply = () => {
+    if (!pendingFrom) return
+    const [fh, fm] = fromTime.split(':').map(Number)
+    const from2 = new Date(pendingFrom); from2.setHours(fh || 0, fm || 0, 0, 0)
+    const [th, tm] = toTime.split(':').map(Number)
+    const to2 = new Date(pendingTo || pendingFrom); to2.setHours(th ?? 23, tm ?? 59, 59, 999)
+    onApply(from2.toISOString(), to2.toISOString())
+  }
+
+  return (
+    <>
+      <div className="rn-cal-ov" onClick={onClose} />
+      <div className="rn-cal-pop" onClick={(e) => e.stopPropagation()}>
+        <div className="rn-cal-hd">
+          <button onClick={() => setViewMonth(new Date(year, month - 1, 1))}><ChevronLeft size={15} /></button>
+          <span className="mo">{viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+          <button onClick={() => setViewMonth(new Date(year, month + 1, 1))}><ChevronRight size={15} /></button>
+        </div>
+        <div className="rn-cal-wd">{WEEKDAYS.map((w) => <span key={w}>{w}</span>)}</div>
+        <div className="rn-cal-grid">
+          {cells.map((d, i) => {
+            if (!d) return <button key={i} className="rn-cal-day empty" disabled />
+            const cellDate = new Date(year, month, d)
+            const isStart = sameDay(cellDate, pendingFrom)
+            const isEnd = sameDay(cellDate, pendingTo)
+            const inRange = !!pendingFrom && !!pendingTo && cellDate > pendingFrom && cellDate < pendingTo
+            return (
+              <button key={i} className={`rn-cal-day ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''} ${inRange ? 'inrange' : ''}`} onClick={() => pickDay(d)}>{d}</button>
+            )
+          })}
+        </div>
+        <div className="rn-cal-times">
+          <div className="fld"><label>From time</label><input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} /></div>
+          <div className="fld"><label>To time</label><input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} /></div>
+        </div>
+        <div className="rn-cal-ft">
+          <button className="clr" onClick={() => { setPendingFrom(null); setPendingTo(null) }}>Clear</button>
+          <button className="app" disabled={!pendingFrom} onClick={apply}>Apply range</button>
+        </div>
+      </div>
+    </>
+  )
+}
 // 'off' used to reuse the same pale grey as the unselected-chip state, which
 // made the Pending chip's selected/unselected look nearly identical. Bold
 // near-black instead — distinct, and matches the toolbar's new ink-black
@@ -104,6 +205,7 @@ export function RunsPage() {
   const [rangeId, setRangeId] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [calOpen, setCalOpen] = useState(false)
   const [groupBy, setGroupBy] = useState('none')
 
   const wsId = () => localStorage.getItem('sandbox.activeWs')
@@ -143,7 +245,7 @@ export function RunsPage() {
   })
 
   const filtersActive = statusOn.size !== STATUS_OPTS.length || projectId !== 'all' || rangeId !== 'all'
-  const clearFilters = () => { setStatusOn(new Set(STATUS_OPTS.map((s) => s.id))); setProjectId('all'); setRangeId('all'); setCustomFrom(''); setCustomTo('') }
+  const clearFilters = () => { setStatusOn(new Set(STATUS_OPTS.map((s) => s.id))); setProjectId('all'); setRangeId('all'); setCustomFrom(''); setCustomTo(''); setCalOpen(false) }
 
   const filtered = useMemo(() => {
     const preset = RANGE_PRESETS.find((r) => r.id === rangeId)
@@ -213,10 +315,20 @@ export function RunsPage() {
           <ChevronDown size={14} />
         </label>
         {rangeId === 'custom' && (
-          <div className="rn-custom">
-            <input type="datetime-local" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
-            <span style={{ color: 'var(--lh-text3)', fontSize: 12 }}>to</span>
-            <input type="datetime-local" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+          <div className="rn-cal-wrap">
+            <button type="button" className="rn-custom-trig" onClick={() => setCalOpen((v) => !v)}>
+              <Calendar size={13} />
+              {customFrom && customTo ? `${fmtDateLabel(new Date(customFrom))} – ${fmtDateLabel(new Date(customTo))}` : 'Select dates'}
+              <ChevronDown size={13} />
+            </button>
+            {calOpen && (
+              <DateRangeCalendar
+                from={customFrom}
+                to={customTo}
+                onApply={(f, t) => { setCustomFrom(f); setCustomTo(t); setCalOpen(false) }}
+                onClose={() => setCalOpen(false)}
+              />
+            )}
           </div>
         )}
 
