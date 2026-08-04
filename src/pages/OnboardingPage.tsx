@@ -62,7 +62,7 @@ export function OnboardingPage(){
 
   return(
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-white border-b border-[#18181b] px-6 py-4">
         <Logo size={26}/>
       </header>
 
@@ -83,7 +83,7 @@ export function OnboardingPage(){
             ))}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-[#18181b] p-8 shadow-sm">
             {step==='workspace'&&(
               <>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600 mb-5"><Users size={22}/></div>

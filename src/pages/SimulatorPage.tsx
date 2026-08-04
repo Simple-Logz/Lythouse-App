@@ -116,7 +116,7 @@ const isDone=s.status==='completed';
 const isFailed=s.status==='failed';
 const isExpanded=expanded===s.id;
 const verdict=isDone?(s.predicted_risk_score??0)<40?'go':(s.predicted_risk_score??0)<70?'conditional':'no-go':null;
-const verdictStyle=verdict==='go'?'border-green-200 bg-green-50 text-green-700':verdict==='conditional'?'border-amber-200 bg-amber-50 text-amber-700':verdict==='no-go'?'border-red-200 bg-red-50 text-danger-600':'border-gray-200 bg-gray-50 text-gray-600';
+const verdictStyle=verdict==='go'?'border-green-200 bg-green-50 text-green-700':verdict==='conditional'?'border-amber-200 bg-amber-50 text-amber-700':verdict==='no-go'?'border-red-200 bg-red-50 text-danger-600':'border-[#18181b] bg-gray-50 text-gray-600';
 return<div key={s.id} className="card p-0 overflow-hidden">
 <button onClick={()=>setExpanded(isExpanded?null:s.id)} className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 transition-colors">
 {isExpanded?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
@@ -124,7 +124,7 @@ return<div key={s.id} className="card p-0 overflow-hidden">
 <div className="flex-1 min-w-0">
 <div className="flex flex-wrap items-center gap-2 mb-1">
 <span className="text-sm font-semibold text-navy-900">{s.project_name??'Unknown project'}</span>
-<span className={`chip border text-xs ${ENV_COLORS[s.environment]??'bg-gray-100 text-gray-600 border-gray-200'}`}>{s.environment}</span>
+<span className={`chip border text-xs ${ENV_COLORS[s.environment]??'bg-gray-100 text-gray-600 border-[#18181b]'}`}>{s.environment}</span>
 {isRunning&&<span className="flex items-center gap-1 text-xs text-brand-600"><RefreshCw size={11} className="animate-spin"/>Analyzing…</span>}
 {isDone&&verdict&&<span className={`chip border text-xs font-semibold uppercase ${verdictStyle}`}>{verdict==='go'?'✓ Safe to deploy':verdict==='conditional'?'⚠ Review required':'⛔ Do not deploy'}</span>}
 {isFailed&&<span className="chip border text-xs bg-red-50 text-danger-600 border-red-200">Failed</span>}
@@ -163,7 +163,7 @@ return<div key={s.id} className="card p-0 overflow-hidden">
 ['Confidence',s.confidence?`${s.confidence}%`:'—','text-navy-900'],
 ['Severity',s.predicted_severity?s.predicted_severity.charAt(0).toUpperCase()+s.predicted_severity.slice(1):'None',s.predicted_severity==='critical'?'text-danger-600':s.predicted_severity==='high'?'text-amber-600':'text-green-600'],
 ].map(([label,val,color])=>(
-<div key={label as string} className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-center">
+<div key={label as string} className="rounded-lg border border-[#18181b] bg-white px-3 py-2.5 text-center">
 <p className={`text-lg font-bold ${color}`}>{val}</p>
 <p className="text-xs text-gray-500 mt-0.5">{label}</p>
 </div>
@@ -176,7 +176,7 @@ return<div key={s.id} className="card p-0 overflow-hidden">
 <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Affected Services</p>
 <div className="flex flex-wrap gap-2">
 {s.affected_services.map((svc:string)=>(
-<span key={svc} className="chip bg-gray-100 text-gray-700 border border-gray-200">{svc}</span>
+<span key={svc} className="chip bg-gray-100 text-gray-700 border border-[#18181b]">{svc}</span>
 ))}
 </div>
 </div>

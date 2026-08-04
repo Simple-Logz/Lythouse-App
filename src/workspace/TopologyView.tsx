@@ -96,7 +96,7 @@ export function TopologyView({ projectId, project, onOpenFile, compact = false }
       </div>
       {stack.length > 0 && (
         <div className="flex flex-wrap justify-end gap-1.5">
-          {stack.map((s) => <span key={s} className="chip bg-gray-100 text-gray-600 border border-gray-200">{s}</span>)}
+          {stack.map((s) => <span key={s} className="chip bg-gray-100 text-gray-600 border border-[#18181b]">{s}</span>)}
         </div>
       )}
     </div>
@@ -117,7 +117,7 @@ export function TopologyView({ projectId, project, onOpenFile, compact = false }
           <foreignObject key={n.id} x={n.x} y={n.y} width={NODE_W} height={NODE_H}>
             <button
               onClick={() => setSelected(active ? null : n.id)}
-              className={`flex h-full w-full items-center gap-2 rounded-xl border px-3 text-left transition ${active ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'}`}
+              className={`flex h-full w-full items-center gap-2 rounded-xl border px-3 text-left transition ${active ? 'border-brand-500 bg-brand-50 shadow-sm' : 'border-[#18181b] bg-white hover:border-gray-300 hover:bg-gray-50'}`}
             >
               <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-600'}`}>{n.icon}</span>
               <span className="min-w-0">
@@ -153,7 +153,7 @@ export function TopologyView({ projectId, project, onOpenFile, compact = false }
     </>
   ) : (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200 text-gray-400"><Network size={22} /></div>
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 border border-[#18181b] text-gray-400"><Network size={22} /></div>
       <h3 className="text-sm font-semibold text-navy-900">Select a node</h3>
       <p className="mt-1.5 max-w-xs text-xs leading-relaxed text-gray-500">Click any node in the diagram to inspect its role and the repository files that back it.</p>
     </div>

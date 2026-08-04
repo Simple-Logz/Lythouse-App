@@ -159,7 +159,7 @@ export function DeploymentDetailPage({ deploymentId }: { deploymentId: string })
                         <p className="text-sm font-semibold text-navy-900">{f.title}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-2xs text-gray-500">
                           <SeverityBadge severity={f.severity} />
-                          <span className="chip bg-gray-50 text-navy-600 border border-gray-200">{f.category.replace('_', ' ')}</span>
+                          <span className="chip bg-gray-50 text-navy-600 border border-[#18181b]">{f.category.replace('_', ' ')}</span>
                           {f.file_path && <span className="flex items-center gap-1 font-mono text-gray-400"><FileCode2 size={10} /> {f.file_path}{f.line ? `:${f.line}` : ''}</span>}
                         </div>
                         <p className="mt-2 text-sm leading-relaxed text-gray-600">{f.description}</p>

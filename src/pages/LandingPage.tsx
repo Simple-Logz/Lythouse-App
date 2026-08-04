@@ -829,7 +829,7 @@ export function LandingPage() {
                   value={email} onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') startTrial(); }}
                   type="email" placeholder="Enter your business email"
-                  className="flex-1 rounded-full border border-gray-200 bg-white/80 px-5 py-3 text-sm text-navy-900 placeholder:text-gray-400 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100" />
+                  className="flex-1 rounded-full border border-[#18181b] bg-white/80 px-5 py-3 text-sm text-navy-900 placeholder:text-gray-400 shadow-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100" />
                 <Dark onClick={startTrial} className="px-6 py-3">Start free<ArrowRight size={15} /></Dark>
               </div>
             </div>
@@ -871,7 +871,7 @@ export function LandingPage() {
               { icon: Rocket, t: 'Deployment', d: 'Policy gates enforce your minimum readiness and required approvals before deploy.' },
               { icon: Activity, t: 'Observability', d: 'Continuous watching detects new commits and tells you if your decision is still valid.' },
             ].map((f) => (
-              <Tilt key={f.t} max={6} className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur p-6 hover:border-brand-200 [box-shadow:0_1px_2px_rgba(16,24,40,.05),0_10px_20px_-8px_rgba(16,24,40,.10)] hover:[box-shadow:0_10px_20px_rgba(16,24,40,.08),0_30px_48px_-16px_rgba(124,92,230,.28)]">
+              <Tilt key={f.t} max={6} className="rounded-2xl border border-[#18181b] bg-white/80 backdrop-blur p-6 hover:border-brand-200 [box-shadow:0_1px_2px_rgba(16,24,40,.05),0_10px_20px_-8px_rgba(16,24,40,.10)] hover:[box-shadow:0_10px_20px_rgba(16,24,40,.08),0_30px_48px_-16px_rgba(124,92,230,.28)]">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 [box-shadow:inset_0_1px_0_rgba(255,255,255,.6),0_4px_10px_-2px_rgba(124,92,230,.30)]"><f.icon size={18} /></span>
                 <h3 className="mt-4 text-lg font-bold">{f.t}</h3>
                 <p className="mt-1.5 text-sm text-navy-500 leading-relaxed">{f.d}</p>

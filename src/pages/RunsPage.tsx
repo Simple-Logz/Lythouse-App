@@ -41,26 +41,22 @@ const GROUP_OPTS = [
 
 const CSS = `
 .rn-wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-/* Bold, high-contrast ink-black border in place of the previous pale
-   lavender-grey — reads as a defined, professional toolbar rather than a
-   washed-out one. #18181b matches the app's primary-button ink elsewhere. */
-.rn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:11px;background:var(--lh-surface);border:1.5px solid #18181b;border-radius:14px;padding:13px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-:root[data-theme="dark"] .rn-bar{border-color:#3f3f46}
+/* Same ink-black border color as the rest of the app (--lh-border, set in
+   AppShell), at the normal 1px weight everything else uses — the previous
+   1.5px was heavier than intended. */
+.rn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:11px;background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;padding:13px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
 .rn-lbl{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--lh-text);display:flex;align-items:center;gap:5px;margin-right:-2px}
 .rn-lbl svg{color:var(--lh-text2)}
 .rn-chips{display:flex;gap:6px;flex-wrap:wrap}
-.rn-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;border:1.5px solid #27272a;background:var(--lh-surface);color:var(--lh-text2);cursor:pointer;transition:.12s;font-family:inherit}
-:root[data-theme="dark"] .rn-chip{border-color:#52525b}
+.rn-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;border:1px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text2);cursor:pointer;transition:.12s;font-family:inherit}
 .rn-chip .cd{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
 .rn-chip.on{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
 .rn-chip.on .cd{opacity:1}
 .rn-sel{display:flex;align-items:center;gap:6px;position:relative}
-.rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1.5px solid #27272a;border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
-:root[data-theme="dark"] .rn-sel select{border-color:#52525b}
+.rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
 .rn-sel svg{position:absolute;right:8px;pointer-events:none;color:var(--lh-text2)}
 .rn-custom{display:flex;align-items:center;gap:6px}
-.rn-custom input{font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1.5px solid #27272a;border-radius:8px;padding:5px 8px}
-:root[data-theme="dark"] .rn-custom input{border-color:#52525b}
+.rn-custom input{font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:8px;padding:5px 8px}
 .rn-spacer{flex:1}
 .rn-clear{font-size:12.5px;font-weight:700;color:var(--lh-text);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
 .rn-clear:hover{color:var(--lh-accent)}

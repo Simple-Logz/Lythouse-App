@@ -78,7 +78,7 @@ export function PolicyPage() {
                 <div key={p.id} className="card">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-navy-900">{p.name}</span>
-                    {!ev.analyzed ? <span className="chip text-[10px] bg-gray-100 text-gray-500 border border-gray-200">not analyzed</span>
+                    {!ev.analyzed ? <span className="chip text-[10px] bg-gray-100 text-gray-500 border border-[#18181b]">not analyzed</span>
                       : ev.fail === 0 ? <span className="chip text-[10px] bg-[#e3f7ea] text-[#0f9a4c] border border-[#9adcb4]">compliant</span>
                         : <span className="chip text-[10px] bg-[#fde3e3] text-[#d61f1f] border border-[#f5a3a3]">{ev.fail} violation{ev.fail === 1 ? '' : 's'}</span>}
                   </div>

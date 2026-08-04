@@ -222,7 +222,7 @@ export function ChangeManagementPage(){
         </div>
 
         {selProjectId&&!contextLoading&&(
-          <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3.5 text-xs text-gray-600">
+          <div className="mt-3 rounded-xl border border-[#18181b] bg-gray-50 p-3.5 text-xs text-gray-600">
             {context?.validation?(
               <>Latest validation: <span className="font-semibold text-navy-800">{context.validation.risk_score??'—'}/100 risk</span> · {context.validation.critical_count} critical · {context.validation.high_count} high · validated {timeAgo(context.validation.completed_at||context.validation.created_at)}. You'll be taken straight to the AI review once it's drafted.</>
             ):(

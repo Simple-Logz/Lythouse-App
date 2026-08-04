@@ -78,7 +78,7 @@ export const TONE = {
   red: { text: 'text-[#dc2626]', bg: 'bg-[#fde3e3]', border: 'border-[#f5a3a3]', dot: 'bg-[#dc2626]' },
   amber: { text: 'text-[#e07600]', bg: 'bg-[#fff0d9]', border: 'border-[#f9c777]', dot: 'bg-[#e07600]' },
   green: { text: 'text-[#12a150]', bg: 'bg-[#e3f7ea]', border: 'border-[#9adcb4]', dot: 'bg-[#12a150]' },
-  gray: { text: 'text-gray-500', bg: 'bg-gray-100', border: 'border-gray-200', dot: 'bg-gray-400' },
+  gray: { text: 'text-gray-500', bg: 'bg-gray-100', border: 'border-[#18181b]', dot: 'bg-gray-400' },
 };
 
 function projectStatus(project, validations, findings) {
@@ -418,7 +418,7 @@ export function ProjectDetail({ project, status: s, stale, approvals, onApprove,
             <p className="text-sm font-semibold text-navy-900 mb-2">Why it needs attention</p>
             <div className="space-y-2">
               {blockers.map((f) => (
-                <div key={f.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                <div key={f.id} className="rounded-xl border border-[#18181b] bg-white p-3">
                   <div className="flex items-center gap-2">
                     <StatusPill tone={f.severity === 'critical' ? 'red' : 'amber'}>{f.severity === 'critical' ? 'Blocker' : 'Review'}</StatusPill>
                     <span className="text-sm font-semibold text-navy-900 truncate">{f.title}</span>
@@ -459,7 +459,7 @@ export function ApprovalCard({ release, onApprove }) {
   const approvedRoles = new Set((release.approvals || []).map((a) => a.role));
   const allApproved = ROLES.every((r) => approvedRoles.has(r.id));
   return (
-    <div className={`rounded-2xl border p-3 ${allApproved ? 'border-[#9adcb4] bg-[#e3f7ea]' : 'border-gray-200 bg-white'}`}>
+    <div className={`rounded-2xl border p-3 ${allApproved ? 'border-[#9adcb4] bg-[#e3f7ea]' : 'border-[#18181b] bg-white'}`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-navy-900 truncate">{release.release_name}</span>
         <StatusPill tone={allApproved ? 'green' : release.status === 'rejected' ? 'red' : 'amber'}>{allApproved ? 'Approved' : release.status === 'rejected' ? 'Rejected' : 'Pending'}</StatusPill>
@@ -544,7 +544,7 @@ export function AccountScreen({ user, profile, signOut }) {
   return (
     <div className="px-4 py-4 space-y-4">
       <h1 className="text-lg font-bold text-navy-900">Account</h1>
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 flex items-center gap-3">
+      <div className="rounded-2xl border border-[#18181b] bg-white p-4 flex items-center gap-3">
         <div className="h-11 w-11 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center overflow-hidden">
           {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="h-11 w-11 object-cover" /> : (profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
         </div>
@@ -553,14 +553,14 @@ export function AccountScreen({ user, profile, signOut }) {
           <p className="text-xs text-gray-500 truncate">{user?.email || ''}</p>
         </div>
       </div>
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 flex items-start gap-3">
+      <div className="rounded-2xl border border-[#18181b] bg-white p-4 flex items-start gap-3">
         <Monitor size={18} className="text-brand-600 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-navy-900">Full app on desktop</p>
           <p className="text-xs text-gray-500 mt-0.5">File editing, auto-remediation pull requests, policy studio, integrations and detailed settings live in the desktop experience. This mobile app covers checking status, approvals and alerts.</p>
         </div>
       </div>
-      <button onClick={() => signOut()} className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-semibold text-[#dc2626] flex items-center justify-center gap-2 active:bg-gray-50"><LogOut size={15} />Sign out</button>
+      <button onClick={() => signOut()} className="w-full rounded-xl border border-[#18181b] bg-white py-3 text-sm font-semibold text-[#dc2626] flex items-center justify-center gap-2 active:bg-gray-50"><LogOut size={15} />Sign out</button>
     </div>
   );
 }

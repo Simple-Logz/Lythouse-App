@@ -126,7 +126,7 @@ export function ChaosEngineeringPage(){
         {SCENARIOS.map(s=><option key={s.id} value={s.id}>{s.label} ({s.risk} risk)</option>)}
       </select>
     </div>
-    {selected&&<div className="mb-4 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 text-xs text-gray-600">{scenario(selected).desc}</div>}
+    {selected&&<div className="mb-4 rounded-lg bg-gray-50 border border-[#18181b] px-3 py-2.5 text-xs text-gray-600">{scenario(selected).desc}</div>}
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">Duration (seconds)</label><input className="input" type="number" value={form.duration} onChange={e=>f('duration',e.target.value)}/></div>

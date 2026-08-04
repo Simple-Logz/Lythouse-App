@@ -100,7 +100,7 @@ return<div>
   </div>
 )}
 {!canManage&&wsId()&&(
-  <div className="mb-6 flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+  <div className="mb-6 flex items-start gap-3 rounded-xl border border-[#18181b] bg-gray-50 px-4 py-3">
     <AlertTriangle size={16} className="text-gray-400 shrink-0 mt-0.5"/>
     <div className="text-sm text-gray-600">You're viewing plans in read-only mode. Only workspace owners and admins can change billing.</div>
   </div>
@@ -124,7 +124,7 @@ return<div>
   return(
     <div key={id}
       onMouseEnter={()=>setHover(id)} onMouseLeave={()=>setHover(null)}
-      className={`relative flex flex-col rounded-2xl border p-6 transition-all duration-200 ${dark?'text-white -translate-y-1':`bg-white text-navy-900 ${isCurrent?'border-brand-400 ring-1 ring-brand-300':'border-gray-200'}`}`}
+      className={`relative flex flex-col rounded-2xl border p-6 transition-all duration-200 ${dark?'text-white -translate-y-1':`bg-white text-navy-900 ${isCurrent?'border-brand-400 ring-1 ring-brand-300':'border-[#18181b]'}`}`}
       style={dark?{background:'linear-gradient(165deg,#1c1433 0%,#0b0812 100%)',borderColor:'rgba(124,92,230,.55)',boxShadow:'0 30px 70px -28px rgba(124,92,230,.6)'}:undefined}>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl transition-colors"
@@ -149,7 +149,7 @@ return<div>
         hasSubscription&&canManage?(
           <button onClick={manageBilling} disabled={busy!==null} className={`mt-6 w-full rounded-xl border px-4 py-2.5 text-sm font-semibold ${dark?'border-white/25 text-white':'border-gray-300 text-navy-700 hover:bg-gray-50'}`}>Downgrade via billing</button>
         ):(
-          <button disabled className={`mt-6 w-full cursor-default rounded-xl border px-4 py-2.5 text-sm font-semibold ${dark?'border-white/20 text-white/70':'border-gray-200 text-gray-400'}`}>Free forever</button>
+          <button disabled className={`mt-6 w-full cursor-default rounded-xl border px-4 py-2.5 text-sm font-semibold ${dark?'border-white/20 text-white/70':'border-[#18181b] text-gray-400'}`}>Free forever</button>
         )
       ):(
         <button onClick={()=>choose(id)} disabled={!canManage||busy!==null} className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50" style={{background:'linear-gradient(120deg,#8b6ef2,#7c5ce6)',boxShadow:'0 10px 26px -10px rgba(124,92,230,.65)'}}>

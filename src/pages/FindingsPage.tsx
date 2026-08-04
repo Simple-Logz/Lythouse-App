@@ -47,7 +47,7 @@ export function FindingsPage(){
         {counts.critical>0&&<span className="chip bg-red-50 text-danger-600 border border-red-200">{counts.critical} Critical</span>}
         {counts.high>0&&<span className="chip bg-amber-50 text-amber-600 border border-amber-200">{counts.high} High</span>}
         {counts.medium>0&&<span className="chip bg-blue-50 text-blue-600 border border-blue-200">{counts.medium} Medium</span>}
-        <span className="chip bg-gray-100 text-gray-600 border border-gray-200">{open.length} open</span>
+        <span className="chip bg-gray-100 text-gray-600 border border-[#18181b]">{open.length} open</span>
       </div>}
     />
 
@@ -69,7 +69,7 @@ export function FindingsPage(){
     ):(
       <div className="card p-0 overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b border-gray-200">
+          <thead><tr className="border-b border-[#18181b]">
             <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">Severity</th>
             <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">Finding</th>
             <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">Category</th>

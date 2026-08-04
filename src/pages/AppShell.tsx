@@ -76,12 +76,18 @@ const TITLES: Record<string, string> = {
 const CSS = `
 :root{
   --lh-bg:#fbfaff;--lh-surface:#ffffff;--lh-surface2:#f4f2fb;--lh-sidebar:#faf9ff;
-  --lh-border:#e9e6f2;--lh-border2:#ded9ec;--lh-text:#15171a;--lh-text2:#5b616b;--lh-text3:#8a909a;
+  /* Bold ink-black borders in place of the previous pale lavender-grey
+     (#e9e6f2) — every component below already draws borders at 1px, so
+     this one token change is enough to darken card/input/sidebar borders
+     across the whole app without also making them thicker. */
+  --lh-border:#18181b;--lh-border2:#3f3f46;--lh-text:#15171a;--lh-text2:#5b616b;--lh-text3:#8a909a;
   --lh-accent:#7c5ce6;--lh-accent-weak:#ece8ff;--lh-accent-contrast:#ffffff;--lh-ring:rgba(124,92,230,.22);
 }
 :root[data-theme="dark"]{
   --lh-bg:#1b1826;--lh-surface:#232030;--lh-surface2:#2a2639;--lh-sidebar:#181523;
-  --lh-border:#383048;--lh-border2:#463d5a;--lh-text:#eeecf6;--lh-text2:#a9a5bb;--lh-text3:#746f88;
+  /* Pure black would be invisible against this dark background, so dark
+     mode gets a lighter (but still clearly "dark", not washed-out) grey. */
+  --lh-border:#52525b;--lh-border2:#71717a;--lh-text:#eeecf6;--lh-text2:#a9a5bb;--lh-text3:#746f88;
   --lh-accent:#a78bfa;--lh-accent-weak:rgba(167,139,250,.15);--lh-accent-contrast:#ffffff;--lh-ring:rgba(167,139,250,.30);
 }
 .lh-app{min-height:100vh;background:var(--lh-bg);color:var(--lh-text)}

@@ -206,7 +206,7 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
             <div className={`text-xl font-bold ${d.blockers ? BAD : d.warnings ? WARN : OK}`}>{d.blockers ? 'No' : d.warnings ? 'Not yet' : 'Yes'}</div>
             <p className="text-sm text-gray-600 mt-1">{d.blockers ? `${d.blockers} deployment blocker${d.blockers === 1 ? '' : 's'} remain. ${d.topBlockers[0] ? 'Most likely failure: ' + d.topBlockers[0].title + '.' : ''}` : d.warnings ? `No blockers, but ${d.warnings} warning${d.warnings === 1 ? '' : 's'} to review.` : 'All validation categories passed.'}</p>
           </div>
-          <div className="sm:border-l sm:border-gray-200 sm:pl-4">
+          <div className="sm:border-l sm:border-[#18181b] sm:pl-4">
             <div className="flex justify-between text-sm py-0.5"><span className="text-gray-500">Estimated rollback probability</span><span className={`font-bold ${d.rollbackProb <= 10 ? OK : d.rollbackProb <= 25 ? WARN : BAD}`}>{d.rollbackProb}%</span></div>
             <div className="flex justify-between text-sm py-0.5"><span className="text-gray-500">Overall readiness</span><span className={`font-bold ${scoreCls(d.overall)}`}>{d.overall}%</span></div>
             <div className="text-xs text-gray-500 mt-1">{d.blockers ? 'Recommendation: resolve blockers before deployment.' : 'Recommendation: proceed to governance sign-off.'}</div>
@@ -221,7 +221,7 @@ export function ValidationReport({ project, scanHistory = [], onRemediate, onApp
         <div className="flex flex-wrap items-center gap-2">
           {d.sim.map((s, i, arr) => (
             <div key={i} className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${s.s === 'fail' ? 'border-[#f5a3a3] bg-[#fde3e3] text-[#d61f1f]' : s.s === 'warn' ? 'border-[#f9c777] bg-[#fff0d9] text-[#e07600]' : 'border-gray-200 bg-white text-navy-700'}`}>{SIM[s.s]}{s.k}</span>
+              <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${s.s === 'fail' ? 'border-[#f5a3a3] bg-[#fde3e3] text-[#d61f1f]' : s.s === 'warn' ? 'border-[#f9c777] bg-[#fff0d9] text-[#e07600]' : 'border-[#18181b] bg-white text-navy-700'}`}>{SIM[s.s]}{s.k}</span>
               {i < arr.length - 1 && <ArrowRight size={12} className="text-gray-300" />}
             </div>
           ))}
