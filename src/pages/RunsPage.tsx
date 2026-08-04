@@ -5,6 +5,7 @@
 // commit, trigger) comes straight off the `validations` row; nothing here
 // is invented or simulated.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase, type Validation } from '../lib/supabase'
 import { PageHeader, Spinner, fmtDuration } from '../lib/ui'
 import { Link } from '../lib/router'
@@ -190,7 +191,15 @@ function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: strin
     onApply(from2.toISOString(), to2.toISOString())
   }
 
-  return (
+  // Rendered via a portal straight onto document.body — not just fixed
+  // positioning. AppShell wraps all page content in `.lh-shell-body`, which
+  // sets `position:relative;z-index:1`, creating its own stacking context.
+  // Inside that context no z-index (even 62) can ever outrank a sibling
+  // like the floating Ask AI button (z-index:60) that lives outside it —
+  // the whole `.lh-shell-body` subtree is capped at z-index:1 from the
+  // browser's perspective. Portaling out of that subtree entirely is what
+  // actually fixes it, not raising the number further.
+  return createPortal(
     <>
       <div className="rn-cal-ov" onClick={onClose} />
       <div
@@ -226,7 +235,8 @@ function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: strin
           <button className="app" disabled={!pendingFrom} onClick={apply}>Apply range</button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
 // 'off' used to reuse the same pale grey as the unselected-chip state, which
