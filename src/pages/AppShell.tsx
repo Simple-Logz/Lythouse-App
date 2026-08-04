@@ -26,6 +26,7 @@ const NAV_DOCS = { label: 'Documentation', to: '/docs', icon: BookOpen }
 const SECTIONS = [
   { key: 'platform', label: 'Platform', icon: Boxes, items: [
     { label: 'Projects', to: '/projects', icon: FolderGit2 },
+    { label: 'Runs', to: '/runs', icon: ListFilter },
     { label: 'Workspaces', to: '/workspaces', icon: Building2 },
     { label: 'Stacks', to: '/stacks', icon: Layers },
   ] },
@@ -35,7 +36,6 @@ const SECTIONS = [
     { label: 'Simulator', to: '/simulator', icon: Zap },
   ] },
   { key: 'ops', label: 'Operations', icon: BarChart3, items: [
-    { label: 'Runs', to: '/runs', icon: ListFilter },
     { label: 'Analytics', to: '/analytics', icon: Activity },
     { label: 'Findings', to: '/findings', icon: Bug },
     { label: 'Executive View', to: '/executive', icon: BarChart3 },

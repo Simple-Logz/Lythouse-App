@@ -41,22 +41,30 @@ const GROUP_OPTS = [
 
 const CSS = `
 .rn-wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-.rn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;padding:12px 14px}
-.rn-lbl{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--lh-text3);display:flex;align-items:center;gap:5px;margin-right:-2px}
+/* Bold, high-contrast ink-black border in place of the previous pale
+   lavender-grey — reads as a defined, professional toolbar rather than a
+   washed-out one. #18181b matches the app's primary-button ink elsewhere. */
+.rn-bar{display:flex;flex-wrap:wrap;align-items:center;gap:11px;background:var(--lh-surface);border:1.5px solid #18181b;border-radius:14px;padding:13px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+:root[data-theme="dark"] .rn-bar{border-color:#3f3f46}
+.rn-lbl{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--lh-text);display:flex;align-items:center;gap:5px;margin-right:-2px}
+.rn-lbl svg{color:var(--lh-text2)}
 .rn-chips{display:flex;gap:6px;flex-wrap:wrap}
-.rn-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:20px;border:1px solid var(--lh-border);background:var(--lh-surface2);color:var(--lh-text3);cursor:pointer;transition:.12s;font-family:inherit}
+.rn-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;border:1.5px solid #27272a;background:var(--lh-surface);color:var(--lh-text2);cursor:pointer;transition:.12s;font-family:inherit}
+:root[data-theme="dark"] .rn-chip{border-color:#52525b}
 .rn-chip .cd{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
-.rn-chip.on{color:var(--c);border-color:color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 12%,transparent)}
+.rn-chip.on{color:var(--c);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
 .rn-chip.on .cd{opacity:1}
 .rn-sel{display:flex;align-items:center;gap:6px;position:relative}
-.rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:500;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
-.rn-sel svg{position:absolute;right:8px;pointer-events:none;color:var(--lh-text3)}
+.rn-sel select{appearance:none;-webkit-appearance:none;font:inherit;font-size:13px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1.5px solid #27272a;border-radius:9px;padding:7px 28px 7px 11px;cursor:pointer;max-width:200px}
+:root[data-theme="dark"] .rn-sel select{border-color:#52525b}
+.rn-sel svg{position:absolute;right:8px;pointer-events:none;color:var(--lh-text2)}
 .rn-custom{display:flex;align-items:center;gap:6px}
-.rn-custom input{font:inherit;font-size:12.5px;color:var(--lh-text);background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:8px;padding:5px 8px}
+.rn-custom input{font:inherit;font-size:12.5px;font-weight:600;color:var(--lh-text);background:var(--lh-surface);border:1.5px solid #27272a;border-radius:8px;padding:5px 8px}
+:root[data-theme="dark"] .rn-custom input{border-color:#52525b}
 .rn-spacer{flex:1}
-.rn-clear{font-size:12.5px;font-weight:600;color:var(--lh-text2);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
-.rn-clear:hover{color:var(--lh-text)}
-.rn-count{font-size:12.5px;color:var(--lh-text3)}
+.rn-clear{font-size:12.5px;font-weight:700;color:var(--lh-text);background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
+.rn-clear:hover{color:var(--lh-accent)}
+.rn-count{font-size:12.5px;font-weight:600;color:var(--lh-text2)}
 .rn-card{background:var(--lh-surface);border:1px solid var(--lh-border);border-radius:14px;overflow:hidden}
 .rn-grp-h{padding:10px 18px;background:var(--lh-surface2);border-bottom:1px solid var(--lh-border);font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--lh-text3);display:flex;align-items:center;justify-content:space-between}
 .rn-row{display:grid;grid-template-columns:1.7fr .9fr 1fr .9fr .8fr .9fr;gap:12px;align-items:center;padding:12px 18px;border-top:1px solid var(--lh-border);text-decoration:none;transition:.12s}
@@ -81,6 +89,13 @@ const CSS = `
 
 function toneFor(status: string) {
   return status === 'completed' ? 'ok' : status === 'running' ? 'warn' : status === 'failed' ? 'bad' : 'off'
+}
+// 'off' used to reuse the same pale grey as the unselected-chip state, which
+// made the Pending chip's selected/unselected look nearly identical. Bold
+// near-black instead — distinct, and matches the toolbar's new ink-black
+// border treatment.
+function colorForTone(tone: string) {
+  return tone === 'ok' ? 'var(--lh-accent)' : tone === 'warn' ? '#d08a1a' : tone === 'bad' ? '#e5484d' : 'var(--lh-text)'
 }
 
 export function RunsPage() {
@@ -179,7 +194,7 @@ export function RunsPage() {
         <span className="rn-lbl"><ListFilter size={12} /> Status</span>
         <div className="rn-chips">
           {STATUS_OPTS.map((s) => (
-            <button key={s.id} className={`rn-chip ${statusOn.has(s.id) ? 'on' : ''}`} style={{ '--c': s.tone === 'ok' ? 'var(--lh-accent)' : s.tone === 'warn' ? '#d08a1a' : s.tone === 'bad' ? '#e5484d' : 'var(--lh-text3)' } as any} onClick={() => toggleStatus(s.id)}>
+            <button key={s.id} className={`rn-chip ${statusOn.has(s.id) ? 'on' : ''}`} style={{ '--c': colorForTone(s.tone) } as any} onClick={() => toggleStatus(s.id)}>
               <span className="cd" />{s.label}
             </button>
           ))}
@@ -258,7 +273,7 @@ export function RunsPage() {
                   <span className="rn-trig" style={{ fontFamily: "'JetBrains Mono',monospace" }}>
                     {r.commit_sha ? <><GitCommitHorizontal size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: -2 }} />{r.commit_sha.slice(0, 7)}</> : '—'}
                   </span>
-                  <span className={`rn-pill ${toneFor(r.status)}`} style={{ '--c': toneFor(r.status) === 'ok' ? 'var(--lh-accent)' : toneFor(r.status) === 'warn' ? '#d08a1a' : toneFor(r.status) === 'bad' ? '#e5484d' : 'var(--lh-text3)' } as any}>
+                  <span className={`rn-pill ${toneFor(r.status)}`} style={{ '--c': colorForTone(toneFor(r.status)) } as any}>
                     <span className="pd" />{STATUS_OPTS.find((s) => s.id === r.status)?.label ?? r.status}
                   </span>
                   <span className="rn-dur">{r.status === 'running' ? <RefreshCw size={12} className="animate-spin" style={{ display: 'inline' }} /> : fmtDuration(r.duration_ms)}</span>
