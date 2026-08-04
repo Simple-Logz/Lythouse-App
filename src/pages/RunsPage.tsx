@@ -79,6 +79,12 @@ const CSS = `
 .rn-cal-pop{position:fixed;z-index:62;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;box-shadow:0 22px 54px -18px rgba(4,8,14,.35);padding:14px;width:296px;transition:opacity .1s ease-out}
 .rn-cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .rn-cal-hd .mo{font-size:13.5px;font-weight:700;color:var(--lh-text)}
+.rn-cal-hd .mo.yr-trig{background:none;border:none;cursor:pointer;border-radius:7px;padding:3px 8px;font-family:inherit}
+.rn-cal-hd .mo.yr-trig:hover{background:var(--lh-surface2)}
+.rn-cal-yr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px 0 2px}
+.rn-cal-yr{font-size:13px;font-weight:600;color:var(--lh-text);background:none;border:none;border-radius:8px;padding:11px 0;cursor:pointer;font-family:inherit}
+.rn-cal-yr:hover{background:var(--lh-surface2)}
+.rn-cal-yr.sel{background:var(--lh-accent);color:var(--lh-accent-contrast)}
 .rn-cal-hd button{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:none;background:none;color:var(--lh-text2);cursor:pointer}
 .rn-cal-hd button:hover{background:var(--lh-surface2);color:var(--lh-text)}
 .rn-cal-wd{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
@@ -150,6 +156,10 @@ function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: strin
   const [pendingTo, setPendingTo] = useState<Date | null>(initTo)
   const [fromTime, setFromTime] = useState(() => from ? new Date(from).toTimeString().slice(0, 5) : '00:00')
   const [toTime, setToTime] = useState(() => to ? new Date(to).toTimeString().slice(0, 5) : '23:59')
+  // Clicking the "August 2026" label jumps into a 12-year grid instead of
+  // requiring N clicks on the single back arrow to reach an older year.
+  const [yearPick, setYearPick] = useState(false)
+  const [yearStart, setYearStart] = useState(() => (initFrom || new Date()).getFullYear() - 5)
   const popRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number; visible: boolean }>({ top: -9999, left: -9999, visible: false })
 
@@ -174,6 +184,7 @@ function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: strin
   const totalDays = new Date(year, month + 1, 0).getDate()
   const startPad = new Date(year, month, 1).getDay()
   const cells: (number | null)[] = [...Array(startPad).fill(null), ...Array.from({ length: totalDays }, (_, i) => i + 1)]
+  const yearCells = Array.from({ length: 12 }, (_, i) => yearStart + i)
 
   const pickDay = (d: number | null) => {
     if (!d) return
@@ -181,6 +192,9 @@ function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: strin
     if (!pendingFrom || pendingTo || picked < pendingFrom) { setPendingFrom(picked); setPendingTo(null) }
     else { setPendingTo(picked) }
   }
+
+  const openYearPick = () => { setYearStart(year - 5); setYearPick(true) }
+  const pickYear = (y: number) => { setViewMonth(new Date(y, month, 1)); setYearPick(false) }
 
   const apply = () => {
     if (!pendingFrom) return
@@ -209,23 +223,39 @@ function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: strin
         onClick={(e) => e.stopPropagation()}
       >
         <div className="rn-cal-hd">
-          <button onClick={() => setViewMonth(new Date(year, month - 1, 1))}><ChevronLeft size={15} /></button>
-          <span className="mo">{viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-          <button onClick={() => setViewMonth(new Date(year, month + 1, 1))}><ChevronRight size={15} /></button>
+          <button onClick={() => yearPick ? setYearStart(yearStart - 12) : setViewMonth(new Date(year, month - 1, 1))}><ChevronLeft size={15} /></button>
+          {yearPick ? (
+            <span className="mo">{yearStart} – {yearStart + 11}</span>
+          ) : (
+            <button type="button" className="mo yr-trig" onClick={openYearPick}>
+              {viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+            </button>
+          )}
+          <button onClick={() => yearPick ? setYearStart(yearStart + 12) : setViewMonth(new Date(year, month + 1, 1))}><ChevronRight size={15} /></button>
         </div>
-        <div className="rn-cal-wd">{WEEKDAYS.map((w) => <span key={w}>{w}</span>)}</div>
-        <div className="rn-cal-grid">
-          {cells.map((d, i) => {
-            if (!d) return <button key={i} className="rn-cal-day empty" disabled />
-            const cellDate = new Date(year, month, d)
-            const isStart = sameDay(cellDate, pendingFrom)
-            const isEnd = sameDay(cellDate, pendingTo)
-            const inRange = !!pendingFrom && !!pendingTo && cellDate > pendingFrom && cellDate < pendingTo
-            return (
-              <button key={i} className={`rn-cal-day ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''} ${inRange ? 'inrange' : ''}`} onClick={() => pickDay(d)}>{d}</button>
-            )
-          })}
-        </div>
+        {yearPick ? (
+          <div className="rn-cal-yr-grid">
+            {yearCells.map((y) => (
+              <button key={y} className={`rn-cal-yr ${y === year ? 'sel' : ''}`} onClick={() => pickYear(y)}>{y}</button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="rn-cal-wd">{WEEKDAYS.map((w) => <span key={w}>{w}</span>)}</div>
+            <div className="rn-cal-grid">
+              {cells.map((d, i) => {
+                if (!d) return <button key={i} className="rn-cal-day empty" disabled />
+                const cellDate = new Date(year, month, d)
+                const isStart = sameDay(cellDate, pendingFrom)
+                const isEnd = sameDay(cellDate, pendingTo)
+                const inRange = !!pendingFrom && !!pendingTo && cellDate > pendingFrom && cellDate < pendingTo
+                return (
+                  <button key={i} className={`rn-cal-day ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''} ${inRange ? 'inrange' : ''}`} onClick={() => pickDay(d)}>{d}</button>
+                )
+              })}
+            </div>
+          </>
+        )}
         <div className="rn-cal-times">
           <div className="fld"><label>From time</label><input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} /></div>
           <div className="fld"><label>To time</label><input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} /></div>
