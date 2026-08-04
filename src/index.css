@@ -15,15 +15,17 @@
   h1,h2,h3{font-family:'Inter',system-ui,-apple-system,sans-serif;font-weight:800;letter-spacing:-.025em;}
 }
 @layer components{
-/* Card/input/secondary-button borders used to be a pale gray-200/80 (close
-   to invisible) — switched to the same ink-black used for primary buttons
-   just below (#18181b), at the same 1px weight, so every card and field
-   across the older Tailwind-styled pages reads as clearly bordered rather
-   than dull/washed-out. */
-.card{@apply rounded-2xl border bg-white p-5 shadow-soft;border-color:#18181b;}
+/* Card/input/secondary-button borders: pale gray-200/80 (too invisible) →
+   near-black #18181b (too heavy/distracting, especially once the sub-pixel
+   width trick didn't reliably render thinner) → settled on a mid-dark
+   charcoal. Still clearly a defined border, not washed-out, just not stark
+   black. btn-primary's solid #18181b fill (a couple lines down) is
+   deliberately untouched — that's the brand's ink-black button, not a
+   border, and was never part of this complaint. */
+.card{@apply rounded-2xl border bg-white p-5 shadow-soft;border-color:#71717a;}
 .btn-primary{@apply inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50;background-color:#18181b;box-shadow:0 1px 2px rgba(0,0,0,.16),0 6px 16px -8px rgba(0,0,0,.4);}
 .btn-primary:hover{background-color:#000000;}
-.btn-secondary{@apply inline-flex items-center gap-1.5 rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-navy-700 transition-all hover:bg-gray-50 active:scale-[0.98] shadow-sm;border-color:#18181b;}
+.btn-secondary{@apply inline-flex items-center gap-1.5 rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-navy-700 transition-all hover:bg-gray-50 active:scale-[0.98] shadow-sm;border-color:#71717a;}
 /* The one true "this is the AI product acting" button — same gradient as the
    landing page's primary CTA, so the brand identity carries from the front
    door into the actual product instead of stopping at flat black/gray. Use
@@ -32,7 +34,7 @@
 .btn-brand{@apply inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60;background:linear-gradient(120deg,#8b6ef2,#7c5ce6);box-shadow:0 6px 18px -8px rgba(124,92,230,.55);}
 .btn-brand:hover{filter:brightness(1.07);box-shadow:0 8px 22px -8px rgba(124,92,230,.65);}
 .btn-ghost{@apply inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-navy-600 transition-all hover:bg-gray-100;}
-.input{@apply w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-navy-900 placeholder:text-gray-400 transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100;border-color:#18181b;}
+.input{@apply w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-navy-900 placeholder:text-gray-400 transition-colors focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100;border-color:#71717a;}
 .label{@apply mb-1.5 block text-sm font-medium text-navy-800;}
 .chip{@apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;}
 .tab-active{@apply border-brand-500 text-brand-700;}
@@ -152,7 +154,7 @@ button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipu
 .dark .tab-active { border-color: var(--brand); color: var(--brand); }
 
 /* Borders and backgrounds */
-.dark .border-gray-100, .dark .border-[#18181b] { border-color: var(--border); }
+.dark .border-gray-100, .dark .border-[#71717a] { border-color: var(--border); }
 .dark .bg-gray-50, .dark .bg-gray-50\/50 { background-color: var(--bg-subtle); }
 .dark .bg-white { background-color: var(--bg-surface); }
 .dark .divide-gray-100 > * + * { border-color: var(--border); }

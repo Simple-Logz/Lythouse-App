@@ -110,7 +110,7 @@ export function LegalPage({ doc }) {
     : <p className="mt-1.5 text-navy-700 text-[15px] leading-relaxed">{p}</p>;
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-[#18181b]">
+      <header className="bg-white border-b border-[#71717a]">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
           <button onClick={() => navigate('/')} title="Home"><Logo size={26} /></button>
           <button onClick={() => navigate('/')} className="text-sm text-gray-500 hover:text-navy-900 inline-flex items-center gap-1.5"><ArrowLeft size={14} />Home</button>
@@ -133,7 +133,7 @@ export function LegalPage({ doc }) {
               </section>
             ))}
           </div>
-          <div className="mt-10 flex flex-wrap gap-x-4 gap-y-2 border-t border-[#18181b] pt-6 text-sm">
+          <div className="mt-10 flex flex-wrap gap-x-4 gap-y-2 border-t border-[#71717a] pt-6 text-sm">
             {LEGAL_ROUTES.map((r) => (
               <button key={r} onClick={() => navigate('/' + r)} className={`hover:underline ${r === doc ? 'text-navy-900 font-semibold' : 'text-brand-600'}`}>{DOCS[r].title}</button>
             ))}

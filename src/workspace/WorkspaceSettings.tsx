@@ -92,11 +92,11 @@ export function WorkspaceSettings({ project, onClose, onSaved }) {
           <div className="pb-2">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Repository</p>
             <Row icon={<GitBranch size={14} className="text-brand-600" />} title="Branch assessed" desc="The branch LytHouse reads to build the release decision.">
-              <input value={branch} onChange={(e) => setBranch(e.target.value)} className="w-32 rounded-lg border border-[#18181b] px-2.5 py-1.5 text-sm focus:border-brand-400 focus:outline-none" placeholder="main" />
+              <input value={branch} onChange={(e) => setBranch(e.target.value)} className="w-32 rounded-lg border border-[#71717a] px-2.5 py-1.5 text-sm focus:border-brand-400 focus:outline-none" placeholder="main" />
             </Row>
             <Row icon={<KeyRound size={14} className="text-brand-600" />} title="GitHub access token" desc="Raises the API rate limit and enables private repositories. Stored with this project only.">
               <div className="flex items-center gap-1.5">
-                <input value={token} onChange={(e) => setToken(e.target.value)} type={showToken ? 'text' : 'password'} className="w-36 rounded-lg border border-[#18181b] px-2.5 py-1.5 text-xs font-mono focus:border-brand-400 focus:outline-none" placeholder="ghp_…" />
+                <input value={token} onChange={(e) => setToken(e.target.value)} type={showToken ? 'text' : 'password'} className="w-36 rounded-lg border border-[#71717a] px-2.5 py-1.5 text-xs font-mono focus:border-brand-400 focus:outline-none" placeholder="ghp_…" />
                 <button onClick={() => setShowToken((v) => !v)} className="text-[11px] text-brand-600 hover:underline">{showToken ? 'Hide' : 'Show'}</button>
               </div>
             </Row>
@@ -110,7 +110,7 @@ export function WorkspaceSettings({ project, onClose, onSaved }) {
             </Row>
             <Row icon={<Bell size={14} className="text-brand-600" />} title="Notify on new changes" desc={connectedProviders.length ? 'Route change-window alerts to a connected tool.' : 'Connect a tool in Integrations to enable alerts.'}>
               {connectedProviders.length ? (
-                <select value={s.notifyChannel} onChange={(e) => set({ notifyChannel: e.target.value })} className="rounded-lg border border-[#18181b] px-2 py-1.5 text-sm focus:border-brand-400 focus:outline-none">
+                <select value={s.notifyChannel} onChange={(e) => set({ notifyChannel: e.target.value })} className="rounded-lg border border-[#71717a] px-2 py-1.5 text-sm focus:border-brand-400 focus:outline-none">
                   <option value="">Off</option>
                   {connectedProviders.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
@@ -124,7 +124,7 @@ export function WorkspaceSettings({ project, onClose, onSaved }) {
           <div className="py-2">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Deployment policy</p>
             <Row icon={<ShieldCheck size={14} className="text-brand-600" />} title="Minimum readiness to deploy" desc="Block the Deploy action when release readiness is below this threshold.">
-              <select value={s.deployGateReadiness} onChange={(e) => set({ deployGateReadiness: Number(e.target.value) })} className="rounded-lg border border-[#18181b] px-2 py-1.5 text-sm focus:border-brand-400 focus:outline-none">
+              <select value={s.deployGateReadiness} onChange={(e) => set({ deployGateReadiness: Number(e.target.value) })} className="rounded-lg border border-[#71717a] px-2 py-1.5 text-sm focus:border-brand-400 focus:outline-none">
                 <option value={0}>Off</option>
                 <option value={70}>70%</option>
                 <option value={80}>80%</option>

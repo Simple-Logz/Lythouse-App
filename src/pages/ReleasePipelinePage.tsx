@@ -16,7 +16,7 @@ import {
 
 function Node({ icon: Icon, title, sub, tone = 'default' }) {
   const tones = {
-    default: 'border-[#18181b] bg-white',
+    default: 'border-[#71717a] bg-white',
     trigger: 'border-brand-200 bg-brand-50/50',
     decision: 'border-brand-300 bg-brand-50/70',
   };
@@ -106,7 +106,7 @@ export function ReleasePipelinePage() {
         <Conn label="then validate" />
 
         {/* Validate group — parallel checks */}
-        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-[#18181b] bg-white p-4 shadow-soft">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-[#71717a] bg-white p-4 shadow-soft">
           <div className="mb-3 flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><Radar size={18} /></span>
             <div>
@@ -172,7 +172,7 @@ export function ReleasePipelinePage() {
       {loading ? (
         <div className="flex items-center gap-2 py-10 justify-center text-sm text-gray-400"><Loader2 size={16} className="animate-spin" /> Loading releases…</div>
       ) : validations.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#18181b] py-14 text-center">
+        <div className="rounded-2xl border border-dashed border-[#71717a] py-14 text-center">
           <Rocket size={22} className="mx-auto mb-3 text-gray-300" />
           <p className="text-sm font-medium text-navy-900">No releases yet</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-gray-400">Run a validation on one of your projects and it will show up here, gated against your policy thresholds.</p>
@@ -188,7 +188,7 @@ export function ReleasePipelinePage() {
               <Link
                 key={v.id}
                 to={`/projects/${v.project_id}`}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-3.5 shadow-sm transition-colors hover:border-[#18181b]"
+                className="flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-3.5 shadow-sm transition-colors hover:border-[#71717a]"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${

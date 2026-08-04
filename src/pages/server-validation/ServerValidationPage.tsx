@@ -23,14 +23,14 @@ const ENV_TYPE_CLS: Record<string, string> = {
   production: 'bg-red-50 text-danger-600 border border-red-200',
   staging: 'bg-amber-50 text-amber-600 border border-amber-200',
   development: 'bg-blue-50 text-blue-600 border border-blue-200',
-  test: 'bg-gray-100 text-gray-600 border border-[#18181b]',
+  test: 'bg-gray-100 text-gray-600 border border-[#71717a]',
 };
 
 const ENV_STATUS_CLS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600 border border-[#18181b]',
+  draft: 'bg-gray-100 text-gray-600 border border-[#71717a]',
   ready: 'bg-brand-50 text-brand-700 border border-brand-200',
   validating: 'bg-blue-50 text-blue-600 border border-blue-200',
-  archived: 'bg-gray-100 text-gray-400 border border-[#18181b]',
+  archived: 'bg-gray-100 text-gray-400 border border-[#71717a]',
 };
 
 function VerdictChip({ verdict }: { verdict: string | null }) {
@@ -39,7 +39,7 @@ function VerdictChip({ verdict }: { verdict: string | null }) {
     approved: 'bg-brand-50 text-brand-700 border border-brand-200',
     conditionally_approved: 'bg-blue-50 text-blue-600 border border-blue-200',
     rejected: 'bg-red-50 text-danger-600 border border-red-200',
-    inconclusive: 'bg-gray-100 text-gray-500 border border-[#18181b]',
+    inconclusive: 'bg-gray-100 text-gray-500 border border-[#71717a]',
   };
   const label = verdict.replace(/_/g, ' ');
   return <span className={`chip capitalize ${m[verdict] ?? m.inconclusive}`}>{label}</span>;
@@ -208,7 +208,7 @@ export function ServerValidationPage({ planId }: { planId: PlanId }) {
                 <span className={`chip capitalize ${ENV_TYPE_CLS[env.environment_type] ?? ENV_TYPE_CLS.production}`}>
                   {env.environment_type}
                 </span>
-                {env.owner && <span className="chip bg-gray-50 text-gray-500 border border-[#18181b]">{env.owner}</span>}
+                {env.owner && <span className="chip bg-gray-50 text-gray-500 border border-[#71717a]">{env.owner}</span>}
               </div>
 
               {env.primary_purpose && (

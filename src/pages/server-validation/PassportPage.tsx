@@ -127,7 +127,7 @@ export function PassportPage({ runId }: { runId?: string }) {
                 <h3 className="mt-3 text-sm font-semibold text-navy-900 group-hover:text-brand-700">{(pp as any).env_name ?? 'Unknown environment'}</h3>
                 <p className="mt-1 text-xs text-gray-400">Blueprint v{pp.blueprint_version ?? '—'}</p>
                 <div className="mt-3 flex items-center gap-2">
-                  {pp.verdict && <span className="chip capitalize bg-gray-50 text-gray-600 border border-[#18181b]">{pp.verdict.replace(/_/g, ' ')}</span>}
+                  {pp.verdict && <span className="chip capitalize bg-gray-50 text-gray-600 border border-[#71717a]">{pp.verdict.replace(/_/g, ' ')}</span>}
                   {pp.confidence_score !== null && <span className="chip bg-blue-50 text-blue-600 border border-blue-200">{pp.confidence_score}% conf</span>}
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">

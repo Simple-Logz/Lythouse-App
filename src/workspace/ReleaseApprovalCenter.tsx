@@ -138,7 +138,7 @@ export function ReleaseApprovalCenter({projectId,workspaceId,validationId,latest
         const isRejected=release.status==='rejected';
 
         return(
-          <div key={release.id} className={`card p-0 overflow-hidden border-2 ${allApproved?'border-green-300':isRejected?'border-red-300':'border-[#18181b]'}`}>
+          <div key={release.id} className={`card p-0 overflow-hidden border-2 ${allApproved?'border-green-300':isRejected?'border-red-300':'border-[#71717a]'}`}>
             {/* Release header */}
             <div className={`flex items-center gap-3 px-5 py-4 cursor-pointer ${allApproved?'bg-green-50':isRejected?'bg-red-50':'bg-white'}`} onClick={()=>setExpanded(isOpen?null:release.id)}>
               {isOpen?<ChevronDown size={16} className="text-gray-400"/>:<ChevronRight size={16} className="text-gray-400"/>}
@@ -195,7 +195,7 @@ export function ReleaseApprovalCenter({projectId,workspaceId,validationId,latest
                     const isCommentingThis=commenting?.id===release.id&&commenting?.role===role.id;
 
                     return(
-                      <div key={role.id} className={`rounded-xl border ${isApproved?'border-green-200 bg-green-50':'border-[#18181b] bg-white'} p-4`}>
+                      <div key={role.id} className={`rounded-xl border ${isApproved?'border-green-200 bg-green-50':'border-[#71717a] bg-white'} p-4`}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <div className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 ${isApproved?'bg-green-100 border-green-300 text-green-600':`${role.bg} ${role.border} ${role.color}`}`}>
@@ -234,7 +234,7 @@ export function ReleaseApprovalCenter({projectId,workspaceId,validationId,latest
 
                 {/* Audit log */}
                 {(release.approvals||[]).length>0&&(
-                  <div className="rounded-xl border border-[#18181b] bg-white p-4">
+                  <div className="rounded-xl border border-[#71717a] bg-white p-4">
                     <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-3 flex items-center gap-1.5"><FileText size={12}/>Audit Trail</h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs text-gray-500">

@@ -76,11 +76,12 @@ const TITLES: Record<string, string> = {
 const CSS = `
 :root{
   --lh-bg:#fbfaff;--lh-surface:#ffffff;--lh-surface2:#f4f2fb;--lh-sidebar:#faf9ff;
-  /* Bold ink-black borders in place of the previous pale lavender-grey
-     (#e9e6f2) — every component below already draws borders at 1px, so
-     this one token change is enough to darken card/input/sidebar borders
-     across the whole app without also making them thicker. */
-  --lh-border:#18181b;--lh-border2:#3f3f46;--lh-text:#15171a;--lh-text2:#5b616b;--lh-text3:#8a909a;
+  /* Went to near-black (#18181b) in an earlier pass; even at 0.5px that
+     read as too heavy/distracting (sub-pixel widths don't reliably render
+     thinner on standard-DPI screens — most browsers round back up to a
+     full device pixel). Backed off to a mid-dark charcoal: still clearly
+     defined against the pale lavender background, not stark black. */
+  --lh-border:#71717a;--lh-border2:#52525b;--lh-text:#15171a;--lh-text2:#5b616b;--lh-text3:#8a909a;
   --lh-accent:#7c5ce6;--lh-accent-weak:#ece8ff;--lh-accent-contrast:#ffffff;--lh-ring:rgba(124,92,230,.22);
 }
 :root[data-theme="dark"]{

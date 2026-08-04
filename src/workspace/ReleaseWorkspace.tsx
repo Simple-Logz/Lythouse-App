@@ -41,7 +41,7 @@ function toBiz(sev:string){
   if(sev==='critical')return{label:'Deployment Blocker',color:'text-red-700',bg:'bg-red-50',border:'border-red-300',dot:'bg-red-500'};
   if(sev==='high')return{label:'Needs Attention',color:'text-amber-700',bg:'bg-amber-50',border:'border-amber-300',dot:'bg-amber-500'};
   if(sev==='medium')return{label:'Recommendation',color:'text-blue-700',bg:'bg-blue-50',border:'border-blue-300',dot:'bg-blue-500'};
-  return{label:'Informational',color:'text-gray-600',bg:'bg-gray-50',border:'border-[#18181b]',dot:'bg-gray-400'};
+  return{label:'Informational',color:'text-gray-600',bg:'bg-gray-50',border:'border-[#71717a]',dot:'bg-gray-400'};
 }
 
 export function ReleaseWorkspace({projectId,project}:{projectId:string;project:any}){
@@ -254,7 +254,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
           );
         })}
 
-        <div className="mt-auto pt-3 lg:pt-4 border-t border-[#18181b]">
+        <div className="mt-auto pt-3 lg:pt-4 border-t border-[#71717a]">
           <button className="flex flex-col lg:flex-row items-center lg:gap-2 gap-0.5 px-1 lg:px-3 py-2 rounded-xl text-xs w-full text-gray-500 hover:bg-white/60" onClick={()=>setSettingsOpen(true)}>
             <Settings size={16}/><span className="text-[9px] lg:text-xs leading-none">Settings</span>
           </button>
@@ -323,7 +323,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               :readiness!==null&&readiness>=80?{text:'READY TO DEPLOY',tone:'green'}
               :{text:'REVIEW REQUIRED',tone:'amber'};
             const toneCls={red:'text-red-600',amber:'text-amber-600',green:'text-green-600',gray:'text-gray-400'}[verdict.tone];
-            const toneBg={red:'bg-red-50 border-red-200',amber:'bg-amber-50 border-amber-200',green:'bg-green-50 border-green-200',gray:'bg-gray-50 border-[#18181b]'}[verdict.tone];
+            const toneBg={red:'bg-red-50 border-red-200',amber:'bg-amber-50 border-amber-200',green:'bg-green-50 border-green-200',gray:'bg-gray-50 border-[#71717a]'}[verdict.tone];
             const topReason=critical[0]?.title||high[0]?.title||latest?.summary||null;
             const estFixMin=blockers*8+needsAttention*4+recommendations*2;
             const nextStep=validations.length===0?{label:'Run Validation',go:()=>{runValidation();setStage('validation');}}
@@ -354,7 +354,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
               :cleanReady?{text:'READY FOR APPROVAL',tone:'green'}
               :{text:'REVIEW REQUIRED',tone:'amber'};
             const dTone={red:'text-red-600',amber:'text-amber-600',green:'text-green-600',gray:'text-gray-400'}[decision.tone];
-            const dBg={red:'bg-red-50 border-red-200',amber:'bg-amber-50 border-amber-200',green:'bg-green-50 border-green-200',gray:'bg-gray-50 border-[#18181b]'}[decision.tone];
+            const dBg={red:'bg-red-50 border-red-200',amber:'bg-amber-50 border-amber-200',green:'bg-green-50 border-green-200',gray:'bg-gray-50 border-[#71717a]'}[decision.tone];
             const checklist=[
               {label:'Validation Passed',ok:validations.length>0&&latest?.status==='completed'&&!isBlocked},
               {label:'Infrastructure Healthy',ok:infraArea?.count===0},
@@ -462,7 +462,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                     </ul>
 
                     {attention.length>0&&(
-                      <div className="mt-4 rounded-xl bg-white/70 border border-[#18181b] px-4 py-3">
+                      <div className="mt-4 rounded-xl bg-white/70 border border-[#71717a] px-4 py-3">
                         <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">{attention.length===1?'One issue remains':`${attention.length} issues remain`}</p>
                         <p className="text-sm font-semibold text-navy-900">{attention[0].title}.</p>
                       </div>
@@ -480,7 +480,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-[#18181b]/70 flex flex-wrap items-center gap-2">
+                    <div className="mt-4 pt-4 border-t border-[#71717a]/70 flex flex-wrap items-center gap-2">
                       <button onClick={nextAction.go} className="btn-primary text-sm"><ArrowRight size={14}/>{nextAction.cta}</button>
                       <button onClick={askAdvisor} className="btn-secondary text-sm"><Sparkles size={13}/>Explain Decision</button>
                     </div>
@@ -644,13 +644,13 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                               </div>
                             )}
                             {ai.explain&&<div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3"><p className="text-[10px] font-bold text-purple-700 mb-1 flex items-center gap-1"><Sparkles size={10}/>AI Explanation</p><div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ai.explain}</div></div>}
-                            {ai.fix&&<div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3"><p className="text-[10px] font-bold text-brand-700 mb-2 flex items-center gap-1"><Zap size={10}/>AI-Generated Fix</p><pre className="text-xs text-gray-800 whitespace-pre-wrap bg-white rounded-lg p-3 border border-brand-200 overflow-x-auto">{ai.fix}</pre><div className="flex gap-2 mt-2"><button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-700"><Zap size={11}/>Apply Fix</button><button className="flex items-center gap-1.5 px-3 py-1.5 border border-[#18181b] text-gray-700 rounded-lg text-xs hover:bg-gray-50"><GitPullRequest size={11}/>Create PR</button></div></div>}
+                            {ai.fix&&<div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3"><p className="text-[10px] font-bold text-brand-700 mb-2 flex items-center gap-1"><Zap size={10}/>AI-Generated Fix</p><pre className="text-xs text-gray-800 whitespace-pre-wrap bg-white rounded-lg p-3 border border-brand-200 overflow-x-auto">{ai.fix}</pre><div className="flex gap-2 mt-2"><button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-700"><Zap size={11}/>Apply Fix</button><button className="flex items-center gap-1.5 px-3 py-1.5 border border-[#71717a] text-gray-700 rounded-lg text-xs hover:bg-gray-50"><GitPullRequest size={11}/>Create PR</button></div></div>}
                             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
                               <button onClick={()=>callAI(f.id,'explain',f)} disabled={!!ai.loading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 text-xs font-medium hover:bg-purple-100 disabled:opacity-50">{ai.loading==='explain'?<Loader2 size={11} className="animate-spin"/>:<Sparkles size={11}/>}Explain</button>
                               <button onClick={()=>callAI(f.id,'fix',f)} disabled={!!ai.loading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-brand-50 text-brand-700 text-xs font-medium hover:bg-brand-100 disabled:opacity-50">{ai.loading==='fix'?<Loader2 size={11} className="animate-spin"/>:<Zap size={11}/>}Generate AI Fix</button>
-                              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100"><Ticket size={11}/>Create Ticket</button>
-                              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100"><GitPullRequest size={11}/>Create PR</button>
-                              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100"><MessageSquare size={11}/>Notify Slack</button>
+                              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100"><Ticket size={11}/>Create Ticket</button>
+                              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100"><GitPullRequest size={11}/>Create PR</button>
+                              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100"><MessageSquare size={11}/>Notify Slack</button>
                             </div>
                           </div>
                         )}
@@ -693,7 +693,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                     {t:'Security Team',d:'Confirms no unresolved security or compliance risk is shipping.'},
                     {t:'Product Management',d:'Confirms the change is the right thing to release to customers now.'},
                   ].map(x=>(
-                    <div key={x.t} className="rounded-lg border border-[#18181b] bg-white px-3 py-2">
+                    <div key={x.t} className="rounded-lg border border-[#71717a] bg-white px-3 py-2">
                       <p className="text-xs font-semibold text-navy-800">{x.t}</p>
                       <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{x.d}</p>
                     </div>
@@ -713,7 +713,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                   const approvedRoles=new Set((release.approvals||[]).map((a:any)=>a.role));
                   const allApproved=['platform','security','product'].every(r=>approvedRoles.has(r));
                   return(
-                    <div key={release.id} className={`card border-2 ${allApproved?'border-green-300 bg-green-50':'border-[#18181b]'}`}>
+                    <div key={release.id} className={`card border-2 ${allApproved?'border-green-300 bg-green-50':'border-[#71717a]'}`}>
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <h3 className="text-sm font-bold text-navy-900">{release.release_name}</h3>
@@ -731,7 +731,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
                         ].map(role=>{
                           const approved=(release.approvals||[]).find((a:any)=>a.role===role.id);
                           return(
-                            <div key={role.id} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${approved?'border-green-200 bg-green-50':'border-[#18181b] bg-white'}`}>
+                            <div key={role.id} className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${approved?'border-green-200 bg-green-50':'border-[#71717a] bg-white'}`}>
                               <div>
                                 <p className="text-sm font-medium text-navy-900">{role.label}</p>
                                 {approved?<p className="text-xs text-green-600">✓ Approved by {approved.approver_name} · {timeAgo(approved.approved_at)}</p>:<p className="text-xs text-gray-400">{role.desc}</p>}
@@ -764,7 +764,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
             <div className="space-y-4">
               <h2 className="text-base font-semibold text-navy-900 mb-1">Deployment</h2>
               <p className="text-sm text-gray-500">Monitor your deployment pipeline, build steps, and environment changes in real time.</p>
-              <div className={`card border-2 text-center py-12 ${deployGated?'border-red-200':'border-[#18181b]'}`}>
+              <div className={`card border-2 text-center py-12 ${deployGated?'border-red-200':'border-[#71717a]'}`}>
                 {deployGated?(
                   <>
                     <XCircle size={32} className="mx-auto text-red-400 mb-3"/>
@@ -907,7 +907,7 @@ export function ReleaseWorkspace({projectId,project}:{projectId:string;project:a
       )}
 
       {!sidebarOpen&&stage!=='changes'&&(
-        <button onClick={()=>setSidebarOpen(true)} className="fixed right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1 bg-white border border-[#18181b] rounded-xl px-2 py-3 shadow-lg hover:bg-gray-50 transition-colors">
+        <button onClick={()=>setSidebarOpen(true)} className="fixed right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1 bg-white border border-[#71717a] rounded-xl px-2 py-3 shadow-lg hover:bg-gray-50 transition-colors">
           <Sparkles size={14} className="text-purple-500"/>
           <span className="text-[10px] text-gray-500 vertical-lr" style={{writingMode:'vertical-lr'}}>AI Advisor</span>
         </button>

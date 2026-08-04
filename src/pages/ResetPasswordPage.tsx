@@ -32,13 +32,13 @@ export function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-[#18181b]">
+      <header className="bg-white border-b border-[#71717a]">
         <div className="mx-auto flex max-w-6xl items-center px-6 py-4">
           <button onClick={() => navigate('/')} title="Home"><Logo size={28} /></button>
         </div>
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-[#18181b] bg-white p-8 shadow-soft">
+        <div className="w-full max-w-md rounded-2xl border border-[#71717a] bg-white p-8 shadow-soft">
           {done ? (
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600"><CheckCircle2 size={24} /></div>

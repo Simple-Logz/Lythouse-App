@@ -77,7 +77,7 @@ function PipelineDiagram() {
     </g>
   );
   return (
-    <div className="my-5 rounded-2xl border border-[#18181b] bg-gradient-to-b from-[#faf9ff] to-white p-4">
+    <div className="my-5 rounded-2xl border border-[#71717a] bg-gradient-to-b from-[#faf9ff] to-white p-4">
       <svg viewBox="0 0 760 384" width="100%" className="mx-auto max-w-[680px]">
         <defs>
           <marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0 0l6 3-6 3z" fill="#a79fc0" /></marker>
@@ -159,7 +159,7 @@ export function DocsPage() {
       <div className="relative mb-4">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter docs…"
-          className="w-full rounded-lg border border-[#18181b] bg-gray-50 py-2 pl-8 pr-3 text-[13px] text-navy-900 placeholder:text-gray-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100" />
+          className="w-full rounded-lg border border-[#71717a] bg-gray-50 py-2 pl-8 pr-3 text-[13px] text-navy-900 placeholder:text-gray-400 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100" />
       </div>
       {filtered.map((g) => (
         <div key={g.group} className="mb-4">
@@ -182,13 +182,13 @@ export function DocsPage() {
   return (
     <div className={dark ? 'dark min-h-screen text-[#eeecf6]' : 'min-h-screen bg-white text-navy-900'} style={dark ? { background: 'linear-gradient(180deg,#211c30 0%,#171324 55%)' } : undefined}>
       {/* Top bar */}
-      <header className="fixed inset-x-0 top-0 z-40 h-14 border-b border-[#18181b] bg-white/90 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-40 h-14 border-b border-[#71717a] bg-white/90 backdrop-blur">
         <div className="mx-auto flex h-full max-w-[1400px] items-center gap-3 px-4">
-          <button onClick={() => setNavOpen((v) => !v)} className="lg:hidden rounded-lg border border-[#18181b] p-2 text-gray-600"><Menu size={16} /></button>
+          <button onClick={() => setNavOpen((v) => !v)} className="lg:hidden rounded-lg border border-[#71717a] p-2 text-gray-600"><Menu size={16} /></button>
           <Link to="/" className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600"><ShieldCheck size={16} className="text-white" strokeWidth={2.4} /></span><span className="text-[16px] font-bold tracking-tight">Lyt<span className="text-brand-600">House</span></span></Link>
           <span className="ml-1.5 rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">Docs</span>
           <div className="flex-1" />
-          <button onClick={toggleTheme} title="Toggle light / dark" className="grid h-9 w-9 place-items-center rounded-lg border border-[#18181b] text-navy-600 hover:bg-gray-50">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
+          <button onClick={toggleTheme} title="Toggle light / dark" className="grid h-9 w-9 place-items-center rounded-lg border border-[#71717a] text-navy-600 hover:bg-gray-50">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
           {session ? (
             <button onClick={() => navigate('/dashboard')} className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110" style={{ background: 'linear-gradient(120deg,#8b6ef2,#7c5ce6)' }}>Back to app<ArrowRight size={14} /></button>
           ) : (
@@ -205,7 +205,7 @@ export function DocsPage() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setNavOpen(false)} />
           <div className="absolute left-0 top-0 h-full w-72 overflow-y-auto bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-[#18181b] px-4 py-3"><span className="font-bold">Documentation</span><button onClick={() => setNavOpen(false)}><X size={18} /></button></div>
+            <div className="flex items-center justify-between border-b border-[#71717a] px-4 py-3"><span className="font-bold">Documentation</span><button onClick={() => setNavOpen(false)}><X size={18} /></button></div>
             {NavTree}
           </div>
         </div>
@@ -213,7 +213,7 @@ export function DocsPage() {
 
       <div className="mx-auto grid max-w-[1400px] grid-cols-1 lg:grid-cols-[256px_minmax(0,1fr)] xl:grid-cols-[256px_minmax(0,1fr)_248px]">
         {/* Left nav */}
-        <aside className="hidden lg:block border-r border-[#18181b]">
+        <aside className="hidden lg:block border-r border-[#71717a]">
           <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">{NavTree}</div>
         </aside>
 
@@ -260,7 +260,7 @@ export function DocsPage() {
                 ['Auto-Remediation', 'The AI-generated fix for a finding, delivered as a concrete change (and, where possible, a pull request) rather than just advice.'],
                 ['Audit Log', 'The immutable, timestamped record of every action — scans, decisions, approvals, gates — used as evidence that the checks actually happened.'],
               ].map(([term, def]) => (
-                <div key={term} className="rounded-xl border border-[#18181b] bg-white p-4 mb-2.5">
+                <div key={term} className="rounded-xl border border-[#71717a] bg-white p-4 mb-2.5">
                   <div className="font-semibold text-navy-900 text-[14px]">{term}</div>
                   <div className="text-[13px] text-gray-600 leading-[1.6] mt-1">{def}</div>
                 </div>
@@ -320,7 +320,7 @@ export function DocsPage() {
               </Callout>
               <P>What each provider reads (read-only), using the CLI you already have authenticated:</P>
               <div className="overflow-x-auto no-scrollbar my-3">
-                <table className="w-full text-[13px] border border-[#18181b] rounded-xl overflow-hidden">
+                <table className="w-full text-[13px] border border-[#71717a] rounded-xl overflow-hidden">
                   <thead className="bg-gray-50 text-gray-500 text-left">
                     <tr><th className="p-2.5 font-semibold">Provider</th><th className="p-2.5 font-semibold">CLI</th><th className="p-2.5 font-semibold">Pulls</th></tr>
                   </thead>
@@ -351,7 +351,7 @@ export function DocsPage() {
                 ['Can I stop a release even if the checks pass?', 'Yes — approvals and policy gates are enforced regardless of the automated checks, so a required approver or a failing gate always blocks a release.'],
                 ['What happens if I connect a repo but no environment?', 'You still get code scanning and release decisions based on the code. Connecting an environment adds live-infrastructure validation on top.'],
               ].map(([q2, a]) => (
-                <div key={q2} className="rounded-xl border border-[#18181b] bg-white p-4 mb-2.5">
+                <div key={q2} className="rounded-xl border border-[#71717a] bg-white p-4 mb-2.5">
                   <div className="font-semibold text-navy-900 text-[14px]">{q2}</div>
                   <div className="text-[13px] text-gray-600 leading-[1.6] mt-1">{a}</div>
                 </div>
@@ -369,7 +369,7 @@ export function DocsPage() {
               {copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied!' : 'Copy for LLM'}
             </button>
             <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">On this page</div>
-            <nav className="space-y-0.5 border-l border-[#18181b]">
+            <nav className="space-y-0.5 border-l border-[#71717a]">
               {FLAT.map((s) => (
                 <button key={s.id} onClick={() => scrollTo(s.id)}
                   className={`-ml-px block w-full border-l-2 pl-3 py-1 text-left text-[12.5px] transition-colors ${active === s.id ? 'border-brand-500 font-semibold text-brand-700' : 'border-transparent text-gray-500 hover:text-navy-900'}`}>

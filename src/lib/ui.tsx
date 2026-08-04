@@ -56,22 +56,22 @@ return<div className="flex items-center gap-2.5 select-none">
 }
 export function Spinner({size=16,className=''}:{size?:number;className?:string}){return<Loader2 size={size} className={'animate-spin '+className}/>;}
 export function StatusBadge({status}:{status:ValidationStatus|StepStatus}){
-const m:Record<string,{label:string;cls:string}>={pending:{label:'Pending',cls:'bg-gray-100 text-gray-600 border border-[#18181b]'},running:{label:'Running',cls:'bg-brand-50 text-brand-700 border border-brand-200'},completed:{label:'Completed',cls:'bg-brand-50 text-brand-700 border border-brand-200'},failed:{label:'Failed',cls:'bg-red-50 text-danger-600 border border-red-200'},skipped:{label:'Skipped',cls:'bg-gray-100 text-gray-500 border border-[#18181b]'}};
+const m:Record<string,{label:string;cls:string}>={pending:{label:'Pending',cls:'bg-gray-100 text-gray-600 border border-[#71717a]'},running:{label:'Running',cls:'bg-brand-50 text-brand-700 border border-brand-200'},completed:{label:'Completed',cls:'bg-brand-50 text-brand-700 border border-brand-200'},failed:{label:'Failed',cls:'bg-red-50 text-danger-600 border border-red-200'},skipped:{label:'Skipped',cls:'bg-gray-100 text-gray-500 border border-[#71717a]'}};
 const s=m[status]??m.pending;
 const dot=status==='running'?<Spinner size={10}/>:<span className={'inline-block h-2 w-2 rounded-full '+(status==='completed'?'bg-brand-500':status==='failed'?'bg-danger-500':'bg-gray-400')}/>;
 return<span className={'chip '+s.cls}>{dot}{s.label}</span>;
 }
 export function SeverityBadge({severity}:{severity:Severity|string}){
-const m:Record<string,{label:string;cls:string;icon:ReactNode}>={critical:{label:'Critical',cls:'bg-red-50 text-danger-600 border border-red-200',icon:<ShieldX size={11}/>},high:{label:'High',cls:'bg-amber-50 text-amber-600 border border-amber-200',icon:<ShieldAlert size={11}/>},medium:{label:'Medium',cls:'bg-blue-50 text-blue-600 border border-blue-200',icon:<AlertTriangle size={11}/>},low:{label:'Low',cls:'bg-gray-100 text-gray-600 border border-[#18181b]',icon:<Check size={11}/>},none:{label:'Clean',cls:'bg-brand-50 text-brand-700 border border-brand-200',icon:<ShieldCheck size={11}/>}};
+const m:Record<string,{label:string;cls:string;icon:ReactNode}>={critical:{label:'Critical',cls:'bg-red-50 text-danger-600 border border-red-200',icon:<ShieldX size={11}/>},high:{label:'High',cls:'bg-amber-50 text-amber-600 border border-amber-200',icon:<ShieldAlert size={11}/>},medium:{label:'Medium',cls:'bg-blue-50 text-blue-600 border border-blue-200',icon:<AlertTriangle size={11}/>},low:{label:'Low',cls:'bg-gray-100 text-gray-600 border border-[#71717a]',icon:<Check size={11}/>},none:{label:'Clean',cls:'bg-brand-50 text-brand-700 border border-brand-200',icon:<ShieldCheck size={11}/>}};
 const s=m[severity]??m.low;return<span className={'chip '+s.cls}>{s.icon}{s.label}</span>;
 }
 export function FindingStatusBadge({status}:{status:FindingStatus}){
-const m:Record<string,{label:string;cls:string}>={open:{label:'Open',cls:'bg-red-50 text-danger-600 border border-red-200'},resolved:{label:'Resolved',cls:'bg-brand-50 text-brand-700 border border-brand-200'},ignored:{label:'Ignored',cls:'bg-gray-100 text-gray-500 border border-[#18181b]'}};
+const m:Record<string,{label:string;cls:string}>={open:{label:'Open',cls:'bg-red-50 text-danger-600 border border-red-200'},resolved:{label:'Resolved',cls:'bg-brand-50 text-brand-700 border border-brand-200'},ignored:{label:'Ignored',cls:'bg-gray-100 text-gray-500 border border-[#71717a]'}};
 const s=m[status]??m.open;return<span className={'chip '+s.cls}>{s.label}</span>;
 }
 export function RiskGauge({score,size=130}:{score:number|null;size?:number}){
 // No score → a clean neutral ring with a dash, legible at any size.
-if(score===null)return<div className="flex shrink-0 items-center justify-center rounded-full border-2 border-dashed border-[#18181b] text-gray-300" style={{width:size,height:size}} title="No score — validation didn't complete"><span className="font-bold leading-none" style={{fontSize:Math.max(12,size*0.3)}}>–</span></div>;
+if(score===null)return<div className="flex shrink-0 items-center justify-center rounded-full border-2 border-dashed border-[#71717a] text-gray-300" style={{width:size,height:size}} title="No score — validation didn't complete"><span className="font-bold leading-none" style={{fontSize:Math.max(12,size*0.3)}}>–</span></div>;
 const c=Math.max(0,Math.min(100,score)),st=Math.max(3,size*0.09),r=size/2-st-2,cir=2*Math.PI*r,o=cir-(c/100)*cir;
 // Semantic traffic-light colors (explicit hex so the theme remap can't flatten them).
 const col=c>=75?'#dc2626':c>=50?'#ea580c':c>=25?'#f59e0b':'#12a150';
@@ -90,11 +90,11 @@ const b='flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2
 if(status==='completed')return<div className={b+' border-brand-500 bg-brand-500 text-white'}><Check size={15} strokeWidth={3}/></div>;
 if(status==='running')return<div className={b+' border-brand-500 bg-white text-brand-500'}><Spinner size={15}/></div>;
 if(status==='failed')return<div className={b+' border-danger-500 bg-danger-500 text-white'}><X size={15} strokeWidth={3}/></div>;
-return<div className={b+' border-[#18181b] bg-white text-gray-400'}>{icon}</div>;
+return<div className={b+' border-[#71717a] bg-white text-gray-400'}>{icon}</div>;
 }
 export function EmptyState({icon,title,description,action}:{icon:ReactNode;title:string;description:string;action?:ReactNode}){
 return<div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-<div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 border border-[#18181b] text-gray-400">{icon}</div>
+<div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 border border-[#71717a] text-gray-400">{icon}</div>
 <h3 className="text-base font-semibold text-navy-900">{title}</h3>
 <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-gray-500">{description}</p>
 {action&&<div className="mt-6">{action}</div>}</div>;

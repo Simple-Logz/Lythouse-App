@@ -75,7 +75,7 @@ export function StepConnectionMethod({ form, setForm, planId }: { form: any; set
         const selected = form.method === m.id;
         return (
           <button key={m.id} onClick={() => allowed && setForm({ ...form, method: m.id })}
-            className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-all ${selected ? 'border-brand-500 bg-brand-50' : allowed ? 'border-[#18181b] hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'}`}>
+            className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-all ${selected ? 'border-brand-500 bg-brand-50' : allowed ? 'border-[#71717a] hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'}`}>
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
               <Icon size={18} />
             </div>
@@ -192,7 +192,7 @@ export function StepCredentials({ form, setForm }: { form: any; setForm: (f: any
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-500">Upload a pre-collected, redacted snapshot bundle from an air-gapped environment.</p>
-      <div className="rounded-xl border-2 border-dashed border-[#18181b] p-8 text-center">
+      <div className="rounded-xl border-2 border-dashed border-[#71717a] p-8 text-center">
         <Upload size={28} className="mx-auto text-gray-400" />
         <p className="mt-2 text-sm font-medium text-navy-900">Drop snapshot bundle here</p>
         <p className="text-xs text-gray-400">Signed .tar.gz or .zip, max 500MB</p>
@@ -215,7 +215,7 @@ export function StepTargets({ targets, setTargets }: { targets: Partial<ServerTa
         <button onClick={add} className="btn-secondary"><Plus size={14} /> Add Server</button>
       </div>
       {targets.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#18181b] py-10 text-center">
+        <div className="rounded-xl border border-dashed border-[#71717a] py-10 text-center">
           <Server size={24} className="mx-auto text-gray-300" />
           <p className="mt-2 text-sm text-gray-400">No servers added yet</p>
         </div>
@@ -258,7 +258,7 @@ export function StepCollectionPolicy({ policy, setPolicy }: { policy: { default_
         {items.map(c => {
           const checked = policy[field].includes(c);
           return (
-            <button key={c} onClick={() => toggle(c, field)} className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-all ${checked ? 'border-brand-300 bg-brand-50' : 'border-gray-100 hover:border-[#18181b]'}`}>
+            <button key={c} onClick={() => toggle(c, field)} className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-all ${checked ? 'border-brand-300 bg-brand-50' : 'border-gray-100 hover:border-[#71717a]'}`}>
               <div className={`flex h-4 w-4 items-center justify-center rounded border ${checked ? 'border-brand-500 bg-brand-500 text-white' : 'border-gray-300'}`}>
                 {checked && <Check size={10} strokeWidth={3} />}
               </div>
@@ -288,7 +288,7 @@ export function StepPreCheck({ targets, results, checking }: { targets: Partial<
     if (status === 'pass') return <Check size={14} className="text-brand-600" />;
     if (status === 'fail') return <X size={14} className="text-danger-600" />;
     if (status === 'running') return <Spinner size={14} />;
-    return <div className="h-3 w-3 rounded-full border border-[#18181b]" />;
+    return <div className="h-3 w-3 rounded-full border border-[#71717a]" />;
   };
   const cols = ['DNS', 'Network', 'Auth', 'OS', 'Perms', 'Agent'] as const;
   return (
@@ -309,7 +309,7 @@ export function StepPreCheck({ targets, results, checking }: { targets: Partial<
               <div key={i} className="grid grid-cols-7 gap-2 border-b border-gray-50 px-4 py-3 items-center">
                 <div className="col-span-1 truncate text-sm font-medium text-navy-900">{t.hostname || `Server ${i + 1}`}</div>
                 {(['dns', 'network', 'auth', 'os', 'permissions', 'agent'] as const).map(k => (
-                  <div key={k} className="col-span-1 flex justify-center">{r ? checkIcon(r[k]) : <div className="h-3 w-3 rounded-full border border-[#18181b]" />}</div>
+                  <div key={k} className="col-span-1 flex justify-center">{r ? checkIcon(r[k]) : <div className="h-3 w-3 rounded-full border border-[#71717a]" />}</div>
                 ))}
               </div>
             );
@@ -343,7 +343,7 @@ export function StepDiscover({ envId, components, appGroups, discoveryRunning, o
             <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-navy-900"><Boxes size={15} /> Discovered Components ({components.length})</h4>
             <div className="flex flex-wrap gap-1.5">
               {components.map(c => (
-                <span key={c.id} className="chip bg-gray-50 text-gray-600 border border-[#18181b]">
+                <span key={c.id} className="chip bg-gray-50 text-gray-600 border border-[#71717a]">
                   <span className="text-[10px] uppercase text-gray-400">{c.component_type}</span> {c.name}
                 </span>
               ))}

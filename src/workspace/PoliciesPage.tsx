@@ -115,7 +115,7 @@ export function PoliciesPage({projectId,workspaceId}:{projectId:string;workspace
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Rules — toggle which are required</p>
           <div className="space-y-2 mb-4">
             {newRules.map(rule=>(
-              <div key={rule.id} className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5 transition-all ${rule.required?'border-brand-300 bg-white':'border-[#18181b] bg-gray-50 opacity-60'}`}>
+              <div key={rule.id} className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5 transition-all ${rule.required?'border-brand-300 bg-white':'border-[#71717a] bg-gray-50 opacity-60'}`}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-navy-900">{rule.label}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{rule.description}</p>
@@ -143,15 +143,15 @@ export function PoliciesPage({projectId,workspaceId}:{projectId:string;workspace
             const isOpen=expanded===policy.id;
             const requiredCount=policy.rules.filter(r=>r.required).length;
             return(
-              <div key={policy.id} className={`card p-0 overflow-hidden border-2 ${policy.enabled?'border-brand-200':'border-[#18181b] opacity-60'}`}>
+              <div key={policy.id} className={`card p-0 overflow-hidden border-2 ${policy.enabled?'border-brand-200':'border-[#71717a] opacity-60'}`}>
                 <div className={`flex items-center gap-3 px-5 py-4 cursor-pointer ${policy.enabled?'bg-brand-50/50':'bg-gray-50'}`} onClick={()=>setExpanded(isOpen?null:policy.id)}>
                   {isOpen?<ChevronDown size={15} className="text-gray-400"/>:<ChevronRight size={15} className="text-gray-400"/>}
                   <Shield size={16} className={policy.enabled?'text-brand-600':'text-gray-400'}/>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-navy-900">{policy.name}</span>
-                      <span className={`chip text-xs border capitalize ${policy.environment==='production'?'bg-red-50 text-red-600 border-red-200':policy.environment==='staging'?'bg-amber-50 text-amber-600 border-amber-200':'bg-gray-100 text-gray-600 border-[#18181b]'}`}>{policy.environment}</span>
-                      {policy.enabled?<span className="chip bg-green-50 text-green-700 border border-green-200 text-xs"><Check size={10}/>Active</span>:<span className="chip bg-gray-100 text-gray-500 border border-[#18181b] text-xs">Disabled</span>}
+                      <span className={`chip text-xs border capitalize ${policy.environment==='production'?'bg-red-50 text-red-600 border-red-200':policy.environment==='staging'?'bg-amber-50 text-amber-600 border-amber-200':'bg-gray-100 text-gray-600 border-[#71717a]'}`}>{policy.environment}</span>
+                      {policy.enabled?<span className="chip bg-green-50 text-green-700 border border-green-200 text-xs"><Check size={10}/>Active</span>:<span className="chip bg-gray-100 text-gray-500 border border-[#71717a] text-xs">Disabled</span>}
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{requiredCount} rule{requiredCount!==1?'s':''} required · Created {new Date(policy.created_at).toLocaleDateString()}</p>
                   </div>
@@ -166,7 +166,7 @@ export function PoliciesPage({projectId,workspaceId}:{projectId:string;workspace
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Deployment Rules</p>
                     <div className="space-y-2">
                       {policy.rules.map(rule=>(
-                        <div key={rule.id} className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5 transition-all ${rule.required?'border-brand-200 bg-brand-50':'border-[#18181b] bg-gray-50'}`}>
+                        <div key={rule.id} className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5 transition-all ${rule.required?'border-brand-200 bg-brand-50':'border-[#71717a] bg-gray-50'}`}>
                           <div className="flex items-start gap-2.5 flex-1 min-w-0">
                             <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${rule.required?'bg-brand-500':'bg-gray-300'}`}/>
                             <div>

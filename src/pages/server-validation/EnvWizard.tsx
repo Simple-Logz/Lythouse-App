@@ -267,7 +267,7 @@ export function EnvWizard({ planId }: { planId: PlanId }) {
                 return (
                   <button key={i} onClick={() => i <= step && setStep(i)} disabled={i > step}
                     className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all ${active ? 'bg-brand-50 text-brand-700' : done ? 'text-gray-600 hover:bg-gray-50' : 'text-gray-300 cursor-not-allowed'}`}>
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 ${active ? 'border-brand-500 bg-brand-500 text-white' : done ? 'border-brand-300 bg-brand-50 text-brand-600' : 'border-[#18181b] bg-white'}`}>
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 ${active ? 'border-brand-500 bg-brand-500 text-white' : done ? 'border-brand-300 bg-brand-50 text-brand-600' : 'border-[#71717a] bg-white'}`}>
                       {done ? <Check size={13} strokeWidth={3} /> : <Icon size={13} />}
                     </div>
                     <span className="font-medium">{s.label}</span>

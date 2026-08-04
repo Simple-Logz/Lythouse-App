@@ -33,7 +33,7 @@ export const ROLE_CLS: Record<Role, string> = {
   admin: 'bg-blue-50 text-blue-600 border border-blue-200',
   developer: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
   approver: 'bg-amber-50 text-amber-700 border border-amber-200',
-  viewer: 'bg-gray-100 text-gray-600 border border-[#18181b]',
+  viewer: 'bg-gray-100 text-gray-600 border border-[#71717a]',
 };
 
 // A rough privilege ordering — higher number = more power. Used for

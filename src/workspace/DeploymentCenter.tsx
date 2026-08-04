@@ -25,7 +25,7 @@ const BIZ_META:Record<BusinessSeverity,{label:string;color:string;bg:string;bord
   blocker:{label:'Deployment Blocker',color:'text-red-700',bg:'bg-red-50',border:'border-red-300',icon:XCircle},
   attention:{label:'Needs Attention',color:'text-amber-700',bg:'bg-amber-50',border:'border-amber-300',icon:AlertTriangle},
   recommendation:{label:'Recommendation',color:'text-blue-700',bg:'bg-blue-50',border:'border-blue-300',icon:Flag},
-  informational:{label:'Informational',color:'text-gray-600',bg:'bg-gray-50',border:'border-[#18181b]',icon:Eye},
+  informational:{label:'Informational',color:'text-gray-600',bg:'bg-gray-50',border:'border-[#71717a]',icon:Eye},
 };
 
 // ─── Readiness dimensions ─────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ Recommendation: ${f.recommendation||'See description'}`);
         <div className="flex items-center gap-1.5 shrink-0" onClick={e=>e.stopPropagation()}>
           {f.status==='open'&&<button onClick={()=>onStatusChange(f.id,'resolved')} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"><Check size={11}/>Resolve</button>}
           {f.status==='resolved'&&<span className="flex items-center gap-1 text-xs text-green-600 font-medium"><CheckCircle2 size={13}/>Resolved</span>}
-          {f.status==='open'&&<button onClick={()=>onStatusChange(f.id,'ignored')} className="px-2 py-1 text-xs text-gray-500 border border-[#18181b] rounded-lg hover:bg-gray-100">Ignore</button>}
+          {f.status==='open'&&<button onClick={()=>onStatusChange(f.id,'ignored')} className="px-2 py-1 text-xs text-gray-500 border border-[#71717a] rounded-lg hover:bg-gray-100">Ignore</button>}
         </div>
       </div>
 
@@ -250,19 +250,19 @@ Recommendation: ${f.recommendation||'See description'}`);
             <button onClick={generateFix} disabled={state.loadingFix} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-brand-50 text-brand-700 text-xs font-medium hover:bg-brand-100 transition-colors disabled:opacity-50">
               {state.loadingFix?<Loader2 size={12} className="animate-spin"/>:<Zap size={12}/>}Generate AI Fix
             </button>
-            <button onClick={createTicket} disabled={state.loadingTicket} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors disabled:opacity-50">
+            <button onClick={createTicket} disabled={state.loadingTicket} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors disabled:opacity-50">
               {state.loadingTicket?<Loader2 size={12} className="animate-spin"/>:<Ticket size={12}/>}Create Ticket
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors">
               <GitPullRequest size={12}/>Create PR
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors">
               <MessageSquare size={12}/>Notify Slack
             </button>
-            {f.file_path&&<button onClick={()=>onOpenFile(f.file_path!,f.line??undefined)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors">
+            {f.file_path&&<button onClick={()=>onOpenFile(f.file_path!,f.line??undefined)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] bg-gray-50 text-gray-700 text-xs font-medium hover:bg-gray-100 transition-colors">
               <FileCode size={12}/>Open File
             </button>}
-            {f.status!=='open'&&<button onClick={()=>onStatusChange(f.id,'open')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#18181b] text-gray-500 text-xs hover:bg-gray-50 ml-auto">
+            {f.status!=='open'&&<button onClick={()=>onStatusChange(f.id,'open')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#71717a] text-gray-500 text-xs hover:bg-gray-50 ml-auto">
               <RotateCcw size={12}/>Reopen
             </button>}
           </div>
@@ -349,7 +349,7 @@ export function DeploymentCenter({projectId,project,onRunValidation,onOpenFile,r
     <div className="space-y-5">
       {/* View switcher */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 rounded-lg border border-[#18181b] bg-gray-50 p-1">
+        <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
           {[{id:'deployment',label:'Deployment Center'},{id:'workitems',label:`Work Items (${open.length})`},{id:'timeline',label:'Timeline'}].map(v=>(
             <button key={v.id} onClick={()=>setView(v.id as any)} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view===v.id?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700'}`}>{v.label}</button>
           ))}
@@ -461,7 +461,7 @@ export function DeploymentCenter({projectId,project,onRunValidation,onOpenFile,r
         <div className="space-y-4">
           {/* Filter bar */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-1 rounded-lg border border-[#18181b] bg-gray-50 p-1">
+            <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
               {[
                 {id:'all',label:'All Open'},
                 {id:'blocker',label:'Blockers'},

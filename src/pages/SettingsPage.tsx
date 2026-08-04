@@ -212,7 +212,7 @@ export function SettingsPage(){
     <PageHeader title="Account Settings" description="Manage your personal account, notifications, and security preferences."/>
 
     {/* Tabs */}
-    <div className="mb-6 flex gap-1 border-b border-[#18181b] overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+    <div className="mb-6 flex gap-1 border-b border-[#71717a] overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
       {TABS.map(t=>(
         <button key={t.id} onClick={()=>setTab(t.id as any)} className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${tab===t.id?'tab-active':'tab-inactive'}`}>
           <t.icon size={15}/>{t.label}
@@ -230,9 +230,9 @@ export function SettingsPage(){
           <div className="flex items-center gap-5 mb-5 pb-5 border-b border-gray-100">
             <div className="relative group shrink-0">
               {avatarUrl?(
-                <img src={avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover border-2 border-[#18181b]"/>
+                <img src={avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover border-2 border-[#71717a]"/>
               ):(
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-3xl font-bold border-2 border-[#18181b]">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-100 text-brand-700 text-3xl font-bold border-2 border-[#71717a]">
                   {(fullName||user?.email||'U').charAt(0).toUpperCase()}
                 </div>
               )}
@@ -351,7 +351,7 @@ export function SettingsPage(){
           <h2 className="text-base font-semibold text-navy-900 mb-4 flex items-center gap-2"><Palette size={17} className="text-brand-600"/>Theme</h2>
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[{id:'light',label:'Light',icon:Sun},{id:'dark',label:'Dark',icon:Moon},{id:'system',label:'System',icon:Monitor}].map(t=>(
-              <button key={t.id} onClick={()=>setTheme(t.id as any)} className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${appPref.theme===t.id?'border-brand-500 bg-brand-50':'border-[#18181b] hover:border-gray-300'}`}>
+              <button key={t.id} onClick={()=>setTheme(t.id as any)} className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${appPref.theme===t.id?'border-brand-500 bg-brand-50':'border-[#71717a] hover:border-gray-300'}`}>
                 <t.icon size={20} className={appPref.theme===t.id?'text-brand-600':'text-gray-400'}/>
                 <span className={`text-sm font-medium ${appPref.theme===t.id?'text-brand-700':'text-gray-600'}`}>{t.label}</span>
               </button>

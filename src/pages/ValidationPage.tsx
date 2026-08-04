@@ -244,7 +244,7 @@ function DeployModal({ validation, projectName, onClose, onCreated }: {
                 className={`rounded-xl border px-3 py-2.5 text-sm font-medium capitalize transition-colors ${
                   environment === env
                     ? 'border-brand-300 bg-brand-50 text-brand-700'
-                    : 'border-[#18181b] bg-white text-navy-600 hover:bg-gray-50'
+                    : 'border-[#71717a] bg-white text-navy-600 hover:bg-gray-50'
                 }`}
               >
                 {env}
@@ -278,7 +278,7 @@ function FindingRow({ finding, expanded, onToggle }: { finding: Finding; expande
           <p className="text-sm font-semibold text-navy-900">{finding.title}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-2xs text-gray-500">
             <SeverityBadge severity={finding.severity} />
-            <span className="chip bg-gray-50 text-navy-600 border border-[#18181b]">{finding.category.replace('_', ' ')}</span>
+            <span className="chip bg-gray-50 text-navy-600 border border-[#71717a]">{finding.category.replace('_', ' ')}</span>
             {finding.file_path && <span className="flex items-center gap-1 font-mono text-gray-400"><FileCode2 size={10} /> {finding.file_path}{finding.line ? `:${finding.line}` : ''}</span>}
             {finding.confidence !== null && <span className="text-gray-400">conf {finding.confidence}%</span>}
           </div>
