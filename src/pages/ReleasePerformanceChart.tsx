@@ -40,7 +40,7 @@ function CustomTooltip({active,payload,label}:any){
   const d=payload[0]?.payload as DataPoint;
   if(!d)return null;
   return(
-    <div className="bg-white border border-[#71717a] rounded-xl shadow-xl p-4 min-w-52">
+    <div className="bg-white border border-[#a1a1aa] rounded-xl shadow-xl p-4 min-w-52">
       <p className="text-sm font-bold text-navy-900 mb-2">{d.label}</p>
       <div className="space-y-1 text-xs">
         <div className="flex justify-between gap-6"><span className="text-gray-500">Total</span><strong>{d.total}</strong></div>
@@ -170,19 +170,19 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
+          <div className="flex gap-1 rounded-lg border border-[#a1a1aa] bg-gray-50 p-1">
             {(['7d','30d','3m','6m','1y'] as TimeRange[]).map(r=>(
               <button key={r} onClick={()=>setRange(r)} className={'px-2.5 py-1 rounded-md text-xs font-medium transition-colors '+(range===r?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>
                 {r==='7d'?'7D':r==='30d'?'30D':r==='3m'?'3M':r==='6m'?'6M':'1Y'}
               </button>
             ))}
           </div>
-          <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
+          <div className="flex gap-1 rounded-lg border border-[#a1a1aa] bg-gray-50 p-1">
             {(['day','week','month'] as Grouping[]).map(g=>(
               <button key={g} onClick={()=>setGrouping(g)} className={'px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors '+(grouping===g?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>{g}</button>
             ))}
           </div>
-          <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
+          <div className="flex gap-1 rounded-lg border border-[#a1a1aa] bg-gray-50 p-1">
             {(['bar','line'] as ChartType[]).map(t=>(
               <button key={t} onClick={()=>setChartType(t)} className={'px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors '+(chartType===t?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700')}>{t}</button>
             ))}
@@ -201,7 +201,7 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
 
       {/* Chart */}
       {chartData.every(d=>d.total===0)?(
-        <div className="flex items-center justify-center h-48 text-sm text-gray-400 bg-gray-50 rounded-xl border border-[#71717a]">
+        <div className="flex items-center justify-center h-48 text-sm text-gray-400 bg-gray-50 rounded-xl border border-[#a1a1aa]">
           No deployment data for this period
         </div>
       ):(
@@ -236,7 +236,7 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
 
       {/* Drill-down panel */}
       {selectedPoint&&(
-        <div className="mt-4 rounded-xl border border-[#71717a] bg-gray-50 p-4">
+        <div className="mt-4 rounded-xl border border-[#a1a1aa] bg-gray-50 p-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-navy-900">{selectedPoint.label} — Release Detail</h4>
             <button onClick={()=>setSelectedPoint(null)} className="btn-ghost p-1"><X size={14}/></button>
@@ -246,7 +246,7 @@ export function ReleasePerformanceChart({validations,projects}:{validations:Vali
           ):(
             <div className="space-y-1.5">
               {selectedPoint.releases.map((r,i)=>(
-                <div key={i} className="flex items-center gap-3 rounded-lg bg-white border border-[#71717a] px-3 py-2.5 text-xs">
+                <div key={i} className="flex items-center gap-3 rounded-lg bg-white border border-[#a1a1aa] px-3 py-2.5 text-xs">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${r.status==='completed'?'bg-green-500':r.status==='failed'?'bg-red-500':'bg-amber-500'}`}/>
                   <span className="font-medium text-navy-900 flex-1 truncate">{r.project}</span>
                   <span className="capitalize text-gray-500">{r.status}</span>

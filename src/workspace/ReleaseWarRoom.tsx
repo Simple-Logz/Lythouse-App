@@ -113,7 +113,7 @@ Give me:
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           {label:'Release Readiness',value:`${readiness}%`,color:readiness>=75?'text-green-600':readiness>=50?'text-amber-600':'text-red-600',bg:readiness>=75?'bg-green-50':'bg-red-50',border:readiness>=75?'border-green-200':'border-red-200'},
-          {label:'Risk Score',value:`${latest?.risk_score??'—'}/100`,color:(latest?.risk_score??0)>70?'text-red-600':(latest?.risk_score??0)>40?'text-amber-600':'text-green-600',bg:'bg-gray-50',border:'border-[#71717a]'},
+          {label:'Risk Score',value:`${latest?.risk_score??'—'}/100`,color:(latest?.risk_score??0)>70?'text-red-600':(latest?.risk_score??0)>40?'text-amber-600':'text-green-600',bg:'bg-gray-50',border:'border-[#a1a1aa]'},
           {label:'Blockers',value:blockers.length,color:blockers.length>0?'text-red-600':'text-green-600',bg:blockers.length>0?'bg-red-50':'bg-green-50',border:blockers.length>0?'border-red-200':'border-green-200'},
           {label:'Validations Run',value:validations.length,color:'text-brand-600',bg:'bg-brand-50',border:'border-brand-200'},
         ].map(s=>(
@@ -136,7 +136,7 @@ Give me:
           {aiRec?(
             <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed bg-purple-50 rounded-xl p-4 border border-purple-200">{aiRec}</div>
           ):(
-            <div className="flex items-center justify-center h-24 text-sm text-gray-400 bg-gray-50 rounded-xl border border-[#71717a]">
+            <div className="flex items-center justify-center h-24 text-sm text-gray-400 bg-gray-50 rounded-xl border border-[#a1a1aa]">
               Click "Get Recommendation" for AI analysis
             </div>
           )}
@@ -176,7 +176,7 @@ Give me:
           <h3 className="text-sm font-semibold text-navy-900 mb-3 flex items-center gap-2"><AlertTriangle size={14} className="text-amber-600"/>Active Release Blockers & Issues</h3>
           <div className="space-y-2">
             {open.slice(0,8).map(f=>(
-              <div key={f.id} className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${f.severity==='critical'?'border-red-200 bg-red-50':f.severity==='high'?'border-amber-200 bg-amber-50':'border-[#71717a] bg-white'}`}>
+              <div key={f.id} className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${f.severity==='critical'?'border-red-200 bg-red-50':f.severity==='high'?'border-amber-200 bg-amber-50':'border-[#a1a1aa] bg-white'}`}>
                 <div className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${f.severity==='critical'?'bg-red-500':f.severity==='high'?'bg-amber-500':f.severity==='medium'?'bg-blue-500':'bg-gray-400'}`}/>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-navy-900">{f.title}</p>

@@ -77,9 +77,9 @@ return<div className="space-y-5">
 </div>}
 
 <div className="flex items-center gap-2">
-<button onClick={()=>setFilter('all')} className={'chip border '+(filter==='all'?'bg-brand-50 text-brand-700 border-brand-200':'bg-white text-gray-500 border-[#71717a] hover:bg-gray-50')}>All ({deps.length})</button>
-<button onClick={()=>setFilter('vulnerable')} className={'chip border '+(filter==='vulnerable'?'bg-red-50 text-danger-600 border-red-200':'bg-white text-gray-500 border-[#71717a] hover:bg-gray-50')}>Vulnerable ({vulnerable.length})</button>
-<button onClick={()=>setFilter('outdated')} className={'chip border '+(filter==='outdated'?'bg-amber-50 text-amber-600 border-amber-200':'bg-white text-gray-500 border-[#71717a] hover:bg-gray-50')}>Outdated ({outdated.length})</button>
+<button onClick={()=>setFilter('all')} className={'chip border '+(filter==='all'?'bg-brand-50 text-brand-700 border-brand-200':'bg-white text-gray-500 border-[#a1a1aa] hover:bg-gray-50')}>All ({deps.length})</button>
+<button onClick={()=>setFilter('vulnerable')} className={'chip border '+(filter==='vulnerable'?'bg-red-50 text-danger-600 border-red-200':'bg-white text-gray-500 border-[#a1a1aa] hover:bg-gray-50')}>Vulnerable ({vulnerable.length})</button>
+<button onClick={()=>setFilter('outdated')} className={'chip border '+(filter==='outdated'?'bg-amber-50 text-amber-600 border-amber-200':'bg-white text-gray-500 border-[#a1a1aa] hover:bg-gray-50')}>Outdated ({outdated.length})</button>
 <button onClick={load} className="btn-ghost ml-auto"><RefreshCw size={15}/>Refresh</button>
 </div>
 

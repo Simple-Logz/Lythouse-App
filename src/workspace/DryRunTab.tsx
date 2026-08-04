@@ -64,7 +64,7 @@ if(phase!=='idle'&&phase!=='complete')return<div className="space-y-5">
 const phases=['analyzing','checking','checking','predicting','predicting','predicting'];
 const active=phases.indexOf(phase)>=i;
 return<div key={i} className="flex items-center gap-3">
-{active&&phases.indexOf(phase)===i?<Loader2 size={16} className="animate-spin text-brand-600"/>:active?<CheckCircle2 size={16} className="text-brand-500"/>:<div className="w-4 h-4 rounded-full border-2 border-[#71717a]"/>}
+{active&&phases.indexOf(phase)===i?<Loader2 size={16} className="animate-spin text-brand-600"/>:active?<CheckCircle2 size={16} className="text-brand-500"/>:<div className="w-4 h-4 rounded-full border-2 border-[#a1a1aa]"/>}
 <span className={'text-sm '+(active?'text-navy-800':'text-gray-400')}>{s}</span>
 </div>;})}
 </div>
@@ -85,7 +85,7 @@ return<div className="space-y-5">
 {(['production','staging','preview']as const).map(env=>{
 const Icon=env==='production'?Globe:env==='staging'?Server:Layers;
 const a=environment===env;
-return<button key={env} onClick={()=>setEnvironment(env)} className={'flex items-center gap-2 rounded-xl border-2 px-4 py-3 transition-all '+(a?'border-brand-500 bg-brand-50':'border-[#71717a] hover:border-gray-300')}>
+return<button key={env} onClick={()=>setEnvironment(env)} className={'flex items-center gap-2 rounded-xl border-2 px-4 py-3 transition-all '+(a?'border-brand-500 bg-brand-50':'border-[#a1a1aa] hover:border-gray-300')}>
 <Icon size={18} className={a?'text-brand-600':'text-gray-500'}/>
 <span className={'text-sm font-medium '+(a?'text-brand-700':'text-gray-600')}>{env.charAt(0).toUpperCase()+env.slice(1)}</span>
 </button>;})}
@@ -117,7 +117,7 @@ return<button key={env} onClick={()=>setEnvironment(env)} className={'flex items
 }
 
 function ContextCard({icon,label,value,valueColor}:{icon:React.ReactNode;label:string;value:string;valueColor?:string}){
-return<div className="rounded-xl border border-[#71717a] bg-gray-50 p-3">
+return<div className="rounded-xl border border-[#a1a1aa] bg-gray-50 p-3">
 <div className="flex items-center gap-1.5 mb-1 text-gray-400">{icon}<span className="text-xs font-medium">{label}</span></div>
 <p className={'text-lg font-bold '+(valueColor??'text-navy-900')}>{value}</p>
 </div>;
@@ -202,7 +202,7 @@ function MetricCard({icon,label,value,valueColor}:{icon:React.ReactNode;label:st
 return<div className="card p-4"><div className="flex items-center gap-1.5 mb-1 text-gray-400">{icon}<span className="text-xs font-medium">{label}</span></div><p className={'text-lg font-bold '+(valueColor??'text-navy-900')}>{value}</p></div>;
 }
 function ResourceCard({icon,label,value}:{icon:React.ReactNode;label:string;value:string}){
-return<div className="rounded-xl border border-[#71717a] bg-gray-50 p-3"><div className="flex items-center gap-1.5 mb-1 text-gray-400">{icon}<span className="text-xs font-medium">{label}</span></div><p className="text-sm font-medium text-navy-700">{value}</p></div>;
+return<div className="rounded-xl border border-[#a1a1aa] bg-gray-50 p-3"><div className="flex items-center gap-1.5 mb-1 text-gray-400">{icon}<span className="text-xs font-medium">{label}</span></div><p className="text-sm font-medium text-navy-700">{value}</p></div>;
 }
 function SimCheckRow({check}:{check:SimResult['checks'][0]}){
 const cfg={pass:{icon:CheckCircle2,color:'text-brand-600',bg:'bg-brand-50',label:'Pass'},warn:{icon:AlertTriangle,color:'text-amber-600',bg:'bg-amber-50',label:'Warning'},fail:{icon:XCircle,color:'text-danger-600',bg:'bg-red-50',label:'Fail'}}[check.status];

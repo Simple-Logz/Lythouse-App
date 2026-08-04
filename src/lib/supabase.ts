@@ -91,7 +91,7 @@ export const COLLECTION_NEVER_CATEGORIES=['Passwords & private keys','Reusable t
 
 export type PLANS={free:{id:PlanId;name:string;price:number;color:string;badge:string};developer:{id:PlanId;name:string;price:number;color:string;badge:string};enterprise:{id:PlanId;name:string;price:number;color:string;badge:string};[key:string]:{id:PlanId;name:string;price:number;color:string;badge:string};};
 export const PLANS:PLANS={
-free:{id:'free',name:'Free',price:0,color:'bg-gray-100 text-gray-700',badge:'bg-gray-100 text-gray-600 border-[#71717a]'},
+free:{id:'free',name:'Free',price:0,color:'bg-gray-100 text-gray-700',badge:'bg-gray-100 text-gray-600 border-[#a1a1aa]'},
 developer:{id:'developer',name:'Developer',price:29,color:'bg-brand-50 text-brand-700',badge:'bg-brand-50 text-brand-700 border-brand-200'},
 enterprise:{id:'enterprise',name:'Enterprise',price:199,color:'bg-navy-800 text-white',badge:'bg-navy-800 text-white border-navy-700'},
 };

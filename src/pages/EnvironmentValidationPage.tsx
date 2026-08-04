@@ -18,7 +18,7 @@ const SEV = {
   critical: { t: 'text-[#b3261e]', b: 'bg-[#fde3e3] border-[#f5a3a3]', d: 'bg-[#dc2626]', label: 'Critical' },
   high: { t: 'text-[#d61f1f]', b: 'bg-[#fde3e3] border-[#f5a3a3]', d: 'bg-[#dc2626]', label: 'High' },
   medium: { t: 'text-[#b06a00]', b: 'bg-[#fff7e9] border-[#f9c777]', d: 'bg-[#e07600]', label: 'Medium' },
-  low: { t: 'text-[#4c5372]', b: 'bg-gray-50 border-[#71717a]', d: 'bg-gray-400', label: 'Low' },
+  low: { t: 'text-[#4c5372]', b: 'bg-gray-50 border-[#a1a1aa]', d: 'bg-gray-400', label: 'Low' },
 };
 const STATUS = {
   validated: { t: 'text-[#0f7a3c]', b: 'bg-[#e3f7ea] border-[#9adcb4]', icon: ShieldCheck, label: 'Validated' },
@@ -201,7 +201,7 @@ export function EnvironmentValidationPage() {
             {PROVIDERS.map((p) => {
               const Icon = p.icon;
               return (
-                <button key={p.id} onClick={() => setConnecting(p.id)} className="group flex items-start gap-3.5 rounded-2xl border border-[#71717a] bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:[box-shadow:0_14px_32px_-16px_rgba(124,92,230,.45)]">
+                <button key={p.id} onClick={() => setConnecting(p.id)} className="group flex items-start gap-3.5 rounded-2xl border border-[#a1a1aa] bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:[box-shadow:0_14px_32px_-16px_rgba(124,92,230,.45)]">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${p.accent}1a`, color: p.accent }}><Icon size={21} /></span>
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 text-[15px] font-semibold text-navy-900">{p.label}<ArrowRight size={14} className="text-brand-400 transition-transform group-hover:translate-x-0.5" /></span>
@@ -293,7 +293,7 @@ function AiPostureCard({ items }) {
         <button onClick={run} disabled={loading} className="btn-primary text-sm shrink-0">{loading ? <><RefreshCw size={14} className="animate-spin" />Analyzing…</> : <><Sparkles size={14} />{text ? 'Re-analyze' : 'Analyze'}</>}</button>
       </div>
       {text && (
-        <div className="mt-4 rounded-xl bg-white border border-[#71717a] p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{text}</div>
+        <div className="mt-4 rounded-xl bg-white border border-[#a1a1aa] p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{text}</div>
       )}
       {!text && !loading && (
         <p className="mt-3 text-[11px] text-gray-400">The AI only sees findings already detected by LytHouse's checks — it explains and prioritises them, it does not invent new ones.</p>
@@ -323,7 +323,7 @@ function ConnectDrawer({ initial, onClose, onCreate }) {
               {PROVIDERS.map((p) => {
                 const PIcon = p.icon; const on = provider === p.id;
                 return (
-                  <button key={p.id} onClick={() => setProvider(p.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${on ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-100' : 'border-[#71717a] hover:border-gray-300'}`}>
+                  <button key={p.id} onClick={() => setProvider(p.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${on ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-100' : 'border-[#a1a1aa] hover:border-gray-300'}`}>
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: `${p.accent}1a`, color: p.accent }}><PIcon size={16} /></span>
                     <span className="min-w-0"><span className="block text-sm font-semibold text-navy-900">{p.short}</span><span className="block text-[11px] text-gray-500 leading-tight">{p.label}</span></span>
                   </button>
@@ -332,13 +332,13 @@ function ConnectDrawer({ initial, onClose, onCreate }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#71717a] p-4">
+          <div className="rounded-2xl border border-[#a1a1aa] p-4">
             <div className="flex items-center gap-2.5 mb-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0" style={{ backgroundColor: `${P.accent}1a`, color: P.accent }}><Icon size={16} /></span>
               <div><div className="text-sm font-semibold text-navy-900">{P.label}</div><div className="text-[11px] text-gray-500">What LytHouse pulls</div></div>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {P.pulls.map((x) => <span key={x} className="chip border border-[#71717a] bg-gray-50 text-[11px] text-gray-600">{x}</span>)}
+              {P.pulls.map((x) => <span key={x} className="chip border border-[#a1a1aa] bg-gray-50 text-[11px] text-gray-600">{x}</span>)}
             </div>
           </div>
 
@@ -416,10 +416,10 @@ function ConnectionDrawer({ conn, count, syncing, onSync, onClose, onRemove }) {
             <p className="text-[11px] text-gray-400 mt-1.5">The token identifies this connection — it is not a cloud credential. Your AWS/GCP/Azure keys stay on the machine running the collector.</p>
           </div>
 
-          <div className="rounded-xl border border-[#71717a] p-4">
+          <div className="rounded-xl border border-[#a1a1aa] p-4">
             <p className="text-xs font-semibold text-navy-900 mb-2">This connection validates</p>
             <div className="flex flex-wrap gap-1.5">
-              {P.pulls.map((x) => <span key={x} className="chip border border-[#71717a] bg-gray-50 text-[11px] text-gray-600">{x}</span>)}
+              {P.pulls.map((x) => <span key={x} className="chip border border-[#a1a1aa] bg-gray-50 text-[11px] text-gray-600">{x}</span>)}
             </div>
           </div>
         </div>
@@ -457,7 +457,7 @@ function AddDrawer({ onClose, onAdd }) {
               {COMPONENT_TYPES.map((t) => {
                 const Icon = t.icon; const on = type === t.id;
                 return (
-                  <button key={t.id} onClick={() => setType(t.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${on ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-100' : 'border-[#71717a] hover:border-gray-300'}`}>
+                  <button key={t.id} onClick={() => setType(t.id)} className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${on ? 'border-brand-400 bg-brand-50 ring-2 ring-brand-100' : 'border-[#a1a1aa] hover:border-gray-300'}`}>
                     <span className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${on ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500'}`}><Icon size={16} /></span>
                     <span className="min-w-0"><span className="block text-sm font-semibold text-navy-900">{t.label}</span><span className="block text-[11px] text-gray-500 leading-tight">{t.hint}</span></span>
                   </button>
@@ -495,7 +495,7 @@ function FindingRow({ comp, finding: f }) {
   const doExplain = async () => { setBusy('explain'); setExplain(await explainFinding(comp, f)); setBusy(''); };
   const doFix = async () => { setBusy('fix'); setFix(await generateFix(comp, f)); setBusy(''); };
   return (
-    <div className="rounded-xl border border-[#71717a] bg-white p-3">
+    <div className="rounded-xl border border-[#a1a1aa] bg-white p-3">
       <div className="flex items-center gap-2">
         <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${sv.b} ${sv.t}`}><span className={`w-1.5 h-1.5 rounded-full ${sv.d}`} />{sv.label}</span>
         <span className="text-sm font-semibold text-navy-900">{f.title}</span>

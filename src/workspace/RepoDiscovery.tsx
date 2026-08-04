@@ -553,7 +553,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             {changeOpen && (<div className="mt-3 space-y-3">
 
             {/* prior decision → new status + confidence delta */}
-            <div className="grid gap-2 sm:grid-cols-3 rounded-lg border border-[#71717a]/70 bg-white/70 px-3 py-2">
+            <div className="grid gap-2 sm:grid-cols-3 rounded-lg border border-[#a1a1aa]/70 bg-white/70 px-3 py-2">
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-gray-400">Last assessed decision</div>
                 <div className="text-sm font-bold text-navy-900">{prevRec.verdict || 'Assessed'}</div>
@@ -615,7 +615,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
                 <ArrowRight size={13} className="group-open:rotate-90 transition-transform" />Commits &amp; files
                 {stale.permalink && <a href={stale.permalink} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="ml-2 text-gray-400 hover:text-brand-700 hover:underline">Full diff on GitHub →</a>}
               </summary>
-              <div className="mt-2 pt-2 border-t border-[#71717a]/70 grid gap-4 lg:grid-cols-2">
+              <div className="mt-2 pt-2 border-t border-[#a1a1aa]/70 grid gap-4 lg:grid-cols-2">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Commits ({commitCount})</p>
                   <ul className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
@@ -689,7 +689,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
           ))}
         </div>
 
-        <div className="mt-2.5 pt-2.5 border-t border-[#71717a]/70">
+        <div className="mt-2.5 pt-2.5 border-t border-[#a1a1aa]/70">
           <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-0.5">Recommendation</p>
           <p className="text-[13px] text-navy-800 leading-snug">{r.recommendation.text}</p>
         </div>
@@ -767,7 +767,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
             )}
             {pr.state === 'error' && <div className="mt-3 rounded-lg border border-[#f5a3a3] bg-[#fde3e3] px-3 py-2.5 text-sm text-[#c0392b]">{pr.error}</div>}
             {guided.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-[#71717a]/60">
+              <div className="mt-4 pt-3 border-t border-[#a1a1aa]/60">
                 <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1.5">Guided — needs a human decision</p>
                 <ul className="space-y-1">
                   {guided.map((g, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-600"><ArrowRight size={13} className="text-gray-300 shrink-0 mt-0.5" /><span><span className="font-medium text-navy-700">{g.label}</span> — {g.hint}</span></li>))}
@@ -791,7 +791,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         <h3 className="text-sm font-semibold text-navy-900 mb-2">Platform Intelligence</h3>
         <div className="flex flex-wrap gap-2">
           {[`${r.appType}`, `${r.services} services`, ...r.cloud, r.orchestration, r.ci, r.infra, ...r.monitoring].filter((x) => x && x !== '—').map((x, i) => (
-            <span key={i} className="inline-flex items-center rounded-lg border border-[#71717a] bg-white px-2.5 py-1.5 text-xs font-medium text-navy-700">{x}</span>
+            <span key={i} className="inline-flex items-center rounded-lg border border-[#a1a1aa] bg-white px-2.5 py-1.5 text-xs font-medium text-navy-700">{x}</span>
           ))}
         </div>
       </div>
@@ -919,7 +919,7 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
         <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
           <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {[{ k: 'Application', v: r.appType }, { k: 'Services', v: String(r.services || '—') }, { k: 'Cloud', v: r.cloud.join(', ') || '—' }, { k: 'Containers', v: r.container }, { k: 'Orchestration', v: r.orchestration }, { k: 'Infrastructure', v: r.infra }, { k: 'CI/CD', v: r.ci }, { k: 'Monitoring', v: r.monitoring.join(', ') || '—' }, { k: 'Environments', v: r.envs.length ? String(r.envs.length) : '—' }].map((g) => (
-              <div key={g.k} className="rounded-xl border border-[#71717a] px-3 py-2.5"><div className="text-[10px] uppercase tracking-wide text-gray-400">{g.k}</div><div className="text-sm font-semibold text-navy-900 mt-0.5 leading-tight">{g.v}</div></div>
+              <div key={g.k} className="rounded-xl border border-[#a1a1aa] px-3 py-2.5"><div className="text-[10px] uppercase tracking-wide text-gray-400">{g.k}</div><div className="text-sm font-semibold text-navy-900 mt-0.5 leading-tight">{g.v}</div></div>
             ))}
           </div>
           {/* inferred architecture */}
@@ -951,6 +951,6 @@ export function RepoDiscovery({ project, onRunValidation, onConnect, hadFailure 
 }
 
 function ArchNode({ icon, label, accent }) {
-  return <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium ${accent ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-[#71717a] bg-white text-navy-700'}`}><span className="text-gray-400">{icon}</span>{label}</span>;
+  return <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium ${accent ? 'border-brand-300 bg-brand-50 text-brand-800' : 'border-[#a1a1aa] bg-white text-navy-700'}`}><span className="text-gray-400">{icon}</span>{label}</span>;
 }
 function Conn() { return <span className="h-3 w-px bg-gray-300" />; }

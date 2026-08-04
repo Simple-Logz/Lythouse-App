@@ -117,14 +117,14 @@ export function ReleaseHistoryTab({projectId,workspaceId}:{projectId:string;work
             const isOpen=expanded===h.id;
             const statusIcon=h.status==='deployed'?<CheckCircle2 size={16} className="text-green-600"/>:h.status==='rolled_back'?<RotateCcw size={16} className="text-amber-600"/>:h.status==='failed'?<XCircle size={16} className="text-red-600"/>:<Clock size={16} className="text-gray-400"/>;
             return(
-              <div key={h.id} className={`card p-0 overflow-hidden border-2 ${h.status==='deployed'?'border-green-200':h.status==='rolled_back'?'border-amber-200':h.status==='failed'?'border-red-200':'border-[#71717a]'}`}>
+              <div key={h.id} className={`card p-0 overflow-hidden border-2 ${h.status==='deployed'?'border-green-200':h.status==='rolled_back'?'border-amber-200':h.status==='failed'?'border-red-200':'border-[#a1a1aa]'}`}>
                 <div className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50" onClick={()=>setExpanded(isOpen?null:h.id)}>
                   {isOpen?<ChevronDown size={15} className="text-gray-400"/>:<ChevronRight size={15} className="text-gray-400"/>}
                   {statusIcon}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-navy-900">{h.release_name}</span>
-                      {h.version&&<span className="chip bg-gray-100 text-gray-600 border border-[#71717a] text-xs">{h.version}</span>}
+                      {h.version&&<span className="chip bg-gray-100 text-gray-600 border border-[#a1a1aa] text-xs">{h.version}</span>}
                       <span className={`chip text-xs border capitalize ${h.environment==='production'?'bg-red-50 text-red-600 border-red-200':h.environment==='staging'?'bg-amber-50 text-amber-600 border-amber-200':'bg-blue-50 text-blue-600 border-blue-200'}`}>{h.environment}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
@@ -150,7 +150,7 @@ export function ReleaseHistoryTab({projectId,workspaceId}:{projectId:string;work
                         {label:'Open Findings',value:h.findings_at_release,color:h.findings_at_release>0?'text-amber-600':'text-green-600'},
                         {label:'Rollback Available',value:h.rollback_available?'Yes':'No',color:h.rollback_available?'text-green-600':'text-red-600'},
                       ].map(d=>(
-                        <div key={d.label} className="rounded-lg bg-white border border-[#71717a] p-2.5 text-center">
+                        <div key={d.label} className="rounded-lg bg-white border border-[#a1a1aa] p-2.5 text-center">
                           <div className={`font-bold capitalize ${d.color}`}>{d.value}</div>
                           <div className="text-gray-400 mt-0.5">{d.label}</div>
                         </div>

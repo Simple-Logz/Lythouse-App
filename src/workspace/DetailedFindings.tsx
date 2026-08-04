@@ -77,11 +77,11 @@ export function DetailedFindings({ project, paths, onTicket }) {
               {isOpen && (
                 <div className="px-4 pb-3 pt-1 space-y-2 bg-gray-50/40">
                   {g.findings.map((f, i) => (
-                    <div key={i} className="flex items-start justify-between gap-3 rounded-lg border border-[#71717a] bg-white px-3 py-2">
+                    <div key={i} className="flex items-start justify-between gap-3 rounded-lg border border-[#a1a1aa] bg-white px-3 py-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`chip text-[10px] ${SEV[f.severity]}`}>{f.severity}</span>
-                          <span className="chip text-[10px] bg-gray-100 text-gray-600 border border-[#71717a]">{f.type === 'omission' ? 'Omission' : 'Commission'}</span>
+                          <span className="chip text-[10px] bg-gray-100 text-gray-600 border border-[#a1a1aa]">{f.type === 'omission' ? 'Omission' : 'Commission'}</span>
                           <span className="text-sm font-medium text-navy-800">{f.title}</span>
                           <span className="text-[11px] text-gray-400">line {f.line}</span>
                         </div>

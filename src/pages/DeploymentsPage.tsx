@@ -44,7 +44,7 @@ return<div>
 <div>
 <h3 className="text-sm font-semibold text-navy-900">{d.project_name??'Unknown project'}</h3>
 <div className="mt-1 flex items-center gap-2">
-<span className={`chip border ${ENV_COLORS[d.environment]??'bg-gray-100 text-gray-600 border-[#71717a]'}`}><Globe size={11}/>{d.environment}</span>
+<span className={`chip border ${ENV_COLORS[d.environment]??'bg-gray-100 text-gray-600 border-[#a1a1aa]'}`}><Globe size={11}/>{d.environment}</span>
 <StatusBadge status={(d.status as any)??'pending'}/>
 </div>
 </div>

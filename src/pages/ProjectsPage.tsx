@@ -265,7 +265,7 @@ return<div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="truncate text-sm font-semibold text-navy-900">{p.name}</span>
-              {p.language&&<span className="chip border border-[#71717a] bg-gray-100 text-[11px] text-gray-600">{p.language}</span>}
+              {p.language&&<span className="chip border border-[#a1a1aa] bg-gray-100 text-[11px] text-gray-600">{p.language}</span>}
             </div>
             {p.description&&<p className="mt-0.5 truncate text-xs text-gray-400">{p.description}</p>}
           </div>
@@ -297,7 +297,7 @@ return<div>
     {workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
   </select>}
 
-<div className="mb-4 flex rounded-lg border border-[#71717a] p-0.5 text-xs font-semibold">
+<div className="mb-4 flex rounded-lg border border-[#a1a1aa] p-0.5 text-xs font-semibold">
   <button onClick={()=>setImportTab('manual')} className={`flex-1 rounded-md py-1.5 transition-colors ${importTab==='manual'?'bg-navy-900 text-white':'text-gray-500 hover:text-navy-900'}`}>Enter repository details</button>
   <button onClick={()=>setImportTab('browse')} className={`flex-1 rounded-md py-1.5 transition-colors ${importTab==='browse'?'bg-navy-900 text-white':'text-gray-500 hover:text-navy-900'}`}>Browse GitHub</button>
 </div>
@@ -357,11 +357,11 @@ return<div>
         <input className="input mb-3" value={repoSearch} onChange={e=>setRepoSearch(e.target.value)} placeholder="Search your repositories…"/>
         <div className="space-y-1.5 max-h-[46vh] overflow-y-auto -mx-1 px-1">
           {repos.filter(r=>r.full_name?.toLowerCase().includes(repoSearch.toLowerCase())).map(r=>(
-            <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#71717a] px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
+            <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#a1a1aa] px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-navy-900 truncate">{r.name}</span>
-                  <span className={`chip text-[10px] ${r.private?'bg-amber-50 text-amber-700 border border-amber-200':'bg-gray-100 text-gray-500 border border-[#71717a]'}`}>{r.private?'private':'public'}</span>
+                  <span className={`chip text-[10px] ${r.private?'bg-amber-50 text-amber-700 border border-amber-200':'bg-gray-100 text-gray-500 border border-[#a1a1aa]'}`}>{r.private?'private':'public'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                   <span className="truncate">{r.full_name}</span>

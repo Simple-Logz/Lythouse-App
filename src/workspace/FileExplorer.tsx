@@ -216,7 +216,7 @@ function FileViewer({ projectId, path, highlightLine, onHighlightConsumed, onDel
 
       {error && <div className="mb-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-danger-600"><AlertTriangle size={13} />{error}</div>}
 
-      <div className="flex-1 overflow-auto rounded-xl border border-[#71717a] bg-white">
+      <div className="flex-1 overflow-auto rounded-xl border border-[#a1a1aa] bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-16"><Spinner size={18} className="text-gray-400" /></div>
         ) : binary ? (

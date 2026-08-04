@@ -144,7 +144,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
         {[
           {label:'Critical',value:findings.filter(f=>f.status==='open'&&f.severity==='critical').length,color:'text-danger-600',bg:'bg-red-50',border:'border-red-200',f:()=>{setSevFilter('critical');setStatusFilter('open');}},
           {label:'High',value:findings.filter(f=>f.status==='open'&&f.severity==='high').length,color:'text-amber-600',bg:'bg-amber-50',border:'border-amber-200',f:()=>{setSevFilter('high');setStatusFilter('open');}},
-          {label:'Open',value:open.length,color:'text-navy-900',bg:'bg-gray-50',border:'border-[#71717a]',f:()=>{setSevFilter('all');setStatusFilter('open');}},
+          {label:'Open',value:open.length,color:'text-navy-900',bg:'bg-gray-50',border:'border-[#a1a1aa]',f:()=>{setSevFilter('all');setStatusFilter('open');}},
           {label:'Resolved',value:resolved.length,color:'text-green-600',bg:'bg-green-50',border:'border-green-200',f:()=>{setSevFilter('all');setStatusFilter('resolved');}},
         ].map(c=>(
           <button key={c.label} onClick={c.f} className={`card flex items-center justify-between py-3 px-4 border ${c.border} ${c.bg} hover:opacity-80 transition-opacity text-left`}>
@@ -158,12 +158,12 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
+        <div className="flex gap-1 rounded-lg border border-[#a1a1aa] bg-gray-50 p-1">
           {(['all','open','resolved','ignored'] as StatusFilter[]).map(s=>(
             <button key={s} onClick={()=>setStatusFilter(s)} className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors ${statusFilter===s?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700'}`}>{s==='all'?'All':s}</button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-lg border border-[#71717a] bg-gray-50 p-1">
+        <div className="flex gap-1 rounded-lg border border-[#a1a1aa] bg-gray-50 p-1">
           {(['all','critical','high','medium','low'] as SevFilter[]).map(s=>(
             <button key={s} onClick={()=>setSevFilter(s)} className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors ${sevFilter===s?'bg-white text-navy-900 shadow-sm':'text-gray-500 hover:text-gray-700'}`}>{s==='all'?'All severity':s}</button>
           ))}
@@ -192,7 +192,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
                 <div className="flex items-center gap-2 mb-2">
                   <CatIcon size={15} className={meta.color}/>
                   <h3 className="text-sm font-semibold text-navy-900">{meta.label}</h3>
-                  <span className="chip bg-gray-100 text-gray-500 border border-[#71717a]">{items.length}</span>
+                  <span className="chip bg-gray-100 text-gray-500 border border-[#a1a1aa]">{items.length}</span>
                   {catResolved>0&&<span className="chip bg-green-50 text-green-700 border border-green-200 ml-1"><CheckCircle2 size={10}/>{catResolved} resolved</span>}
                 </div>
                 <div className="space-y-1.5">
@@ -200,7 +200,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
                     const isOpen=expanded===f.id;
                     const hasGeneratedFix=!!generatedFixes[f.id];
                     return(
-                      <div key={f.id} className={`rounded-xl border overflow-hidden transition-all ${f.status==='resolved'?'opacity-60 border-[#71717a]':f.severity==='critical'?'border-red-200':f.severity==='high'?'border-amber-200':'border-[#71717a]'}`}>
+                      <div key={f.id} className={`rounded-xl border overflow-hidden transition-all ${f.status==='resolved'?'opacity-60 border-[#a1a1aa]':f.severity==='critical'?'border-red-200':f.severity==='high'?'border-amber-200':'border-[#a1a1aa]'}`}>
                         <button className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50/80 ${isOpen?'bg-gray-50':''}`} onClick={()=>setExpanded(isOpen?null:f.id)}>
                           {isOpen?<ChevronDown size={14} className="shrink-0 text-gray-400"/>:<ChevronRight size={14} className="shrink-0 text-gray-400"/>}
                           <SeverityBadge severity={f.severity}/>
@@ -219,7 +219,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
 
                             {/* File location */}
                             {f.file_path&&(
-                              <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-[#71717a] px-3 py-2">
+                              <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-[#a1a1aa] px-3 py-2">
                                 <FileCode size={14} className="text-gray-400 shrink-0"/>
                                 <code className="text-xs text-navy-800 flex-1">{f.file_path}{f.line?`:${f.line}`:''}</code>
                                 <button onClick={()=>onOpenFile(f.file_path??'',f.line??undefined,{title:f.title,recommendation:f.recommendation||'',line:f.line??undefined,file:f.file_path??undefined})} className="text-xs text-brand-600 hover:underline font-medium">View file →</button>
@@ -277,7 +277,7 @@ export function FindingsTab({projectId,onOpenFile,onRunValidation}:Props){
 
                             {/* Step by step fix guidance */}
                             {f.status!=='resolved'&&(
-                              <div className="rounded-xl border border-[#71717a] bg-gray-50 px-4 py-3 space-y-2">
+                              <div className="rounded-xl border border-[#a1a1aa] bg-gray-50 px-4 py-3 space-y-2">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">How to fix this</p>
                                 {[
                                   f.file_path?`1. Open ${f.file_path}${f.line?` at line ${f.line}`:''}`:null,
