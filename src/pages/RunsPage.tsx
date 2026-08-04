@@ -4,7 +4,7 @@
 // aggregated in Analytics. Every field shown (status, risk, duration,
 // commit, trigger) comes straight off the `validations` row; nothing here
 // is invented or simulated.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { supabase, type Validation } from '../lib/supabase'
 import { PageHeader, Spinner, fmtDuration } from '../lib/ui'
 import { Link } from '../lib/router'
@@ -62,7 +62,13 @@ const CSS = `
 .rn-custom-trig:hover{border-color:var(--lh-border2)}
 .rn-cal-wrap{position:relative}
 .rn-cal-ov{position:fixed;inset:0;z-index:39}
-.rn-cal-pop{position:absolute;top:calc(100% + 8px);left:0;z-index:40;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;box-shadow:0 22px 54px -18px rgba(4,8,14,.35);padding:14px;width:296px}
+/* position:fixed + top/left set in JS (clamped to the viewport against the
+   trigger's real bounding rect) instead of position:absolute anchored to
+   the trigger — a plain absolute popover could get sliced off by an
+   ancestor's overflow or simply render past the edge of a narrow viewport.
+   transition is just a quick fade-in once JS has placed it; it starts
+   opacity:0 off-screen for one frame while it measures itself. */
+.rn-cal-pop{position:fixed;z-index:40;background:var(--lh-surface);border:0.5px solid var(--lh-border);border-radius:14px;box-shadow:0 22px 54px -18px rgba(4,8,14,.35);padding:14px;width:296px;transition:opacity .1s ease-out}
 .rn-cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .rn-cal-hd .mo{font-size:13.5px;font-weight:700;color:var(--lh-text)}
 .rn-cal-hd button{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:none;background:none;color:var(--lh-text2);cursor:pointer}
@@ -123,7 +129,12 @@ const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
 // One month grid, click a start day then an end day to select a range —
 // replaces the previous two-separate-native-datetime-input layout.
-function DateRangeCalendar({ from, to, onApply, onClose }: { from: string; to: string; onApply: (from: string, to: string) => void; onClose: () => void }) {
+// Positioned as position:fixed and placed in JS against the trigger's real
+// on-screen rect (measured after mount, then clamped to the viewport) so it
+// always renders fully on-screen — it no longer depends on a parent's
+// overflow/scroll behavior and can't get sliced off on narrow screens the
+// way a plain CSS-anchored `position:absolute` popover was.
+function DateRangeCalendar({ from, to, anchor, onApply, onClose }: { from: string; to: string; anchor: DOMRect | null; onApply: (from: string, to: string) => void; onClose: () => void }) {
   const initFrom = from ? startOfDay(new Date(from)) : null
   const initTo = to ? startOfDay(new Date(to)) : null
   const [viewMonth, setViewMonth] = useState(() => initFrom || new Date())
@@ -131,6 +142,25 @@ function DateRangeCalendar({ from, to, onApply, onClose }: { from: string; to: s
   const [pendingTo, setPendingTo] = useState<Date | null>(initTo)
   const [fromTime, setFromTime] = useState(() => from ? new Date(from).toTimeString().slice(0, 5) : '00:00')
   const [toTime, setToTime] = useState(() => to ? new Date(to).toTimeString().slice(0, 5) : '23:59')
+  const popRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ top: number; left: number; visible: boolean }>({ top: -9999, left: -9999, visible: false })
+
+  useLayoutEffect(() => {
+    const pad = 12
+    const el = popRef.current
+    const w = el?.offsetWidth ?? 296
+    const h = el?.offsetHeight ?? 420
+    const a = anchor
+    let left = a ? a.left : pad
+    let top = a ? a.bottom + 8 : pad
+    if (left + w > window.innerWidth - pad) left = window.innerWidth - w - pad
+    if (left < pad) left = pad
+    if (a && top + h > window.innerHeight - pad) {
+      const above = a.top - h - 8
+      top = above >= pad ? above : Math.max(pad, window.innerHeight - h - pad)
+    }
+    setPos({ top, left, visible: true })
+  }, [anchor])
 
   const year = viewMonth.getFullYear(), month = viewMonth.getMonth()
   const totalDays = new Date(year, month + 1, 0).getDate()
@@ -156,7 +186,12 @@ function DateRangeCalendar({ from, to, onApply, onClose }: { from: string; to: s
   return (
     <>
       <div className="rn-cal-ov" onClick={onClose} />
-      <div className="rn-cal-pop" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={popRef}
+        className="rn-cal-pop"
+        style={{ top: pos.top, left: pos.left, opacity: pos.visible ? 1 : 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="rn-cal-hd">
           <button onClick={() => setViewMonth(new Date(year, month - 1, 1))}><ChevronLeft size={15} /></button>
           <span className="mo">{viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
@@ -206,6 +241,8 @@ export function RunsPage() {
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [calOpen, setCalOpen] = useState(false)
+  const [calAnchor, setCalAnchor] = useState<DOMRect | null>(null)
+  const calTrigRef = useRef<HTMLButtonElement>(null)
   const [groupBy, setGroupBy] = useState('none')
 
   const wsId = () => localStorage.getItem('sandbox.activeWs')
@@ -316,7 +353,12 @@ export function RunsPage() {
         </label>
         {rangeId === 'custom' && (
           <div className="rn-cal-wrap">
-            <button type="button" className="rn-custom-trig" onClick={() => setCalOpen((v) => !v)}>
+            <button
+              type="button"
+              ref={calTrigRef}
+              className="rn-custom-trig"
+              onClick={() => { setCalAnchor(calTrigRef.current?.getBoundingClientRect() ?? null); setCalOpen((v) => !v) }}
+            >
               <Calendar size={13} />
               {customFrom && customTo ? `${fmtDateLabel(new Date(customFrom))} – ${fmtDateLabel(new Date(customTo))}` : 'Select dates'}
               <ChevronDown size={13} />
@@ -325,6 +367,7 @@ export function RunsPage() {
               <DateRangeCalendar
                 from={customFrom}
                 to={customTo}
+                anchor={calAnchor}
                 onApply={(f, t) => { setCustomFrom(f); setCustomTo(t); setCalOpen(false) }}
                 onClose={() => setCalOpen(false)}
               />
