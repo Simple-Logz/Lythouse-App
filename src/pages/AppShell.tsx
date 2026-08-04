@@ -4,7 +4,7 @@ import {
   ChartBar as BarChart3, FolderGit2, Server, Boxes, LogOut, BookOpen,
   Menu, Sparkles, Scale, Rocket, ShieldCheck, Zap, Activity,
   Plug, Bug, ClipboardCheck, FileWarning, ScrollText, Users, CreditCard, Settings as SettingsIcon,
-  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight, FileText, Gauge
+  Building2, Layers, Workflow, ChevronsUpDown, Check, Plus, Pin, X, House, ChevronRight, FileText, Gauge, ListFilter
 } from 'lucide-react'
 import { supabase, type Workspace, type Organization, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins'
@@ -35,6 +35,7 @@ const SECTIONS = [
     { label: 'Simulator', to: '/simulator', icon: Zap },
   ] },
   { key: 'ops', label: 'Operations', icon: BarChart3, items: [
+    { label: 'Runs', to: '/runs', icon: ListFilter },
     { label: 'Analytics', to: '/analytics', icon: Activity },
     { label: 'Findings', to: '/findings', icon: Bug },
     { label: 'Executive View', to: '/executive', icon: BarChart3 },
@@ -64,7 +65,7 @@ const PIN_ICONS: Record<PinType, any> = {
   workspace: Building2, project: FolderGit2, finding: Bug, stack: Layers, environment: Server,
 }
 const TITLES: Record<string, string> = {
-  '/dashboard': 'Overview', '/executive': 'Executive View', '/projects': 'Projects',
+  '/dashboard': 'Overview', '/executive': 'Executive View', '/projects': 'Projects', '/runs': 'Runs',
   '/deployments': 'Deployments', '/simulator': 'Deployment Simulator', '/analytics': 'Analytics',
   '/policies': 'Policy Studio', '/environment': 'Environment Validation', '/integrations': 'Integrations',
   '/findings': 'Findings', '/change-management': 'Change Management', '/approvals': 'Approvals', '/compliance': 'Compliance', '/incidents': 'Incidents', '/audit': 'Audit',

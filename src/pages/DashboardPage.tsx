@@ -165,12 +165,13 @@ export function DashboardPage() {
   const [vCounts, setVCounts] = useState({ completed: 0, running: 0, failed: 0, total: 0 })
   const [memberCount, setMemberCount] = useState<number | null>(null)
   const [pendingInviteCount, setPendingInviteCount] = useState(0)
+  const [memberInitials, setMemberInitials] = useState<string[]>([])
   const wsId = () => localStorage.getItem('sandbox.activeWs')
 
   const load = useCallback(async () => {
     const wid = wsId()
     if (!wid) { setLoading(false); return }
-    const [wr, pr, vl, fn, ap, ec, vTotal, vDone, vRun, vFail, mem, inv] = await Promise.all([
+    const [wr, pr, vl, fn, ap, ec, vTotal, vDone, vRun, vFail, mem, inv, memRows] = await Promise.all([
       supabase.from('workspaces').select('name').eq('id', wid).single(),
       supabase.from('projects').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }),
       supabase.from('validations').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }).limit(50),
@@ -185,6 +186,7 @@ export function DashboardPage() {
       supabase.from('validations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid).eq('status', 'failed'),
       supabase.from('workspace_members').select('id', { count: 'exact', head: true }).eq('workspace_id', wid),
       supabase.from('workspace_invitations').select('id', { count: 'exact', head: true }).eq('workspace_id', wid).eq('status', 'pending'),
+      supabase.from('workspace_members').select('user_id').eq('workspace_id', wid).order('created_at', { ascending: true }).limit(4),
     ])
     setWs(wr.data)
     setProjects(pr.data ?? [])
@@ -195,6 +197,19 @@ export function DashboardPage() {
     setVCounts({ total: vTotal.count ?? 0, completed: vDone.count ?? 0, running: vRun.count ?? 0, failed: vFail.count ?? 0 })
     setMemberCount(mem.count ?? null)
     setPendingInviteCount(inv.count ?? 0)
+    // Real initials for the team widget — no placeholder A/B/C/D letters.
+    const memberIds = (memRows.data ?? []).map((m: any) => m.user_id).filter(Boolean)
+    if (memberIds.length) {
+      const { data: profs } = await supabase.from('profiles').select('id,full_name,email').in('id', memberIds)
+      const byId = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]))
+      setMemberInitials(memberIds.map((id: string) => {
+        const p = byId[id]
+        const name = p?.full_name?.trim() || p?.email || ''
+        return name ? name.charAt(0).toUpperCase() : '?'
+      }))
+    } else {
+      setMemberInitials([])
+    }
     setSelProj((p) => p || (pr.data?.[0]?.id ?? ''))
     setLoading(false)
   }, [])
@@ -327,7 +342,7 @@ export function DashboardPage() {
   // about this workspace (no fabricated timers or progress percentages).
   const missions = [
     { label: 'Connect your first project', done: projects.length > 0, to: '/projects', icon: GitBranch },
-    { label: 'Run your first validation', done: vCounts.total > 0, to: projects.length ? '/projects' : '/projects', icon: Rocket },
+    { label: 'Run your first validation', done: vCounts.total > 0, to: '/projects', icon: Rocket },
     { label: 'Connect an environment', done: connections.length > 0, to: '/environment', icon: Server },
     { label: 'Invite a teammate', done: (memberCount ?? 0) > 1, to: '/team', icon: UserPlus },
   ]
@@ -337,10 +352,10 @@ export function DashboardPage() {
   // pattern, driven entirely by real counts fetched above.
   const vOther = Math.max(0, vCounts.total - vCounts.completed - vCounts.running - vCounts.failed)
   const vTiles = [
-    { label: 'Completed', value: vCounts.completed, tone: 'ok' },
-    { label: 'Running', value: vCounts.running, tone: 'warn' },
-    { label: 'Failed', value: vCounts.failed, tone: 'bad' },
-    { label: 'Other', value: vOther, tone: 'off' },
+    { label: 'Completed', value: vCounts.completed, tone: 'ok', to: '/runs?status=completed' },
+    { label: 'Running', value: vCounts.running, tone: 'warn', to: '/runs?status=running' },
+    { label: 'Failed', value: vCounts.failed, tone: 'bad', to: '/runs?status=failed' },
+    { label: 'Other', value: vOther, tone: 'off', to: '/runs' },
   ]
 
   return (
@@ -389,14 +404,14 @@ export function DashboardPage() {
         <div className="dv-card">
           <div className="rc-top">
             <div className="rc-title"><BarChart3 size={15} style={{ color: 'var(--lh-text3)' }} /> Validation runs</div>
-            <Link to="/analytics" style={{ fontSize: 12.5, color: 'var(--lh-text2)', fontWeight: 500, textDecoration: 'none' }}>View analytics</Link>
+            <Link to="/runs" style={{ fontSize: 12.5, color: 'var(--lh-text2)', fontWeight: 500, textDecoration: 'none' }}>View all runs</Link>
           </div>
           {vCounts.total === 0 ? (
             <div className="dv-empty">No validations run yet. They'll appear here the moment you run one.</div>
           ) : (
             <div className="dv-tiles">
               {vTiles.map((t) => (
-                <Link to="/analytics" key={t.label} className={`dv-tile ${t.tone}`}>
+                <Link to={t.to} key={t.label} className={`dv-tile ${t.tone}`}>
                   <span className="tt"><span className="td" />{t.label}</span>
                   <span className="tv">{t.value}</span>
                 </Link>
@@ -429,9 +444,7 @@ export function DashboardPage() {
           <div className="team-body">
             <div className="team-count">
               <div className="team-avs">
-                {Array.from({ length: Math.min(memberCount ?? 0, 4) }).map((_, i) => (
-                  <span key={i}>{String.fromCharCode(65 + i)}</span>
-                ))}
+                {memberInitials.map((ch, i) => <span key={i}>{ch}</span>)}
               </div>
               <div>
                 <div className="team-num">{memberCount ?? 0}</div>
