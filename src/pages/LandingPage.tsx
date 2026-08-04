@@ -471,7 +471,7 @@ const PT_STEP_MS = 3000;
 
 const PT_CSS = `
 .pt-wrap{position:relative}
-.pt-glow{position:absolute;inset:-28px;border-radius:2.6rem;filter:blur(60px);opacity:.7;background:linear-gradient(120deg,rgba(167,139,250,.5),rgba(147,197,253,.32),rgba(240,171,214,.4))}
+.pt-glow{position:absolute;inset:-28px;border-radius:2.6rem;filter:blur(60px);opacity:.7;background:linear-gradient(120deg,rgba(167,139,250,.5),rgba(147,197,253,.32),rgba(88,58,168,.45))}
 .pt-frame{position:relative;width:100%;aspect-ratio:16/10;border-radius:18px;overflow:hidden;border:1px solid rgba(196,181,253,.22);background:linear-gradient(180deg,#221b38 0%,#181325 100%);box-shadow:0 30px 70px -22px rgba(8,6,20,.7)}
 .pt-top{height:34px;display:flex;align-items:center;gap:7px;padding:0 13px;border-bottom:1px solid rgba(196,181,253,.12);background:rgba(255,255,255,.03)}
 .pt-dot{width:9px;height:9px;border-radius:50%}
@@ -707,7 +707,7 @@ export function LandingPage() {
         <div className="lh-orb-r absolute -top-24 right-[6%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
           style={{ background: 'radial-gradient(closest-side, rgba(147,197,253,.40), transparent 70%)' }} />
         <div className="absolute top-24 left-[4%] h-[420px] w-[420px] rounded-full blur-[60px] lg:blur-[120px]"
-          style={{ background: 'radial-gradient(closest-side, rgba(240,171,214,.38), transparent 70%)' }} />
+          style={{ background: 'radial-gradient(closest-side, rgba(88,58,168,.4), transparent 70%)' }} />
       </div>
 
       <div className="relative">
@@ -795,7 +795,7 @@ export function LandingPage() {
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur"><ShieldCheck size={12} />Pre-deployment intelligence platform</span>
               <h1 className="mt-6 text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06]">
                 Validate every change you make<br />
-                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">before it reaches production.</span>
+                <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300 bg-clip-text text-transparent">before it reaches production.</span>
               </h1>
 
               {/* Three-step path. Uses a plain straight connecting line rather
@@ -821,7 +821,7 @@ export function LandingPage() {
               </div>
 
               <p className="mt-8 text-lg font-semibold text-white">
-                Every deploy, <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-[#e79ad4] bg-clip-text text-transparent">backed by evidence.</span>
+                Every deploy, <span className="bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300 bg-clip-text text-transparent">backed by evidence.</span>
               </p>
 
               <div className="mt-8 flex max-w-md flex-col sm:flex-row items-stretch gap-2">

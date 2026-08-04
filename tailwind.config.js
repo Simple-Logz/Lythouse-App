@@ -78,7 +78,9 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
+        // 'display' used to alias the rounded serif Fraunces; it's now just
+        // Inter so any lingering font-display usage stays on-brand.
+        display: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
         glossy: '0 1px 0 0 rgba(255,255,255,.3) inset, 0 8px 20px -6px rgba(16,24,40,.20)',

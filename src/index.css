@@ -1,16 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* Inter/Fraunces are now loaded via <link rel=stylesheet> in index.html
-   (with preconnect) instead of a CSS @import — a CSS @import of an external
-   stylesheet blocks the rest of this file from applying until that fetch
-   finishes, which was adding an extra round-trip before anything painted,
-   most noticeable on mobile connections. */
+/* Inter is loaded via <link rel=stylesheet> in index.html (with preconnect)
+   instead of a CSS @import — a CSS @import of an external stylesheet blocks
+   the rest of this file from applying until that fetch finishes, which was
+   adding an extra round-trip before anything painted, most noticeable on
+   mobile connections. */
 @layer base{
   html{font-size:16.5px;}
   body{@apply text-navy-900 antialiased;background-color:#fbfaff;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
-  /* Editorial serif display for headings (Fraunces); Inter stays for body/UI. */
-  h1,h2,h3{font-family:'Fraunces','Georgia',serif;font-optical-sizing:auto;letter-spacing:-.01em;}
+  /* Headings use the same enterprise sans as the body (previously a rounded
+     serif, Fraunces — read as too soft/editorial for a SaaS product) at a
+     heavier weight and tighter tracking for contrast against body copy. */
+  h1,h2,h3{font-family:'Inter',system-ui,-apple-system,sans-serif;font-weight:800;letter-spacing:-.025em;}
 }
 @layer components{
 .card{@apply rounded-2xl border border-gray-200/80 bg-white p-5 shadow-soft;}
