@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase, type AuditLog } from '../lib/supabase';
 import { PageHeader, Spinner, EmptyState, Breadcrumb, timeAgo } from '../lib/ui';
-import { useRouter } from '../lib/router';
-import { ScrollText, Download, ListFilter as Filter } from 'lucide-react';
+import { useRouter, Link } from '../lib/router';
+import { usePlanId } from './AppShell';
+import { ScrollText, Download, ListFilter as Filter, Lock } from 'lucide-react';
 
 export function AuditLogPage() {
   const { navigate } = useRouter();
+  const planId = usePlanId();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [actionFilter, setActionFilter] = useState('all');
@@ -35,7 +37,13 @@ export function AuditLogPage() {
 
   const filtered = actionFilter === 'all' ? logs : logs.filter(l => l.action === actionFilter);
 
+  // 'Audit log export' is listed as an Enterprise-plan feature on /plans —
+  // viewing the log itself stays open to everyone (nothing on the pricing
+  // page ever restricted viewing), but the export button is the real gate.
+  const canExport = planId === 'enterprise';
+
   const exportCsv = () => {
+    if (!canExport) return;
     const rows = [['action', 'entity_type', 'entity_id', 'created_at', 'metadata']];
     filtered.forEach(l => rows.push([
       l.action,
@@ -60,7 +68,10 @@ export function AuditLogPage() {
         title="Audit Log"
         description="Every action taken across this workspace."
         breadcrumb={<Breadcrumb items={[{ label: 'Settings', to: '/settings' }, { label: 'Audit Log' }]} />}
-        actions={<button onClick={exportCsv} disabled={!filtered.length} className="btn-secondary"><Download size={16} /> Export</button>}
+        actions={canExport
+          ? <button onClick={exportCsv} disabled={!filtered.length} className="btn-secondary"><Download size={16} /> Export</button>
+          : <Link to="/plans" className="btn-secondary" title="Audit log export is an Enterprise plan feature"><Lock size={14} /> Export</Link>
+        }
       />
 
       <div className="mb-4 flex items-center gap-2">

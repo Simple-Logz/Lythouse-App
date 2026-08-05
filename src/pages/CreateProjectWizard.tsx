@@ -121,9 +121,9 @@ textarea.wz-in{resize:vertical;min-height:64px}
 .wz-btn.gho:hover{background:var(--lh-surface2);color:var(--lh-text)}
 `
 
-export function CreateProjectWizard({ open, onClose, workspaces, selectedWs, existingNames, onCreated }: {
+export function CreateProjectWizard({ open, onClose, workspaces, selectedWs, existingNames, onCreated, atLimit }: {
   open: boolean; onClose: () => void; workspaces: { id: string; name: string }[];
-  selectedWs: string; existingNames: string[]; onCreated: (p: any) => void;
+  selectedWs: string; existingNames: string[]; onCreated: (p: any) => void; atLimit?: boolean;
 }) {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -168,6 +168,11 @@ export function CreateProjectWizard({ open, onClose, workspaces, selectedWs, exi
   }
 
   const create = async () => {
+    // Defensive backstop — ProjectsPage already hides/redirects the entry
+    // points that open this wizard once a Free workspace hits its project
+    // limit, but check again here too in case the wizard was already open
+    // when the limit was hit (e.g. a second tab creating a project).
+    if (atLimit) { setError('Your plan is at its project limit. Upgrade to add more.'); return }
     setSaving(true); setError('')
     const { data, error: err } = await supabase.from('projects').insert({
       workspace_id: f.ws, name: f.name.trim(), description: f.description.trim() || null,

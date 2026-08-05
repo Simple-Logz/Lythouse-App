@@ -13,6 +13,7 @@ import {
 } from '../../lib/supabase';
 import { PageHeader, Spinner, Breadcrumb } from '../../lib/ui';
 import { useRouter } from '../../lib/router';
+import { usePlanId } from '../AppShell';
 import { Server, Wifi, KeyRound, ListPlus, ShieldCheck, Plug, Search, FileCheck, Check, ChevronLeft, ChevronRight, ArrowLeft, TriangleAlert as AlertTriangle } from 'lucide-react';
 import {
   StepDetails,
@@ -38,8 +39,12 @@ const STEPS = [
 
 type CheckResult = { dns: string; network: string; auth: string; os: string; permissions: string; agent: string };
 
-export function EnvWizard({ planId }: { planId: PlanId }) {
+export function EnvWizard() {
   const { navigate } = useRouter();
+  // See ServerValidationPage.tsx — planId now comes from context, not a
+  // prop threaded through App.tsx's Routes(), which always resolved to
+  // 'free' regardless of the workspace's actual plan.
+  const planId = usePlanId();
   const wsId = () => localStorage.getItem('sandbox.activeWs');
   const [step, setStep] = useState(0);
   const [envId, setEnvId] = useState<string | null>(null);

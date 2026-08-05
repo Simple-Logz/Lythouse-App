@@ -1,8 +1,7 @@
 // @ts-nocheck
 import{Suspense,lazy}from'react';
 import{RouterProvider,useRouter}from'./lib/router';
-import{AppShell,usePlanId}from'./pages/AppShell';
-import type{PlanId}from'./lib/supabase';
+import{AppShell}from'./pages/AppShell';
 import{AuthPage}from'./pages/AuthPage';
 import{useAuth}from'./lib/auth';
 import{useIsMobile}from'./lib/useIsMobile';
@@ -69,7 +68,13 @@ function PageFallback(){
 
 // Shared route → page mapping, used by both the desktop shell and the mobile app
 // so every feature on the web is reachable on mobile too (no missing screens).
-export function pageForPath(path:string,planId:PlanId):ReactNode{
+// planId is no longer threaded through here — ServerValidationPage,
+// EnvWizard and EnvDetailPage now read it directly via usePlanId() (see
+// those files for why: this function's caller, Routes(), sits above
+// AppShell's PlanContext.Provider in the tree, so any planId resolved here
+// and passed down as a prop was always the context's 'free' default,
+// regardless of the workspace's real plan).
+export function pageForPath(path:string):ReactNode{
 const seg=path.split('/').filter(Boolean);
 let c:ReactNode;
 if(!seg.length||seg[0]==='dashboard')c=<DashboardPage/>;
@@ -104,11 +109,11 @@ else if(seg[0]==='load-testing')c=<LoadTestingPage/>;
 else if(seg[0]==='api-testing')c=<ApiTestingPage/>;
 else if(seg[0]==='chaos')c=<ChaosEngineeringPage/>;
 else if(seg[0]==='server-validation'){
-  if(!seg[1])c=<ServerValidationPage planId={planId}/>;
-  else if(seg[1]==='new')c=<EnvWizard planId={planId}/>;
+  if(!seg[1])c=<ServerValidationPage/>;
+  else if(seg[1]==='new')c=<EnvWizard/>;
   else if(seg[1]==='runs'&&seg[2])c=<ValidationRunPage runId={seg[2]}/>;
   else if(seg[1]==='passports')c=seg[2]?<PassportPage runId={seg[2]}/>:<PassportPage/>;
-  else c=<EnvDetailPage envId={seg[1]} planId={planId}/>;
+  else c=<EnvDetailPage envId={seg[1]}/>;
 }
 else c=<DashboardPage/>;
 return<Suspense fallback={<PageFallback/>}>{c}</Suspense>;
@@ -116,8 +121,7 @@ return<Suspense fallback={<PageFallback/>}>{c}</Suspense>;
 
 function Routes(){
 const{path}=useRouter();
-const planId=usePlanId();
-return<AppShell>{pageForPath(path,planId)}</AppShell>;
+return<AppShell>{pageForPath(path)}</AppShell>;
 }
 
 function AuthGate(){
@@ -162,7 +166,13 @@ if(!session){
 {const pending=takePendingInvite();if(pending&&!path.startsWith('/invite/')){window.history.replaceState({},'',`/invite/${pending}`);return<AcceptInvitePage token={pending}/>;}}
 // Phones get the dedicated mobile app; desktop keeps the full workspace.
 // renderPage lets the mobile app open any real page too (full feature parity).
-if(isMobile)return<MobileApp renderPage={(p:string)=>pageForPath(p,'free')}/>;
+// Note: MobileApp doesn't render inside AppShell's PlanContext.Provider, so
+// ServerValidationPage/EnvWizard/EnvDetailPage's usePlanId() calls fall back
+// to the context default ('free') here — same effective behavior as the old
+// hardcoded 'free' literal that used to be passed explicitly, so this isn't
+// a regression, but real per-plan gating on mobile still needs MobileApp to
+// fetch and provide the actual plan the same way AppShell does.
+if(isMobile)return<MobileApp renderPage={(p:string)=>pageForPath(p)}/>;
 return<Routes/>;
 }
 

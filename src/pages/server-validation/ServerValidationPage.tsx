@@ -11,6 +11,7 @@ import {
 import { PageHeader, Spinner, EmptyState, Breadcrumb, timeAgo } from '../../lib/ui';
 import { useRouter } from '../../lib/router';
 import { PinButton } from '../../lib/pins';
+import { usePlanId } from '../AppShell';
 import { Server, Plus, Lock, ArrowRight, ShieldCheck, Boxes, CirclePlay as PlayCircle, FileCheck } from 'lucide-react';
 
 type EnvRow = ServerEnvironment & {
@@ -45,8 +46,19 @@ function VerdictChip({ verdict }: { verdict: string | null }) {
   return <span className={`chip capitalize ${m[verdict] ?? m.inconclusive}`}>{label}</span>;
 }
 
-export function ServerValidationPage({ planId }: { planId: PlanId }) {
+export function ServerValidationPage() {
   const { navigate } = useRouter();
+  // Read the plan straight from context instead of taking it as a prop —
+  // App.tsx used to call usePlanId() in Routes() and pass the result down,
+  // but Routes() sits ABOVE AppShell's PlanContext.Provider in the tree
+  // (Routes renders <AppShell>{...}</AppShell>, so Routes is the Provider's
+  // ancestor, not a descendant of it). A context Provider only supplies its
+  // value to descendants, so that usePlanId() call always resolved to the
+  // context's default ('free') no matter what plan the workspace was
+  // actually on — every paying customer was silently treated as Free here.
+  // Calling the hook inside this component (an actual descendant once
+  // mounted inside AppShell) reads the real value.
+  const planId = usePlanId();
   const [loading, setLoading] = useState(true);
   const [envs, setEnvs] = useState<EnvRow[]>([]);
   const [stats, setStats] = useState({ totalServers: 0, totalBlueprints: 0, totalRuns: 0 });

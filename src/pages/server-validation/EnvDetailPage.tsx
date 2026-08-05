@@ -14,6 +14,7 @@ import {
 } from '../../lib/supabase';
 import { PageHeader, Spinner, EmptyState, Breadcrumb, StatusBadge, SeverityBadge, timeAgo } from '../../lib/ui';
 import { useRouter } from '../../lib/router';
+import { usePlanId } from '../AppShell';
 import { Server, Boxes, FileCheck, CirclePlay as PlayCircle, Plus, ArrowLeft, Lock, Network, Settings2, ShieldCheck, ChevronRight, Loader as Loader2, X } from 'lucide-react';
 
 type TabId = 'overview' | 'targets' | 'blueprints' | 'runs' | 'submit';
@@ -44,8 +45,12 @@ const ENV_STATUS_CLS: Record<string, string> = {
   archived: 'bg-gray-100 text-gray-400 border border-[#d4d4d8]',
 };
 
-export function EnvDetailPage({ envId, planId }: { envId: string; planId: PlanId }) {
+export function EnvDetailPage({ envId }: { envId: string }) {
   const { navigate } = useRouter();
+  // See ServerValidationPage.tsx for why this reads context directly
+  // instead of taking planId as a prop from App.tsx's Routes() — the old
+  // prop chain always resolved to 'free' regardless of the real plan.
+  const planId = usePlanId();
   const [loading, setLoading] = useState(true);
   const [env, setEnv] = useState<ServerEnvironment | null>(null);
   const [targets, setTargets] = useState<ServerTarget[]>([]);

@@ -1,16 +1,31 @@
 // @ts-nocheck
 import { useState } from 'react';
-import { PageHeader } from '../lib/ui';
-import { Check, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { PageHeader, EmptyState } from '../lib/ui';
+import { Link } from '../lib/router';
+import { usePlanId } from './AppShell';
+import { Check, X, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { PROVIDERS, getCfg, saveOne, removeOne, isConnected } from '../lib/integrations';
 
 // Integrations hub — connect ticketing / collaboration platforms once.
 export function IntegrationsPage() {
+  const planId = usePlanId();
   const [open, setOpen] = useState(null);
   const [, force] = useState(0);
   const rerender = () => force((n) => n + 1);
 
   const connectedCount = PROVIDERS.filter((p) => isConnected(p.id)).length;
+
+  // 'Slack & GitHub integrations' is listed as a Developer-plan feature on
+  // /plans — this is the real gate (previously the whole integrations hub,
+  // including third-party credential storage, was open on Free).
+  if (planId === 'free') {
+    return (
+      <div>
+        <PageHeader title="Integrations" description="Connect your ticketing and collaboration tools once. Then create and assign tickets from any finding — no re-entering credentials." />
+        <EmptyState icon={<Lock size={22} />} title="Integrations are a Developer plan feature" description="Connect Slack, GitHub, and other tools to create and assign tickets straight from findings. Upgrade to unlock it for this workspace." action={<Link to="/plans" className="btn-primary">View plans</Link>} />
+      </div>
+    );
+  }
 
   return (
     <div>

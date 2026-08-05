@@ -3,16 +3,8 @@ import { useEffect, useState } from 'react'
 import { supabase, type WorkspacePlan, type PlanId, PLANS } from '../lib/supabase'
 import { PageHeader, Spinner } from '../lib/ui'
 import { Link } from '../lib/router'
+import { PLAN_LIMITS } from '../lib/planLimits'
 import { FolderGit2, ShieldCheck, Users, Bug, ArrowUpRight, Gauge } from 'lucide-react'
-
-// Real, hard-coded plan limits — mirrors the same numbers already shown on
-// the Plans page (FEATURES: '1 project', '5 validations / month' for Free;
-// unlimited for Developer/Enterprise). No invented ceilings.
-const LIMITS: Record<PlanId, { projects: number | null; validationsPerMonth: number | null; members: number | null }> = {
-  free: { projects: 1, validationsPerMonth: 5, members: 3 },
-  developer: { projects: null, validationsPerMonth: null, members: null },
-  enterprise: { projects: null, validationsPerMonth: null, members: null },
-}
 
 const CSS = `
 .us-wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -101,7 +93,7 @@ export function UsagePage() {
 
   const planId: PlanId = (plan?.plan_id as PlanId) ?? 'free'
   const planInfo = PLANS[planId]
-  const limits = LIMITS[planId] ?? LIMITS.free
+  const limits = PLAN_LIMITS[planId] ?? PLAN_LIMITS.free
   const monthLabel = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
   return (
@@ -122,7 +114,10 @@ export function UsagePage() {
       <div className="us-grid">
         <Meter label="Projects" icon={FolderGit2} used={projectCount} limit={limits.projects} note={limits.projects != null ? 'Connect via Projects → Import from GitHub.' : undefined} />
         <Meter label={`Validations · ${monthLabel}`} icon={ShieldCheck} used={monthValidations} limit={limits.validationsPerMonth} note={`${monthPassed} completed · ${monthFailed} failed this month`} />
-        <Meter label="Team members" icon={Users} used={memberCount} limit={limits.members} note={memberCount > 0 ? undefined : 'Invite teammates from Team.'} />
+        {/* No plan on the Plans page has ever stated a member-count cap, so
+            this is deliberately always shown as unlimited rather than
+            enforcing a number nobody was promised. */}
+        <Meter label="Team members" icon={Users} used={memberCount} limit={null} note={memberCount > 0 ? undefined : 'Invite teammates from Team.'} />
       </div>
 
       <div className="us-card" style={{ padding: 0 }}>

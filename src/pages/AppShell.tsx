@@ -185,6 +185,13 @@ const CSS = `
 .lh-iconbtn{width:34px;height:34px;border-radius:8px;border:0.5px solid var(--lh-border);background:var(--lh-surface);color:var(--lh-text);cursor:pointer;display:grid;place-items:center;flex-shrink:0}
 .lh-iconbtn:hover{background:var(--lh-surface2)}
 .lh-tb{position:sticky;top:0;z-index:10;height:56px;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:0.5px solid var(--lh-border);background:color-mix(in srgb,var(--lh-bg) 86%,transparent);backdrop-filter:blur(10px)}
+.lh-plan-badge{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:5px 6px 5px 10px;border-radius:20px;border:0.5px solid var(--lh-border);background:var(--lh-surface2);color:var(--lh-text2);text-decoration:none;transition:.12s}
+.lh-plan-badge:hover{border-color:var(--lh-border2)}
+.lh-plan-badge.developer{color:var(--lh-accent);border-color:color-mix(in srgb,var(--lh-accent) 40%,transparent);background:var(--lh-accent-weak)}
+.lh-plan-badge.enterprise{color:#fff;border-color:transparent;background:linear-gradient(120deg,#372a63,#1c1433)}
+.lh-plan-badge .up{font-size:10px;font-weight:700;text-transform:none;letter-spacing:0;background:var(--lh-accent);color:var(--lh-accent-contrast);padding:3px 8px;border-radius:20px}
+.lh-plan-badge.enterprise .up{display:none}
+@media(max-width:820px){.lh-plan-badge{display:none}}
 .lh-title{font-size:16px;font-weight:600;letter-spacing:-.01em}
 .lh-search{align-items:center;gap:8px;width:260px;padding:7px 11px;border:0.5px solid var(--lh-border);border-radius:9px;background:var(--lh-surface);color:var(--lh-text3);font-size:13px}
 .lh-kbd{margin-left:auto;font-size:11px;border:0.5px solid var(--lh-border);border-radius:5px;padding:1px 5px;font-family:'JetBrains Mono',monospace}
@@ -491,6 +498,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="lh-tb">
           <button onClick={() => setMobileOpen(true)} className="lh-iconbtn lg:hidden"><Menu size={18} /></button>
           <span className="lh-title">{pageTitle}</span>
+          {/* Real, visible-everywhere signal of the workspace's actual plan
+              tier — previously computed (planInfo) but never rendered
+              anywhere, so Free/Developer/Enterprise workspaces looked
+              identical outside of the /plans page itself. */}
+          <Link to="/plans" className={`lh-plan-badge ${planId}`} title="Manage plan">
+            {planInfo.name}
+            {planId !== 'enterprise' && <span className="up">Upgrade</span>}
+          </Link>
           <button type="button" className="lh-search hidden md:flex" onClick={() => setPaletteOpen(true)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>Search…<span className="lh-kbd">⌘K</span></button>
           <button className="lh-iconbtn md:hidden" title="Search" onClick={() => setPaletteOpen(true)}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></button>
           <div style={{ flex: 1 }} />

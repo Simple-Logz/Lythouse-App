@@ -6,7 +6,9 @@ import{useRouter,Link}from'../lib/router';
 import{PinButton}from'../lib/pins';
 import{useRole}from'../lib/useRole';
 import{useAuth}from'../lib/auth';
-import { FolderGit2, Plus, X, GitFork as Github, Loader as Loader2, Search, ChevronRight } from 'lucide-react';
+import{usePlanId}from'./AppShell';
+import{PLAN_LIMITS}from'../lib/planLimits';
+import { FolderGit2, Plus, X, GitFork as Github, Loader as Loader2, Search, ChevronRight, Lock } from 'lucide-react';
 import { CreateProjectWizard } from './CreateProjectWizard';
 
 const hostFrom=(u:string)=>{try{return new URL(u).hostname.replace(/^www\./,'');}catch{return u;}};
@@ -16,8 +18,15 @@ const{navigate}=useRouter();
 const{user}=useAuth();
 const perms=useRole();
 const canCreate=perms.can('projects.create');
+const planId=usePlanId();
 const[loading,setLoading]=useState(true);
 const[projects,setProjects]=useState<Project[]>([]);
+// Real enforcement of the Free plan's stated '1 project' limit (previously
+// only ever shown as a progress bar on Usage — nothing actually stopped a
+// Free workspace from creating unlimited projects). Recomputed from live
+// `projects` state, so it's always accurate for the current workspace.
+const projectLimit=PLAN_LIMITS[planId]?.projects??null;
+const atProjectLimit=projectLimit!=null&&projects.length>=projectLimit;
 const[q,setQ]=useState('');
 const[creating,setCreating]=useState(false);
 const[name,setName]=useState('');
@@ -91,11 +100,16 @@ const connectGithub=()=>{
   connectWithToken(ghToken);
 };
 
-// Deep-link from the command palette (⌘K → New Project) opens the create form.
+// Deep-link from the command palette (⌘K → New Project) opens the create form —
+// unless the workspace is already at its plan's project limit, in which case
+// send them to /plans instead of opening a wizard that would just dead-end.
 useEffect(()=>{
   const params=new URLSearchParams(window.location.search);
-  if(params.get('new')==='1'){setCreating(true);window.history.replaceState({},'',window.location.pathname);}
-},[]);
+  if(params.get('new')==='1'){
+    window.history.replaceState({},'',window.location.pathname);
+    if(atProjectLimit)navigate('/plans');else setCreating(true);
+  }
+},[atProjectLimit]);
 
 // Default the import modal's workspace picker to whatever's currently active.
 useEffect(()=>{
@@ -124,6 +138,7 @@ useEffect(()=>{
 const importRepo=async(repo:any)=>{
   const wid=importWs||wsId();
   if(!wid){setGhError('Select a workspace first (create one under Workspaces).');return;}
+  if(atProjectLimit){setGhError(`Your ${planId} plan is limited to ${projectLimit} project${projectLimit===1?'':'s'}. Upgrade to add more.`);return;}
   if(projects.find(p=>p.name.trim().toLowerCase()===String(repo.name).toLowerCase())){setGhError(`A project named "${repo.name}" already exists in this workspace.`);return;}
   setImportingId(repo.id);setGhError('');
   const{data,error}=await supabase.from('projects').insert({
@@ -149,6 +164,7 @@ const importRepo=async(repo:any)=>{
 const importManual=async()=>{
   const wid=importWs;
   if(!wid){setManError('Select a workspace first (create one under Workspaces).');return;}
+  if(atProjectLimit){setManError(`Your ${planId} plan is limited to ${projectLimit} project${projectLimit===1?'':'s'}. Upgrade to add more.`);return;}
   if(!manGitUrl.trim()){setManError('Enter the repository URL.');return;}
   const finalName=(manName.trim()||manDerivedName).trim();
   if(!finalName){setManError('Could not determine a project name from that URL — enter one above.');return;}
@@ -198,6 +214,7 @@ useEffect(()=>{
 const createProject=async()=>{
   const wid=wsId();
   if(!wid||!name.trim())return;
+  if(atProjectLimit){setError(`Your ${planId} plan is limited to ${projectLimit} project${projectLimit===1?'':'s'}. Upgrade to add more.`);return;}
 
   // Validate required fields
   if(!gitUrl.trim()){setError('Git URL is required.');return;}
@@ -237,8 +254,11 @@ const filtered=projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCas
 return<div>
 <PageHeader title="Projects" description="Every repository connected to LytHouse for pre-deployment validation." actions={
 <div className="flex items-center gap-2">
-{canCreate&&<button onClick={()=>setImporting(true)} className="btn-secondary"><Github size={16}/> Import from GitHub</button>}
-{canCreate&&<button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button>}
+{canCreate&&(atProjectLimit
+  ?<Link to="/plans" className="btn-primary"><Lock size={14}/> Upgrade for more projects</Link>
+  :<><button onClick={()=>setImporting(true)} className="btn-secondary"><Github size={16}/> Import from GitHub</button>
+    <button onClick={()=>setCreating(true)} className="btn-primary"><Plus size={16}/> New project</button></>
+)}
 </div>
 }/>
 
@@ -388,6 +408,7 @@ return<div>
   workspaces={workspaces}
   selectedWs={selectedWs}
   existingNames={projects.map(p=>p.name)}
+  atLimit={atProjectLimit}
   onCreated={(data)=>{setProjects(prev=>[data,...prev]);setCreating(false);navigate(`/projects/${data.id}`);}}
 />
 </div>;

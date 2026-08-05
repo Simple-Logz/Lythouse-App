@@ -1,7 +1,9 @@
 import{useEffect,useState}from'react';
 import{supabase,type DeploymentSimulation,type Project,type Severity}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,RiskGauge,StatusBadge}from'../lib/ui';
-import{FlaskConical,Plus,X,Loader as Loader2,Activity,Boxes,AlertTriangle,CheckCircle2,Zap,RefreshCw,ChevronDown,ChevronRight,Globe}from'lucide-react';
+import{Link}from'../lib/router';
+import{usePlanId}from'./AppShell';
+import{FlaskConical,Plus,X,Loader as Loader2,Activity,Boxes,AlertTriangle,CheckCircle2,Zap,RefreshCw,ChevronDown,ChevronRight,Globe,Lock}from'lucide-react';
 
 type SRow=DeploymentSimulation&{project_name?:string;}
 
@@ -18,6 +20,7 @@ critical:'bg-red-50 text-danger-600 border-red-200',
 };
 
 export function SimulatorPage(){
+const planId=usePlanId();
 const[loading,setLoading]=useState(true);
 const[simulations,setSimulations]=useState<SRow[]>([]);
 const[projects,setProjects]=useState<Project[]>([]);
@@ -101,6 +104,14 @@ const createSimulation=async()=>{
 };
 
 if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
+
+// Deployment Simulator is listed as a Developer-plan feature on /plans —
+// this is the real gate (previously this whole page was reachable and
+// fully functional on Free, despite the pricing page saying otherwise).
+if(planId==='free')return<div>
+<PageHeader title="Deployment Simulator" description="Simulate deployments to predict risk and blast radius before shipping."/>
+<EmptyState icon={<Lock size={22}/>} title="Deployment Simulator is a Developer plan feature" description="Predict risk scores, blast radius, and affected services before you deploy. Upgrade to unlock it for this workspace." action={<Link to="/plans" className="btn-primary">View plans</Link>}/>
+</div>;
 
 return<div>
 <PageHeader title="Deployment Simulator" description="Simulate deployments to predict risk and blast radius before shipping." actions={

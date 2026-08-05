@@ -3,12 +3,15 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { supabase, type Project, type Validation, type ValidationStep, type Finding } from '../lib/supabase';
 import { useRouter } from '../lib/router';
 import { PageHeader, Breadcrumb, EmptyState, Spinner, StatusBadge, SeverityBadge, RiskGauge, StepIcon, timeAgo, fmtDuration } from '../lib/ui';
-import { Play, X, GitBranch, Folder, Github, FileCode, TriangleAlert as AlertTriangle, ShieldCheck, Search, Zap, Brain, FileSearch, GitCompare, Key } from 'lucide-react';
+import { usePlanId } from './AppShell';
+import { checkValidationLimit } from '../lib/planLimits';
+import { Play, X, GitBranch, Folder, Github, FileCode, TriangleAlert as AlertTriangle, ShieldCheck, Search, Zap, Brain, FileSearch, GitCompare, Key, Lock } from 'lucide-react';
 
 const SI: Record<string, typeof Search> = { secret_scan: Search, static_analysis: FileSearch, dependency_audit: Zap, ai_review: Brain, diff_analysis: GitCompare };
 
 export function ProjectDetailPage({ projectId }: { projectId: string }) {
   const { navigate } = useRouter();
+  const planId = usePlanId();
   const [project, setProject] = useState<Project | null>(null);
   const [validations, setValidations] = useState<Validation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +57,7 @@ export function ProjectDetailPage({ projectId }: { projectId: string }) {
       {!project.github_token && <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"><AlertTriangle size={16} /> No GitHub token set for this project. Validations will fail to read your repository. Delete and recreate the project with a token.</div>}
       {validations.length === 0 ? <div className="card"><EmptyState icon={<ShieldCheck size={22} />} title="No validations yet" description="Run your first AI-powered pre-deployment validation to check for security risks." action={<button className="btn-primary" onClick={() => setShowRun(true)}><Play size={15} /> Run validation</button>} /></div>
       : <div className="space-y-4">{validations.map(v => <ValCard key={v.id} v={v} />)}</div>}
-      {showRun && <RunModal projectId={projectId} workspaceId={project.workspace_id} hasToken={!!project.github_token} onClose={() => setShowRun(false)} onCreated={() => { setShowRun(false); load(); }} />}
+      {showRun && <RunModal projectId={projectId} workspaceId={project.workspace_id} hasToken={!!project.github_token} planId={planId} onClose={() => setShowRun(false)} onCreated={() => { setShowRun(false); load(); }} />}
     </>
   );
 }
@@ -112,11 +115,20 @@ function ValCard({ v }: { v: Validation }) {
   );
 }
 
-function RunModal({ projectId, workspaceId, hasToken, onClose, onCreated }: { projectId: string; workspaceId: string; hasToken: boolean; onClose: () => void; onCreated: () => void }) {
+function RunModal({ projectId, workspaceId, hasToken, planId, onClose, onCreated }: { projectId: string; workspaceId: string; hasToken: boolean; planId: string; onClose: () => void; onCreated: () => void }) {
   const [commitSha, setCommitSha] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(null);
+
+    // Real enforcement of the Free plan's stated '5 validations / month'
+    // limit — queried fresh at submit time so it's always accurate, not
+    // just a display number on the Usage page.
+    const limitCheck = await checkValidationLimit(planId as any, workspaceId);
+    if (!limitCheck.ok) {
+      setError(`Your ${planId} plan is limited to ${limitCheck.limit} validations per month, and you've used all ${limitCheck.count}. Upgrade to run more this month.`);
+      setBusy(false); return;
+    }
 
     // Create the validation record
     const { data, error: insertErr } = await supabase.from('validations').insert({ project_id: projectId, workspace_id: workspaceId, status: 'pending', trigger: 'manual', commit_sha: commitSha || null, total_findings: 0, critical_count: 0, high_count: 0, medium_count: 0, low_count: 0 }).select('*').single();
