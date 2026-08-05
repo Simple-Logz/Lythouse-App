@@ -13,12 +13,13 @@ import {
   Workflow, Rocket, Zap, Activity, ClipboardCheck, Scale, FileWarning, ScrollText,
   BookOpen, Plug, FileText, CreditCard, ListFilter, Gauge,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, PLANS } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useRouter } from '../lib/router';
 import { Logo } from '../lib/ui';
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins';
 import { getHeadSha } from '../workspace/repoCache';
+import { PlanContext } from '../pages/AppShell';
 
 // Same destinations the desktop sidebar exposes (see SECTIONS in
 // pages/AppShell.tsx) — kept in sync by hand so nothing on the web is
@@ -120,6 +121,15 @@ export function MobileApp({ renderPage }) {
   const [selected, setSelected] = useState(null);
   const [stale, setStale] = useState({}); // projectId -> true when HEAD != last assessed commit
   const wid = typeof localStorage !== 'undefined' ? localStorage.getItem('sandbox.activeWs') : null;
+  // MobileApp renders outside of AppShell, so it needs its own real fetch
+  // of the workspace's plan — see the PlanContext export note in
+  // pages/AppShell.tsx for why this can't just rely on usePlanId() alone.
+  const [planId, setPlanId] = useState('free');
+  useEffect(() => {
+    if (!wid) return;
+    supabase.from('workspace_plans').select('*').eq('workspace_id', wid).order('created_at', { ascending: false }).limit(1)
+      .then(({ data }) => setPlanId(data?.[0]?.plan_id ?? 'free'));
+  }, [wid]);
 
   const load = useCallback(async () => {
     if (!wid) { setLoading(false); return; }
@@ -283,10 +293,19 @@ export function MobileApp({ renderPage }) {
           <header className="sticky top-0 bg-white border-b border-gray-100 h-14 flex items-center gap-2 px-3 shrink-0">
             <button onClick={() => setBrowsing(false)} className="p-2 -ml-1 text-gray-500 active:text-brand-600"><ChevronLeft size={20} /></button>
             <span className="font-semibold text-navy-900 truncate">{(ALL_NAV_ITEMS.find((m) => path.startsWith(m.to))?.label) || 'Details'}</span>
-            <button onClick={() => setMenuOpen(true)} className="ml-auto p-2 -mr-1 text-gray-500"><Menu size={20} /></button>
+            {/* Same visible plan signal as the desktop top bar's badge —
+                mobile never had one at all (not just hidden by CSS; this
+                header has no equivalent element), so there was no way to
+                see the current tier here regardless of screen width. */}
+            <button onClick={() => navigate('/plans')} className="ml-auto shrink-0 flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-600">
+              {PLANS[planId]?.name ?? planId}
+            </button>
+            <button onClick={() => setMenuOpen(true)} className="p-2 -mr-1 text-gray-500"><Menu size={20} /></button>
           </header>
           <div className={`flex-1 overflow-y-auto overflow-x-hidden ${path.startsWith('/projects/') && path.split('/').filter(Boolean).length >= 2 ? '' : 'px-3 py-4'}`}>
-            {renderPage ? renderPage(path) : <p className="text-sm text-gray-500">Page unavailable.</p>}
+            <PlanContext.Provider value={planId}>
+              {renderPage ? renderPage(path) : <p className="text-sm text-gray-500">Page unavailable.</p>}
+            </PlanContext.Provider>
           </div>
         </div>
       )}

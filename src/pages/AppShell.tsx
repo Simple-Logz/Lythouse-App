@@ -13,7 +13,13 @@ import { useAuth } from '../lib/auth'
 import { CommandPalette } from './CommandPalette'
 import { AskAiPanel } from './AskAiPanel'
 
-const PlanContext = createContext<PlanId>('free')
+// Exported (not just usePlanId) so MobileApp.tsx can provide its own real
+// value too — the mobile app renders pages outside of AppShell entirely,
+// so without its own Provider every plan-aware page (Simulator,
+// Integrations, Audit Log export, project/validation limits, Server
+// Validation) would silently read the 'free' default on mobile regardless
+// of the workspace's actual plan.
+export const PlanContext = createContext<PlanId>('free')
 export function usePlanId(): PlanId { return useContext(PlanContext) }
 
 // Workflow-oriented navigation: users think "I need to build / ship / watch /
