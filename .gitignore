@@ -29,3 +29,8 @@ dist-ssr
 
 # Supabase CLI local project link cache — machine-specific, not needed in git.
 supabase/.temp/
+
+# Added by Lythouse — do not commit secrets
+.env
+.env.*
+*.env
