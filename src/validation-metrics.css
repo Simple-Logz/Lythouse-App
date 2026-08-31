@@ -1,30 +1,33 @@
-/* Validation summary metric tiles: intentionally raised/embossed so users can immediately read them as clickable controls. */
+/* Validation summary metrics: clickable and lightly raised without competing with the release decision. */
 .bg-gray-200 > button.group {
   position: relative;
-  margin: 7px;
-  border: 1px solid rgba(148, 163, 184, 0.42) !important;
-  border-radius: 14px;
+  margin: 5px;
+  border: 1px solid rgba(148,163,184,.28) !important;
+  border-radius: 11px;
   background-clip: padding-box;
   box-shadow:
-    0 5px 10px rgba(15, 23, 42, 0.13),
-    0 2px 3px rgba(15, 23, 42, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(15, 23, 42, 0.06) !important;
-  transform: translateY(-1px);
+    0 1px 2px rgba(15,23,42,.04),
+    0 3px 7px rgba(15,23,42,.055),
+    inset 0 1px 0 rgba(255,255,255,.72) !important;
+  transform: none;
 }
 
 .bg-gray-200 > button.group:hover {
-  transform: translateY(-3px);
+  transform: translateY(-1px);
   box-shadow:
-    0 9px 16px rgba(15, 23, 42, 0.16),
-    0 3px 5px rgba(15, 23, 42, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 -1px 0 rgba(15, 23, 42, 0.07) !important;
+    0 2px 3px rgba(15,23,42,.045),
+    0 5px 10px rgba(15,23,42,.07),
+    inset 0 1px 0 rgba(255,255,255,.8) !important;
 }
 
 .bg-gray-200 > button.group:active {
-  transform: translateY(1px);
+  transform: translateY(0);
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.12),
-    inset 0 2px 5px rgba(15, 23, 42, 0.10) !important;
+    inset 0 1px 3px rgba(15,23,42,.07),
+    0 1px 2px rgba(15,23,42,.035) !important;
+}
+
+.dark .bg-gray-200 > button.group {
+  border-color: var(--border) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.035) !important;
 }
