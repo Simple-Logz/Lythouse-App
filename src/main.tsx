@@ -1,6 +1,7 @@
 import{StrictMode}from'react';
 import{createRoot}from'react-dom/client';
 import'./index.css';
+import'./validation-metrics.css';
 
 // Block pinch/rotate gestures on touch devices.
 if(typeof window!=='undefined'){
