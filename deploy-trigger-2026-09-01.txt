@@ -1,0 +1,3 @@
+LytHouse production deployment trigger.
+Purpose: force a fresh Vercel production deployment after the project persistence/RLS fix.
+Date: 2026-09-01
