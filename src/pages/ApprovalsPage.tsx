@@ -3,79 +3,16 @@ import{useEffect,useState,useCallback}from'react';
 import{supabase}from'../lib/supabase';
 import{PageHeader,Spinner,EmptyState,timeAgo}from'../lib/ui';
 import{Link}from'../lib/router';
-import{CheckCircle2,XCircle,Clock,ShieldCheck}from'lucide-react';
+import{CheckCircle2,XCircle,Clock,ShieldCheck,Play}from'lucide-react';
 
-// Governance surface — the workspace-wide release approval queue. Reads the
-// real `release_approvals` table.
 export function ApprovalsPage(){
-  const[loading,setLoading]=useState(true);
-  const[rows,setRows]=useState<any[]>([]);
-  const[projects,setProjects]=useState<Record<string,string>>({});
-  const wsId=()=>localStorage.getItem('sandbox.activeWs');
-
-  const load=useCallback(async()=>{
-    setLoading(true);
-    const wid=wsId();if(!wid){setLoading(false);return;}
-    const[aRes,pRes]=await Promise.all([
-      supabase.from('release_approvals').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(50),
-      supabase.from('projects').select('id,name').eq('workspace_id',wid),
-    ]);
-    setRows(aRes.data??[]);
-    setProjects(Object.fromEntries((pRes.data??[]).map((p:any)=>[p.id,p.name])));
-    setLoading(false);
-  },[]);
-  useEffect(()=>{load();},[load]);
-
-  if(loading)return<div className="flex justify-center py-24"><Spinner size={28}/></div>;
-
-  const pending=rows.filter((r:any)=>r.status==='pending');
-  const decided=rows.filter((r:any)=>r.status!=='pending');
-  const name=(r:any)=>r.release_name||projects[r.project_id]||'Release';
-
-  return<div>
-    <PageHeader title="Approvals" description="Releases awaiting sign-off. Every decision is logged for audit."
-      actions={pending.length>0?<span className="chip bg-amber-50 text-amber-600 border border-amber-200">{pending.length} pending</span>:<span className="chip bg-green-50 text-green-700 border border-green-200">All clear</span>}
-    />
-
-    {rows.length===0?(
-      <EmptyState icon={<ShieldCheck size={22}/>} title="No approvals yet" description="When a release requires sign-off, it appears here for the required approvers to review." action={<Link to="/projects" className="btn-primary">Go to projects</Link>}/>
-    ):(
-      <div className="space-y-5">
-        <div className="card p-0">
-          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3"><Clock size={15} className="text-amber-500"/><h2 className="text-sm font-semibold text-navy-900">Awaiting approval</h2></div>
-          {pending.length===0?(
-            <div className="px-4 py-8 text-center text-sm text-gray-400">Nothing waiting on you.</div>
-          ):(
-            <div className="divide-y divide-gray-100">
-              {pending.map((r:any)=>(
-                <div key={r.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><Clock size={16}/></span>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-navy-900">{name(r)}</p><p className="text-xs text-gray-500">{projects[r.project_id]||'—'} · requested {r.created_at?timeAgo(r.created_at):''}</p></div>
-                  <Link to={`/projects/${r.project_id}`} className="btn-secondary text-xs">Review</Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="card p-0">
-          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3"><ShieldCheck size={15} className="text-brand-600"/><h2 className="text-sm font-semibold text-navy-900">Recent decisions</h2></div>
-          {decided.length===0?(
-            <div className="px-4 py-8 text-center text-sm text-gray-400">No decisions recorded yet.</div>
-          ):(
-            <div className="divide-y divide-gray-100">
-              {decided.slice(0,15).map((r:any)=>{
-                const approved=r.status==='approved';
-                return<div key={r.id} className="flex items-center gap-3 px-4 py-3.5">
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${approved?'bg-green-50 text-green-600':'bg-red-50 text-danger-600'}`}>{approved?<CheckCircle2 size={16}/>:<XCircle size={16}/>}</span>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-navy-900">{name(r)}</p><p className="text-xs text-gray-500">{projects[r.project_id]||'—'} · {r.created_at?timeAgo(r.created_at):''}</p></div>
-                  <span className={`chip ${approved?'bg-green-50 text-green-700 border border-green-200':'bg-red-50 text-danger-600 border border-red-200'}`}>{approved?'Approved':'Rejected'}</span>
-                </div>;
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    )}
-  </div>;
+ const[loading,setLoading]=useState(true),[busy,setBusy]=useState<string|null>(null),[error,setError]=useState<string|null>(null),[rows,setRows]=useState<any[]>([]),[changes,setChanges]=useState<Record<string,any>>({}),[projects,setProjects]=useState<Record<string,string>>({});
+ const wsId=()=>localStorage.getItem('sandbox.activeWs');
+ const load=useCallback(async()=>{setLoading(true);setError(null);const wid=wsId();if(!wid){setLoading(false);return}const[a,c,p]=await Promise.all([supabase.from('approvals').select('*').eq('workspace_id',wid).order('created_at',{ascending:false}).limit(50),supabase.from('change_requests').select('*').eq('workspace_id',wid),supabase.from('projects').select('id,name').eq('workspace_id',wid)]);if(a.error)setError(a.error.message);setRows(a.data??[]);setChanges(Object.fromEntries((c.data??[]).map((x:any)=>[x.id,x])));setProjects(Object.fromEntries((p.data??[]).map((x:any)=>[x.id,x.name])));setLoading(false)},[]);
+ useEffect(()=>{load()},[load]);
+ async function decide(r:any,status:'approved'|'rejected'){setBusy(r.id);setError(null);const{data:{user}}=await supabase.auth.getUser();const{error:e}=await supabase.from('approvals').update({status,decided_by:user?.id??null,decided_at:new Date().toISOString()}).eq('id',r.id);if(e)setError(e.message);else{await supabase.from('change_requests').update({status:status==='approved'?'approved':'rejected',updated_at:new Date().toISOString()}).eq('id',r.change_request_id);await load()}setBusy(null)}
+ async function deploy(r:any){setBusy(r.id);setError(null);const{data,error:e}=await supabase.rpc('create_deployment_for_approved_change',{p_change:r.change_request_id,p_provider:'manual'});if(e)setError(e.message);else{await supabase.from('change_requests').update({status:'deployed',updated_at:new Date().toISOString()}).eq('id',r.change_request_id);await load()}setBusy(null)}
+ if(loading)return <div className="flex justify-center py-24"><Spinner size={28}/></div>;
+ const pending=rows.filter(r=>r.status==='pending'),decided=rows.filter(r=>r.status!=='pending');const change=(r:any)=>changes[r.change_request_id]??{};const name=(r:any)=>change(r).title||'Change request';
+ return <div><PageHeader title="Approvals" description="Authoritative change approvals. Decisions gate deployment and are tenant-scoped." actions={<span className="chip bg-amber-50 text-amber-700 border border-amber-200">{pending.length} pending</span>}/>{error&&<div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-danger-600">{error}</div>}{rows.length===0?<EmptyState icon={<ShieldCheck size={22}/>} title="No approvals yet" description="Approval requests created from governed changes will appear here." action={<Link to="/projects" className="btn-primary">Go to projects</Link>}/>:<div className="space-y-5"><div className="card p-0"><div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3"><Clock size={15}/><h2 className="text-sm font-semibold">Awaiting approval</h2></div>{pending.length===0?<div className="p-8 text-center text-sm text-gray-400">Nothing waiting on you.</div>:pending.map(r=><div key={r.id} className="flex items-center gap-3 border-b border-gray-100 px-4 py-3.5"><div className="flex-1"><p className="text-sm font-semibold text-navy-900">{name(r)}</p><p className="text-xs text-gray-500">{projects[change(r).project_id]||'Project'} · {timeAgo(r.created_at)}</p></div><button disabled={busy===r.id} onClick={()=>decide(r,'rejected')} className="btn-secondary text-xs"><XCircle size={14}/> Reject</button><button disabled={busy===r.id} onClick={()=>decide(r,'approved')} className="btn-primary text-xs"><CheckCircle2 size={14}/> Approve</button></div>)}</div><div className="card p-0"><div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold">Recent decisions</div>{decided.map(r=><div key={r.id} className="flex items-center gap-3 border-b border-gray-100 px-4 py-3.5"><div className="flex-1"><p className="text-sm font-semibold">{name(r)}</p><p className="text-xs text-gray-500">{r.status} · {timeAgo(r.decided_at||r.created_at)}</p></div>{r.status==='approved'&&change(r).status!=='deployed'&&<button disabled={busy===r.id} onClick={()=>deploy(r)} className="btn-primary text-xs"><Play size={14}/> Start deployment</button>}</div>)}</div></div>}</div>;
 }
