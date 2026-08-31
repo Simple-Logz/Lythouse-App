@@ -21,28 +21,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function ensureWorkspace(userId: string): Promise<void> {
-  const active = localStorage.getItem('sandbox.activeWs');
-  if (active) {
-    const { data: membership } = await supabase.from('workspace_members').select('workspace_id').eq('workspace_id', active).eq('user_id', userId).maybeSingle();
-    if (membership) return;
-    localStorage.removeItem('sandbox.activeWs');
-  }
-
-  const { data: memberships } = await supabase.from('workspace_members').select('workspace_id').eq('user_id', userId).order('created_at', { ascending: true }).limit(1);
-  if (memberships?.[0]?.workspace_id) {
-    localStorage.setItem('sandbox.activeWs', memberships[0].workspace_id);
-    return;
-  }
-
-  const pendingName = localStorage.getItem('lh.pendingAccount') || 'My Workspace';
-  const { data, error } = await supabase.rpc('bootstrap_user_workspace', { p_name: pendingName });
+async function ensureWorkspace(accountName?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('bootstrap_user_workspace', { p_name: accountName || null });
   if (error) throw error;
-  const workspaceId = data?.[0]?.workspace_id;
+  const row = Array.isArray(data) ? data[0] : data;
+  const workspaceId = row?.workspace_id;
   if (!workspaceId) throw new Error('Workspace bootstrap did not return a workspace');
   localStorage.setItem('sandbox.activeWs', workspaceId);
-  localStorage.removeItem('lh.pendingAccount');
-  localStorage.removeItem('lh.pendingCompanySize');
+  localStorage.setItem('lh.activeWorkspace', workspaceId);
+  return workspaceId;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -51,38 +38,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   async function loadProfile(uid: string) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+    if (error) throw error;
     setProfile(data as Profile | null);
+  }
+
+  async function hydrate(s: Session | null) {
+    setSession(s);
+    if (!s?.user) { setProfile(null); setLoading(false); return; }
+    try {
+      await ensureWorkspace(localStorage.getItem('lh.pendingAccount') || undefined);
+      await loadProfile(s.user.id);
+      localStorage.removeItem('lh.pendingAccount');
+      localStorage.removeItem('lh.pendingCompanySize');
+    } finally { setLoading(false); }
   }
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user) {
-        (async () => {
-          try { await ensureWorkspace(data.session.user.id); await loadProfile(data.session.user.id); }
-          finally { if (mounted) setLoading(false); }
-        })();
-      } else setLoading(false);
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      if (newSession?.user) {
-        (async () => { await ensureWorkspace(newSession.user.id); await loadProfile(newSession.user.id); })().catch(console.error);
-      } else setProfile(null);
-    });
+    supabase.auth.getSession().then(({ data }) => { if (mounted) void hydrate(data.session); });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => { if (mounted) void hydrate(newSession); });
     return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, []);
 
   const signIn: AuthContextValue['signIn'] = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.user) {
-      try { await ensureWorkspace(data.user.id); } catch (e) { return { error: e instanceof Error ? e.message : 'Workspace setup failed' }; }
-    }
-    return { error: error?.message ?? null };
+    if (error) return { error: error.message };
+    try { await ensureWorkspace(); if (data.user) await loadProfile(data.user.id); }
+    catch (e) { return { error: e instanceof Error ? e.message : 'Account initialization failed' }; }
+    return { error: null };
   };
 
   const signUp: AuthContextValue['signUp'] = async (email, password, fullName, meta) => {
@@ -90,27 +74,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (meta?.company_size) localStorage.setItem('lh.pendingCompanySize', meta.company_size);
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, ...(meta || {}) } } });
     if (error) return { error: error.message };
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (!signInError && signInData.user) {
-      try { await ensureWorkspace(signInData.user.id); } catch (e) { return { error: e instanceof Error ? e.message : 'Workspace setup failed' }; }
+    if (data.session) {
+      try { await ensureWorkspace(meta?.account_name); if (data.user) await loadProfile(data.user.id); }
+      catch (e) { return { error: e instanceof Error ? e.message : 'Account initialization failed' }; }
       return { error: null };
     }
-    if (data.user && !data.session) return { error: 'EMAIL_CONFIRMATION_REQUIRED' };
-    if (signInError) return { error: signInError.message };
-    return { error: null };
+    if (data.user) return { error: 'EMAIL_CONFIRMATION_REQUIRED' };
+    return { error: 'Unable to create account' };
   };
 
   const signInWithProvider: AuthContextValue['signInWithProvider'] = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: `${window.location.origin}/dashboard` } });
     return { error: error?.message ?? null };
   };
-  const signOut = async () => { await supabase.auth.signOut(); setProfile(null); };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setSession(null); setProfile(null);
+    localStorage.removeItem('sandbox.activeWs');
+    localStorage.removeItem('lh.activeWorkspace');
+  };
+
   const refreshProfile = async () => { if (session?.user) await loadProfile(session.user.id); };
-  const resetPassword: AuthContextValue['resetPassword'] = async (email) => { const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` }); return { error: error?.message ?? null }; };
-  const updatePassword: AuthContextValue['updatePassword'] = async (newPassword) => { const { error } = await supabase.auth.updateUser({ password: newPassword }); return { error: error?.message ?? null }; };
-  const resendVerification: AuthContextValue['resendVerification'] = async (email) => { const { error } = await supabase.auth.resend({ type: 'signup', email }); return { error: error?.message ?? null }; };
+  const resetPassword: AuthContextValue['resetPassword'] = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    return { error: error?.message ?? null };
+  };
+  const updatePassword: AuthContextValue['updatePassword'] = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error?.message ?? null };
+  };
+  const resendVerification: AuthContextValue['resendVerification'] = async (email) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    return { error: error?.message ?? null };
+  };
 
   return <AuthContext.Provider value={{ session, user: session?.user ?? null, profile, loading, signIn, signUp, signInWithProvider, signOut, refreshProfile, resetPassword, updatePassword, resendVerification }}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() { const ctx = useContext(AuthContext); if (!ctx) throw new Error('useAuth must be used within AuthProvider'); return ctx; }
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}
