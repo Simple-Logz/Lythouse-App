@@ -1,9 +1,15 @@
 import{createContext,useContext}from'react';
 import{createClient}from'@supabase/supabase-js';
 
-const url=import.meta.env.VITE_SUPABASE_URL;
+const upstreamUrl=import.meta.env.VITE_SUPABASE_URL as string;
 export const anonKey=import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-export const edgeFunctionUrl=(import.meta.env.VITE_SUPABASE_URL as string)+'/functions/v1';
+// In production, keep all browser-to-Supabase traffic same-origin. Vercel
+// rewrites /supabase/* to the configured LytHouse Supabase project, avoiding
+// client-side CORS/VPN interception while preserving the user's JWT and RLS.
+// Local Vite development continues to use Supabase directly.
+const isLocal=typeof window!=='undefined'&&['localhost','127.0.0.1'].includes(window.location.hostname);
+const url=isLocal?upstreamUrl:`${window.location.origin}/supabase`;
+export const edgeFunctionUrl=url+'/functions/v1';
 export const supabase=createClient(url,anonKey,{auth:{persistSession:true}});
 
 export type PlanId='free'|'developer'|'enterprise';
