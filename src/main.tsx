@@ -32,6 +32,27 @@ async function start(){
   }
 
   try{
+    // LytHouse Edge Functions that perform privileged validation work must receive
+    // the signed-in user's JWT, never the public anonymous project key. Some older
+    // workspace code still supplies the anon key explicitly; normalize those calls
+    // here so authorization is enforced consistently while those screens are migrated.
+    const {supabase}=await import('./lib/supabase');
+    const nativeFetch=window.fetch.bind(window);
+    const functionPrefix=`${url}/functions/v1/`;
+    window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const requestUrl=typeof input==='string'?input:input instanceof URL?input.toString():input.url;
+      if(requestUrl.startsWith(functionPrefix)){
+        const {data:{session}}=await supabase.auth.getSession();
+        if(session?.access_token){
+          const headers=new Headers(init?.headers||(input instanceof Request?input.headers:undefined));
+          headers.set('Authorization',`Bearer ${session.access_token}`);
+          headers.set('apikey',anonKey);
+          return nativeFetch(input,{...init,headers});
+        }
+      }
+      return nativeFetch(input,init);
+    };
+
     const [{App},{AuthProvider},{ErrorBoundary}]=await Promise.all([
       import('./App'),
       import('./lib/auth'),
