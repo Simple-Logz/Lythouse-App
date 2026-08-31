@@ -1,0 +1,3 @@
+LytHouse deployment trigger
+Commit created 2026-08-31
+If this file is served in production, Vercel is deploying current main.
