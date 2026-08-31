@@ -10,6 +10,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" />
+    <style>
+      /* Keep public auth/trial screens comfortably visible on phone-sized viewports. */
+      @media (max-width: 900px) {
+        .ft-right,.au-right{padding:14px 20px!important;min-height:100svh;overflow-y:auto!important}
+        .ft-form,.au-form{max-width:390px!important;margin:8px auto 0!important}
+        .ft-form>div.mb-1 p{display:none!important}
+        .ft-form h2,.au-form h2{font-size:1.35rem!important;line-height:1.2!important}
+        .ft-soc{gap:6px!important;margin-top:12px!important}
+        .ft-sbtn{height:38px!important;font-size:13px!important;border-radius:9px!important}
+        .ft-div{margin:12px 0 2px!important}
+        .ft-row2{gap:8px!important}
+        .ft-form .mt-3{margin-top:.5rem!important}
+        .ft-form .mt-4{margin-top:.65rem!important}
+        .ft-form .label,.au-form .label{font-size:12.5px!important;margin-bottom:3px!important}
+        .ft-form .input,.au-form .input{padding-top:.48rem!important;padding-bottom:.48rem!important;font-size:13px!important;border-radius:10px!important}
+        .ft-form p.text-xs{font-size:10.5px!important;line-height:1.25!important}
+        .au-form .mb-6{margin-bottom:1rem!important}
+        .au-form form.space-y-4>:not([hidden])~:not([hidden]){margin-top:.65rem!important}
+      }
+      @media (max-width: 440px) {
+        .ft-row2{grid-template-columns:1fr 1fr!important}
+        .ft-right,.au-right{padding-left:16px!important;padding-right:16px!important}
+      }
+      @media (max-width: 370px) {
+        .ft-row2{grid-template-columns:1fr!important}
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
