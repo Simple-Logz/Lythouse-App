@@ -1,0 +1,15 @@
+alter view public.completed_simulator_sessions set (security_invoker = true);
+alter view public.incomplete_simulator_sessions set (security_invoker = true);
+revoke select,insert,update,references on public.projects from anon;
+revoke select,insert,update,references on public.projects from authenticated;
+grant select(id,client_id,workspace_id,name,description,status,git_url,git_branch,repo_folder,language,created_at,updated_at,created_by) on public.projects to authenticated;
+grant insert(client_id,workspace_id,name,description,status,git_url,git_branch,repo_folder,language,created_by) on public.projects to authenticated;
+grant update(client_id,workspace_id,name,description,status,git_url,git_branch,repo_folder,language) on public.projects to authenticated;
+create table if not exists public.dora_metrics(id uuid primary key default gen_random_uuid(),workspace_id uuid not null references public.workspaces(id) on delete cascade,metric_date date not null default current_date,deployment_frequency numeric not null default 0,lead_time_hours numeric not null default 0,change_failure_rate numeric not null default 0,mttr_hours numeric not null default 0,created_at timestamptz not null default now(),unique(workspace_id,metric_date));
+create table if not exists public.environment_drift(id uuid primary key default gen_random_uuid(),workspace_id uuid not null references public.workspaces(id) on delete cascade,project_id uuid not null references public.projects(id) on delete cascade,environment text not null,drift_score integer not null default 0 check(drift_score between 0 and 100),differences jsonb not null default '{}'::jsonb,detected_at timestamptz not null default now());
+alter table public.dora_metrics enable row level security;alter table public.environment_drift enable row level security;
+drop policy if exists dora_workspace_member on public.dora_metrics;create policy dora_workspace_member on public.dora_metrics for select to authenticated using(public.is_workspace_member(workspace_id));
+drop policy if exists drift_workspace_member on public.environment_drift;create policy drift_workspace_member on public.environment_drift for select to authenticated using(public.is_workspace_member(workspace_id));
+grant select on public.dora_metrics,public.environment_drift to authenticated;
+create index if not exists dora_metrics_workspace_date_idx on public.dora_metrics(workspace_id,metric_date desc);create index if not exists environment_drift_workspace_detected_idx on public.environment_drift(workspace_id,detected_at desc);
+alter table public.change_requests add column if not exists environment text,add column if not exists risk_level text,add column if not exists summary text,add column if not exists scope text[] not null default '{}',add column if not exists risk_assessment text,add column if not exists rollback_plan text,add column if not exists validation_snapshot jsonb not null default '{}',add column if not exists scheduled_start timestamptz,add column if not exists scheduled_end timestamptz,add column if not exists decided_at timestamptz;
