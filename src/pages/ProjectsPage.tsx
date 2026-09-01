@@ -1,17 +1,70 @@
-// @ts-nocheck
-import{useEffect,useState}from'react';
-import{supabase,edgeFunctionUrl,anonKey,resolveActiveWorkspace,type Project}from'../lib/supabase';
-import{PageHeader,EmptyState,Spinner}from'../lib/ui';
-import{useRouter,Link}from'../lib/router';
-import{FolderGit2,Plus,GitFork as Github,Search,ChevronRight,Lock,X,RefreshCw,ShieldCheck,Eye,EyeOff}from'lucide-react';
-import{usePlanId}from'./AppShell';import{PLAN_LIMITS}from'../lib/planLimits';
-const hostFrom=(u:string)=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch{return u}};
-export function ProjectsPage(){const{navigate}=useRouter();const planId=usePlanId();const[loading,setLoading]=useState(true),[projects,setProjects]=useState<Project[]>([]),[wid,setWid]=useState(''),[q,setQ]=useState(''),[modal,setModal]=useState(false),[step,setStep]=useState(1),[accessType,setAccessType]=useState<'public'|'private'>('public'),[pat,setPat]=useState(''),[showPat,setShowPat]=useState(false),[name,setName]=useState(''),[url,setUrl]=useState(''),[branch,setBranch]=useState('main'),[repoFolder,setRepoFolder]=useState(''),[saving,setSaving]=useState(false),[error,setError]=useState('');const limit=PLAN_LIMITS[planId]?.projects??null,atLimit=limit!=null&&projects.length>=limit;
-async function load(){setLoading(true);setError('');try{const ws=await resolveActiveWorkspace();setWid(ws.id);const{data,error:e}=await supabase.from('projects').select('id,name,description,status,git_url,git_branch,repo_folder,language,workspace_id,created_at').eq('workspace_id',ws.id).order('created_at',{ascending:false});if(e)throw e;setProjects(data??[])}catch(e:any){setProjects([]);setError(e?.message||'Projects could not be loaded.')}finally{setLoading(false)}}
-useEffect(()=>{load();const h=()=>load();window.addEventListener('lythouse:workspace-changed',h);return()=>window.removeEventListener('lythouse:workspace-changed',h)},[]);
-function openConnect(){setStep(1);setAccessType('public');setPat('');setShowPat(false);setName('');setUrl('');setBranch('main');setRepoFolder('');setError('');setModal(true)}
-function close(){if(saving)return;setModal(false);setPat('')}
-async function create(){if(!wid)return setError('Workspace is not ready.');if(!url.trim())return setError('Enter a GitHub repository URL.');if(accessType==='private'&&!pat.trim())return setError('Enter a GitHub Personal Access Token for this private repository.');setSaving(true);setError('');try{const{data:{session},error:se}=await supabase.auth.getSession();if(se||!session)throw new Error('Your session expired. Sign in again.');const r=await fetch(`${edgeFunctionUrl}/connect-project`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`,apikey:anonKey},body:JSON.stringify({workspaceId:wid,gitUrl:url.trim(),name:name.trim(),branch:branch.trim()||'main',repoFolder:repoFolder.trim(),accessType,pat:accessType==='private'?pat.trim():''})});const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.error||'Repository verification failed.');setPat('');setModal(false);setProjects(p=>[body.project,...p]);navigate('/projects/'+body.project.id)}catch(e:any){setError(e?.message||'Project could not be connected.')}finally{setSaving(false)}}
-if(loading)return <div className="flex justify-center py-24"><Spinner size={28}/></div>;const filtered=projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase()));
-return <div><PageHeader title="Projects" description="Every repository connected to LytHouse for pre-deployment validation." actions={atLimit?<Link to="/plans" className="btn-primary"><Lock size={14}/> Upgrade for more projects</Link>:<button onClick={openConnect} className="btn-primary"><Plus size={16}/> Connect project</button>}/>{error&&!modal&&<div className="mb-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"><span>{error}</span><button className="btn-secondary text-xs" onClick={load}><RefreshCw size={13}/> Retry</button></div>}{projects.length===0?<EmptyState icon={<FolderGit2 size={22}/>} title="No projects yet" description="Connect your first repository. LytHouse verifies repository access before persisting it to this workspace." action={!atLimit?<button onClick={openConnect} className="btn-primary"><Github size={16}/> Connect your first project</button>:<Link to="/plans" className="btn-primary">Upgrade for more projects</Link>}/>:<><div className="mb-4 relative max-w-xs"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input pl-9" value={q} onChange={e=>setQ(e.target.value)} placeholder="Search projects…"/></div><div className="card overflow-hidden p-0 divide-y divide-gray-100">{filtered.map(p=><Link key={p.id} to={'/projects/'+p.id} className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><FolderGit2 size={18}/></div><div className="min-w-0 flex-1"><div className="font-semibold text-navy-900">{p.name}</div><div className="text-xs text-gray-500">{p.git_url?hostFrom(p.git_url):'Repository not connected'}{p.git_branch?' · '+p.git_branch:''}</div></div><span className="chip border border-brand-200 bg-brand-50 text-brand-700">{p.status}</span><ChevronRight size={16} className="text-gray-300"/></Link>)}</div></>}{modal&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={close}><div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl" onClick={e=>e.stopPropagation()}><div className="mb-5 flex items-start justify-between"><div><h2 className="text-xl font-semibold">Connect project</h2><p className="mt-1 text-sm text-gray-500">Step {step} of 3 · {step===1?'Repository access':step===2?'Configuration':'Verify & connect'}</p></div><button className="btn-ghost" onClick={close}><X size={16}/></button></div><div className="mb-5 grid grid-cols-3 gap-2">{['Access','Configure','Verify'].map((x,i)=><div key={x} className={`h-1.5 rounded-full ${step>=i+1?'bg-brand-600':'bg-gray-200'}`}/>)}</div>{error&&<div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}{step===1&&<><label className="label">GitHub repository URL</label><input className="input mb-4" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://github.com/org/repo"/><label className="label">Repository access</label><div className="mb-4 grid grid-cols-2 gap-3"><button type="button" onClick={()=>{setAccessType('public');setPat('')}} className={`rounded-xl border p-4 text-left ${accessType==='public'?'border-brand-500 bg-brand-50':'border-gray-200'}`}><div className="font-semibold">Public repository</div><div className="mt-1 text-xs text-gray-500">No credential required</div></button><button type="button" onClick={()=>setAccessType('private')} className={`rounded-xl border p-4 text-left ${accessType==='private'?'border-brand-500 bg-brand-50':'border-gray-200'}`}><div className="font-semibold">Private repository</div><div className="mt-1 text-xs text-gray-500">Use a GitHub PAT</div></button></div>{accessType==='private'&&<><label className="label">GitHub Personal Access Token (PAT)</label><div className="relative mb-2"><input type={showPat?'text':'password'} className="input pr-10" value={pat} onChange={e=>setPat(e.target.value)} placeholder="github_pat_… or ghp_…" autoComplete="off"/><button type="button" onClick={()=>setShowPat(v=>!v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{showPat?<EyeOff size={16}/>:<Eye size={16}/>}</button></div><p className="mb-4 text-xs text-gray-500">The token is sent only to the authenticated server-side connector. LytHouse does not return it to the browser after connection.</p></>}<div className="flex justify-end"><button className="btn-primary" disabled={!url.trim()||(accessType==='private'&&!pat.trim())} onClick={()=>{setError('');setStep(2)}}>Continue</button></div></>}{step===2&&<><label className="label">Project name <span className="text-gray-400">(optional)</span></label><input className="input mb-3" value={name} onChange={e=>setName(e.target.value)} placeholder="Defaults to repository name"/><label className="label">Branch</label><input className="input mb-3" value={branch} onChange={e=>setBranch(e.target.value)} placeholder="main"/><label className="label">Repository folder <span className="text-gray-400">(optional)</span></label><input className="input mb-4" value={repoFolder} onChange={e=>setRepoFolder(e.target.value)} placeholder="e.g. apps/api"/><div className="flex justify-between"><button className="btn-secondary" onClick={()=>setStep(1)}>Back</button><button className="btn-primary" onClick={()=>{setError('');setStep(3)}}>Review</button></div></>}{step===3&&<><div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm"><div className="mb-3 flex items-center gap-2 font-semibold"><ShieldCheck size={17} className="text-brand-600"/> LytHouse will verify access before connecting</div><div className="grid grid-cols-[120px_1fr] gap-y-2"><span className="text-gray-500">Repository</span><span className="font-medium break-all">{url}</span><span className="text-gray-500">Access</span><span className="font-medium capitalize">{accessType}</span><span className="text-gray-500">Branch</span><span className="font-medium">{branch||'main'}</span><span className="text-gray-500">Folder</span><span className="font-medium">{repoFolder||'Repository root'}</span></div></div><p className="mb-5 text-sm text-gray-500">When you continue, LytHouse verifies the repository, branch and optional folder with GitHub. The project is persisted only after verification succeeds.</p><div className="flex justify-between"><button className="btn-secondary" disabled={saving} onClick={()=>setStep(2)}>Back</button><button className="btn-primary" disabled={saving} onClick={create}>{saving?'Verifying repository…':'Verify & connect'}</button></div></>}</div></div>}</div>;
+import { useEffect, useState } from 'react';
+import { supabase, edgeFunctionUrl, anonKey, resolveActiveWorkspace, type Project } from '../lib/supabase';
+import { PageHeader, EmptyState, Spinner } from '../lib/ui';
+import { useRouter, Link } from '../lib/router';
+import { FolderGit2, Plus, GitFork as Github, Search, ChevronRight, Lock, X, RefreshCw, ShieldCheck } from 'lucide-react';
+import { usePlanId } from './AppShell';
+import { PLAN_LIMITS } from '../lib/planLimits';
+
+const hostFrom = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+
+export function ProjectsPage() {
+  const { navigate } = useRouter();
+  const planId = usePlanId();
+  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [wid, setWid] = useState('');
+  const [q, setQ] = useState('');
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const limit = PLAN_LIMITS[planId]?.projects ?? null;
+  const atLimit = limit != null && projects.length >= limit;
+
+  async function load() {
+    setLoading(true); setError('');
+    try {
+      const ws = await resolveActiveWorkspace();
+      setWid(ws.id);
+      const { data, error: e } = await supabase.from('projects')
+        .select('id,name,description,status,git_url,git_branch,repo_folder,language,workspace_id,created_at,github_repository_full_name,github_installation_id')
+        .eq('workspace_id', ws.id).order('created_at', { ascending: false });
+      if (e) throw e;
+      setProjects(data ?? []);
+    } catch (e: any) { setProjects([]); setError(e?.message || 'Projects could not be loaded.'); }
+    finally { setLoading(false); }
+  }
+
+  useEffect(() => { load(); const h = () => load(); window.addEventListener('lythouse:workspace-changed', h); return () => window.removeEventListener('lythouse:workspace-changed', h); }, []);
+
+  async function connectGitHub() {
+    if (!wid) return setError('Workspace is not ready.');
+    setSaving(true); setError('');
+    try {
+      const { data: { session }, error: se } = await supabase.auth.getSession();
+      if (se || !session) throw new Error('Your session expired. Sign in again.');
+      const r = await fetch(`${edgeFunctionUrl}/github-app-connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: anonKey },
+        body: JSON.stringify({ workspaceId: wid })
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || 'GitHub connection could not be started.');
+      if (!body.installUrl) throw new Error('GitHub App is not configured yet.');
+      window.location.assign(body.installUrl);
+    } catch (e: any) { setError(e?.message || 'GitHub connection could not be started.'); setSaving(false); }
+  }
+
+  if (loading) return <div className="flex justify-center py-24"><Spinner size={28}/></div>;
+  const filtered = projects.filter(p => !q || p.name.toLowerCase().includes(q.toLowerCase()));
+
+  return <div>
+    <PageHeader title="Projects" description="Every repository connected to LytHouse for pre-deployment validation." actions={atLimit ? <Link to="/plans" className="btn-primary"><Lock size={14}/> Upgrade for more projects</Link> : <button onClick={() => { setError(''); setModal(true); }} className="btn-primary"><Plus size={16}/> Connect project</button>}/>
+    {error && !modal && <div className="mb-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"><span>{error}</span><button className="btn-secondary text-xs" onClick={load}><RefreshCw size={13}/> Retry</button></div>}
+    {projects.length === 0 ? <EmptyState icon={<FolderGit2 size={22}/>} title="No projects yet" description="Connect GitHub and choose the repositories LytHouse may validate." action={!atLimit ? <button onClick={() => setModal(true)} className="btn-primary"><Github size={16}/> Connect GitHub</button> : <Link to="/plans" className="btn-primary">Upgrade for more projects</Link>}/> : <>
+      <div className="mb-4 relative max-w-xs"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/><input className="input pl-9" value={q} onChange={e => setQ(e.target.value)} placeholder="Search projects…"/></div>
+      <div className="card overflow-hidden p-0 divide-y divide-gray-100">{filtered.map((p: any) => <Link key={p.id} to={'/projects/' + p.id} className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><FolderGit2 size={18}/></div><div className="min-w-0 flex-1"><div className="font-semibold text-navy-900">{p.name}</div><div className="text-xs text-gray-500">{p.github_repository_full_name || (p.git_url ? hostFrom(p.git_url) : 'Repository not connected')}{p.git_branch ? ' · ' + p.git_branch : ''}</div></div><span className="chip border border-brand-200 bg-brand-50 text-brand-700">{p.status}</span><ChevronRight size={16} className="text-gray-300"/></Link>)}</div>
+    </>}
+    {modal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !saving && setModal(false)}><div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}><div className="mb-5 flex items-start justify-between"><div><h2 className="text-xl font-semibold">Connect GitHub</h2><p className="mt-1 text-sm text-gray-500">Securely choose the repositories LytHouse may validate.</p></div><button className="btn-ghost" disabled={saving} onClick={() => setModal(false)}><X size={16}/></button></div>{error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}<div className="rounded-xl border border-gray-200 bg-gray-50 p-4"><div className="flex gap-3"><ShieldCheck size={20} className="mt-0.5 text-brand-600"/><div><div className="font-semibold text-navy-900">GitHub App connection</div><p className="mt-1 text-sm text-gray-600">GitHub handles authentication. LytHouse never asks for your GitHub password or Personal Access Token. You choose which repositories the LytHouse GitHub App can access.</p><p className="mt-2 text-xs text-gray-500">Repository access is performed server-side using short-lived GitHub App installation credentials.</p></div></div></div><div className="mt-5 flex justify-end"><button className="btn-primary" disabled={saving} onClick={connectGitHub}><Github size={16}/>{saving ? 'Opening GitHub…' : 'Continue with GitHub'}</button></div></div></div>}
+  </div>;
 }
