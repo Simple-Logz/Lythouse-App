@@ -8,25 +8,28 @@ if(typeof window!=='undefined'){
   ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
   document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
 
-  // Mobile landing-menu tap reliability. The visible X used to have a small
-  // touch target and iOS could miss a quick tap. Give it an immediate
-  // pointer-down close, and make every point outside the menu card dismiss it
-  // with a single touch. This delegates at document level so it also works
-  // when the overlay itself is the event target.
+  // Mobile landing-menu tap reliability. Treat the visible X as a generous
+  // 52px touch target and dismiss the menu from any single touch outside the
+  // menu card. Pointer-down makes the response immediate on iOS/Android.
   document.addEventListener('pointerdown',e=>{
     if(e.pointerType&&e.pointerType!=='touch'&&e.pointerType!=='pen')return;
     const close=document.querySelector('button[aria-label="Close menu"]') as HTMLButtonElement|null;
     if(!close)return;
     const target=e.target as Node|null;
     if(!target)return;
-    if(close.contains(target)){
+    const r=close.getBoundingClientRect();
+    const pad=Math.max(8,(52-Math.max(r.width,r.height))/2);
+    const hitClose=e.clientX>=r.left-pad&&e.clientX<=r.right+pad&&e.clientY>=r.top-pad&&e.clientY<=r.bottom+pad;
+    if(hitClose){
       e.preventDefault();
+      e.stopPropagation();
       close.click();
       return;
     }
     const card=close.closest('.shadow-2xl');
     if(card&&!card.contains(target)){
       e.preventDefault();
+      e.stopPropagation();
       close.click();
     }
   },{passive:false,capture:true});
