@@ -8,9 +8,9 @@ if(typeof window!=='undefined'){
   ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
   document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
 
-  // Mobile landing-menu tap reliability. Treat the visible X as a generous
-  // 52px touch target and dismiss the menu from any single touch outside the
-  // menu card. Pointer-down makes the response immediate on iOS/Android.
+  // Mobile landing-menu tap reliability. Dismiss visually on pointer-down,
+  // before React's state/render cycle, so the menu disappears on the exact
+  // frame the finger lands. The click then synchronizes React state.
   document.addEventListener('pointerdown',e=>{
     if(e.pointerType&&e.pointerType!=='touch'&&e.pointerType!=='pen')return;
     const close=document.querySelector('button[aria-label="Close menu"]') as HTMLButtonElement|null;
@@ -18,18 +18,15 @@ if(typeof window!=='undefined'){
     const target=e.target as Node|null;
     if(!target)return;
     const r=close.getBoundingClientRect();
-    const pad=Math.max(8,(52-Math.max(r.width,r.height))/2);
+    const pad=Math.max(8,(56-Math.max(r.width,r.height))/2);
     const hitClose=e.clientX>=r.left-pad&&e.clientX<=r.right+pad&&e.clientY>=r.top-pad&&e.clientY<=r.bottom+pad;
-    if(hitClose){
-      e.preventDefault();
-      e.stopPropagation();
-      close.click();
-      return;
-    }
     const card=close.closest('.shadow-2xl');
-    if(card&&!card.contains(target)){
+    const hitOutside=!!card&&!card.contains(target);
+    if(hitClose||hitOutside){
       e.preventDefault();
       e.stopPropagation();
+      const shell=close.closest('.fixed.inset-0') as HTMLElement|null;
+      if(shell) shell.style.display='none';
       close.click();
     }
   },{passive:false,capture:true});
