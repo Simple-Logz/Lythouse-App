@@ -9,27 +9,13 @@
 @layer base{
   html{font-size:16.5px;}
   body{@apply text-navy-900 antialiased;background-color:#fbfaff;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;}
-  /* Headings use the same enterprise sans as the body (previously a rounded
-     serif, Fraunces — read as too soft/editorial for a SaaS product) at a
-     heavier weight and tighter tracking for contrast against body copy. */
   h1,h2,h3{font-family:'Inter',system-ui,-apple-system,sans-serif;font-weight:800;letter-spacing:-.025em;}
 }
 @layer components{
-/* Card/input/secondary-button borders: pale gray-200/80 (too invisible) →
-   near-black #18181b → mid charcoal #71717a (both still too dark) →
-   soft neutral grey. Clearly a defined border, not washed-out, but no
-   longer reads as a bold/distracting line. btn-primary's solid #18181b
-   fill (a couple lines down) is deliberately untouched — that's the
-   brand's ink-black button, not a border, and was never part of this. */
 .card{@apply rounded-2xl border bg-white p-5 shadow-soft;border-color:#d4d4d8;}
 .btn-primary{@apply inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50;background-color:#18181b;box-shadow:0 1px 2px rgba(0,0,0,.16),0 6px 16px -8px rgba(0,0,0,.4);}
 .btn-primary:hover{background-color:#000000;}
 .btn-secondary{@apply inline-flex items-center gap-1.5 rounded-xl border bg-white px-4 py-2 text-sm font-semibold text-navy-700 transition-all hover:bg-gray-50 active:scale-[0.98] shadow-sm;border-color:#d4d4d8;}
-/* The one true "this is the AI product acting" button — same gradient as the
-   landing page's primary CTA, so the brand identity carries from the front
-   door into the actual product instead of stopping at flat black/gray. Use
-   sparingly: one per view, for the single highest-stakes or AI-driven action
-   (Deploy, Generate Fix PR, Revalidate) — not a replacement for btn-primary. */
 .btn-brand{@apply inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-60;background:linear-gradient(120deg,#8b6ef2,#7c5ce6);box-shadow:0 6px 18px -8px rgba(124,92,230,.55);}
 .btn-brand:hover{filter:brightness(1.07);box-shadow:0 8px 22px -8px rgba(124,92,230,.65);}
 .btn-ghost{@apply inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-navy-600 transition-all hover:bg-gray-100;}
@@ -39,47 +25,17 @@
 .tab-active{@apply border-brand-500 text-brand-700;}
 .tab-inactive{@apply border-transparent text-gray-500 hover:border-gray-300 hover:text-navy-700;}
 }
-/* Hide scrollbars on horizontal tab/stage strips (mobile) */
 .no-scrollbar{scrollbar-width:none;-ms-overflow-style:none;}
 .no-scrollbar::-webkit-scrollbar{display:none;}
-/* Prevent horizontal page shift / cutoffs + pinch-zoom on phones */
 @media (max-width:820px){html,body{overflow-x:hidden;touch-action:pan-x pan-y;}}
-/* The white flash on a hard/fast scroll on phones is iOS/Android's rubber-
-   band overscroll bounce briefly revealing the real <body> background past
-   the end of the page's own content — body defaults to the light theme's
-   background-color, which reads as a jarring white flash on dark pages.
-   Turning off the bounce removes the flash entirely (also just feels more
-   like a native app, less like a webpage). */
 html,body{overscroll-behavior-y:none;}
-/* iOS/Android's "does this need two taps?" heuristic: an element with a
-   :hover style (Tailwind's hover: utilities, used all over this app) but no
-   explicit cursor:pointer gets treated as needing a first tap to simulate
-   :hover and a second tap to actually click. Every <button> in the browser's
-   own default stylesheet is cursor:default, not pointer, so this hit nearly
-   every button in the app. Setting it explicitly makes the first tap count,
-   everywhere, not just on the landing page. */
 button,[role="button"]{cursor:pointer;}
-/* Disable the ~300ms double-tap-to-zoom delay/gesture on touch devices via
-   CSS instead of a global JS touchend handler (that JS approach used to
-   preventDefault() ANY touchend within 300ms of the previous one, anywhere
-   in the app — which ate legitimate fast taps and interrupted scroll-fling
-   momentum too, making the mobile app feel laggy and unresponsive). */
 button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipulation;}
-/* backdrop-filter (the "frosted glass" look on the landing page's nav pill
-   and content cards) is one of the most expensive things a mobile browser
-   can be asked to recompute — it has to reblur whatever's behind an element
-   on basically every frame it moves through during scroll. On a page with
-   several of these, that shows up as exactly what it feels like: scrolling
-   that stutters/hitches instead of running smooth. Desktop GPUs shrug this
-   off; phones (especially Android) often can't keep up. Killing it below
-   1024px keeps every element's background color/border/shadow (so nothing
-   looks broken) and just drops the blur-through effect on phones. */
 @media (max-width:1024px){
   .backdrop-blur,.backdrop-blur-sm,.backdrop-blur-md,.backdrop-blur-lg,.backdrop-blur-xl,.backdrop-blur-2xl,.backdrop-blur-3xl{
     -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
   }
 }
-/* ─── Enterprise Dark Theme ─────────────────────────────────────── */
 :root {
   --bg-base: #ffffff;
   --bg-surface: #ffffff;
@@ -92,9 +48,7 @@ button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipu
   --brand: #7c5ce6;
   --brand-light: #ece8ff;
 }
-
 .dark {
-  /* Soft, lightly-grayed dark violet (Spacelift-style) — not harsh black. */
   --bg-base: #1b1826;
   --bg-surface: #232030;
   --bg-subtle: #2a2639;
@@ -106,89 +60,38 @@ button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipu
   --brand: #a78bfa;
   --brand-light: rgba(167,139,250,.16);
 }
-
-.dark body {
-  background-color: var(--bg-base);
-  color: var(--text-primary);
-}
-
-/* Sidebar */
-.dark aside, .dark nav {
-  background-color: var(--bg-surface) !important;
-  border-color: var(--border) !important;
-}
-
-/* Cards */
-.dark .card {
-  background-color: var(--bg-surface);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
-
-/* Inputs */
-.dark .input {
-  background-color: var(--bg-subtle);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
+.dark body { background-color: var(--bg-base); color: var(--text-primary); }
+.dark aside, .dark nav { background-color: var(--bg-surface) !important; border-color: var(--border) !important; }
+.dark .card { background-color: var(--bg-surface); border-color: var(--border); color: var(--text-primary); }
+.dark .input { background-color: var(--bg-subtle); border-color: var(--border); color: var(--text-primary); }
 .dark .input::placeholder { color: var(--text-muted); }
 .dark .input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(131,125,214,0.22); }
-
-/* Labels */
 .dark .label { color: var(--text-secondary); }
-
-/* Buttons */
-.dark .btn-secondary {
-  background-color: var(--bg-subtle);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
+.dark .btn-secondary { background-color: var(--bg-subtle); border-color: var(--border); color: var(--text-primary); }
 .dark .btn-secondary:hover { background-color: var(--bg-muted); }
 .dark .btn-ghost { color: var(--text-secondary); }
 .dark .btn-ghost:hover { background-color: var(--bg-subtle); color: var(--text-primary); }
-
-/* Tabs */
 .dark .tab-inactive { color: var(--text-muted); border-color: transparent; }
 .dark .tab-inactive:hover { color: var(--text-primary); border-color: var(--border); }
 .dark .tab-active { border-color: var(--brand); color: var(--brand); }
-
-/* Borders and backgrounds */
-.dark .border-gray-100, .dark .border-[#d4d4d8] { border-color: var(--border); }
+.dark .border-gray-100, .dark .border-\[\#d4d4d8\] { border-color: var(--border); }
 .dark .bg-gray-50, .dark .bg-gray-50\/50 { background-color: var(--bg-subtle); }
 .dark .bg-white { background-color: var(--bg-surface); }
 .dark .divide-gray-100 > * + * { border-color: var(--border); }
-
-/* Text */
 .dark .text-navy-900, .dark .text-navy-800 { color: var(--text-primary); }
 .dark .text-gray-600, .dark .text-gray-500 { color: var(--text-secondary); }
 .dark .text-gray-400 { color: var(--text-muted); }
-
-/* Tables */
 .dark table th { color: var(--text-muted); background-color: var(--bg-subtle); border-color: var(--border); }
 .dark table tr:hover { background-color: var(--bg-subtle); }
 .dark table td { border-color: var(--border); }
-
-/* Chips */
 .dark .chip { background-color: var(--bg-muted); color: var(--text-secondary); border-color: var(--border); }
-
-/* Modals / overlays */
-.dark .rounded-xl.bg-white, .dark .rounded-2xl.bg-white {
-  background-color: var(--bg-surface);
-  border-color: var(--border);
-}
-
-/* Hover states */
+.dark .rounded-xl.bg-white, .dark .rounded-2xl.bg-white { background-color: var(--bg-surface); border-color: var(--border); }
 .dark .hover\:bg-gray-50:hover { background-color: var(--bg-subtle); }
 .dark .hover\:bg-gray-100:hover { background-color: var(--bg-muted); }
-
-/* Scrollbar */
 .dark ::-webkit-scrollbar { width: 6px; height: 6px; }
 .dark ::-webkit-scrollbar-track { background: var(--bg-base); }
 .dark ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 .dark ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-/* ── Catch opacity variants & brand tints so inner pages (project interior,
-      stage rail, headers) go fully dark, not just the neutral utilities ── */
 .dark [class*="bg-white/"] { background-color: var(--bg-surface) !important; }
 .dark [class*="bg-gray-50/"] { background-color: var(--bg-subtle) !important; }
 .dark .bg-gray-100, .dark [class*="bg-gray-100/"] { background-color: var(--bg-muted) !important; }
@@ -197,7 +100,6 @@ button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipu
 .dark .text-brand-700, .dark .text-brand-600 { color: var(--brand) !important; }
 .dark .border-brand-200, .dark .border-brand-100 { border-color: color-mix(in srgb, var(--brand) 35%, transparent) !important; }
 .dark .text-navy-700, .dark .text-navy-600, .dark .text-gray-700 { color: var(--text-secondary) !important; }
-/* Keep colored severity tints readable on dark */
 .dark .bg-red-50 { background-color: rgba(229,72,77,.12) !important; }
 .dark .bg-amber-50, .dark .bg-yellow-50 { background-color: rgba(224,178,61,.12) !important; }
 .dark .bg-green-50, .dark .bg-emerald-50 { background-color: rgba(18,183,106,.13) !important; }
