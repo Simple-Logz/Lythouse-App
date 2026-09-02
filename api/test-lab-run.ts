@@ -1,8 +1,9 @@
 import { Sandbox } from '@vercel/sandbox';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL=process.env.VITE_SUPABASE_URL||'https://kqjyubxrbjyvakpvcymc.supabase.co';
-const SUPABASE_ANON_KEY=process.env.VITE_SUPABASE_ANON_KEY||'';
+const SUPABASE_URL='https://kqjyubxrbjyvakpvcymc.supabase.co';
+// Publishable key for the canonical LytHouse Supabase project. This is intentionally public/client-safe.
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_yNpvKpFRVhqTs02wclmX6A_FJwhg_5c';
 const MAX_SCRIPT=50000;
 const MAX_OUTPUT=120000;
 
@@ -17,15 +18,15 @@ function clip(v:string){return String(v||'').slice(0,MAX_OUTPUT)}
 export default async function handler(req:any,res:any){
  if(req.method!=='POST')return send(res,405,{error:'Method not allowed'});
  const bearer=String(req.headers.authorization||'');
- if(!bearer.startsWith('Bearer ')||!SUPABASE_ANON_KEY)return send(res,401,{error:'Authentication required'});
+ if(!bearer.startsWith('Bearer '))return send(res,401,{error:'Authentication required'});
  const {projectId,script,runtime='node',name='Test Lab run',allowedDomains=[]}=req.body||{};
  if(!projectId||!script)return send(res,400,{error:'Project and script are required'});
  if(typeof script!=='string'||script.length>MAX_SCRIPT)return send(res,400,{error:'Script exceeds the 50 KB execution limit'});
  if(!['node','python','shell'].includes(runtime))return send(res,400,{error:'Unsupported runtime'});
  const token=bearer.slice(7);
- const db=createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{global:{headers:{Authorization:`Bearer ${token}`}},auth:{persistSession:false}});
+ const db=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{global:{headers:{Authorization:`Bearer ${token}`}},auth:{persistSession:false,autoRefreshToken:false}});
  const {data:{user},error:userError}=await db.auth.getUser(token);
- if(userError||!user)return send(res,401,{error:'Session expired'});
+ if(userError||!user)return send(res,401,{error:'Authentication failed',detail:userError?.message||'Access token was not accepted by the LytHouse identity service'});
  const {data:project,error:projectError}=await db.from('projects').select('id,workspace_id,name').eq('id',projectId).single();
  if(projectError||!project)return send(res,404,{error:'Project not found or access denied'});
  const {data:testCase,error:testError}=await db.from('qa_test_cases').insert({workspace_id:project.workspace_id,project_id:project.id,name:String(name).slice(0,160),framework:runtime,test_type:'sandbox',source:'test_lab',script,status:'active',metadata:{allowed_domains:allowedDomains},created_by:user.id}).select('id').single();
