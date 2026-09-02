@@ -107,3 +107,5 @@ button,a,[role="button"],.no-scrollbar,input,select,textarea{touch-action:manipu
 .dark .border-red-200 { border-color: rgba(229,72,77,.32) !important; }
 .dark .border-amber-200, .dark .border-yellow-200 { border-color: rgba(224,178,61,.32) !important; }
 .dark .border-green-200, .dark .border-emerald-200 { border-color: rgba(18,183,106,.34) !important; }
+/* Project filter chips contain contextual operator menus. The horizontal scroller was clipping those menus. */
+[class*="[scrollbar-width:none]"]{overflow:visible!important;}
