@@ -1,0 +1,43 @@
+name: Fix intelligence fetch
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-intelligence-fetch.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Route intelligence through the same-origin Supabase proxy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/workspace/ProjectWorkspace.tsx')
+          s=p.read_text()
+          old="import{supabase,type Project}from'../lib/supabase';"
+          new="import{supabase,edgeFunctionUrl,type Project}from'../lib/supabase';"
+          if old not in s:
+              raise SystemExit('supabase import pattern not found')
+          s=s.replace(old,new,1)
+          old_run="const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rebuild-intelligence`,{"
+          new_run="const res=await fetch(`${edgeFunctionUrl}/rebuild-intelligence`,{"
+          if old_run not in s:
+              raise SystemExit('intelligence fetch pattern not found')
+          s=s.replace(old_run,new_run,1)
+          old_effect=" useEffect(()=>{if(!loading&&project?.git_url&&!validations.length&&!analyzing)runIntelligence()},[loading,project?.git_url,validations.length,analyzing,runIntelligence]);\n"
+          if old_effect not in s:
+              raise SystemExit('automatic intelligence effect pattern not found')
+          s=s.replace(old_effect,'',1)
+          p.write_text(s)
+          PY
+      - name: Commit repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/workspace/ProjectWorkspace.tsx
+          git commit -m "Route intelligence rebuild through Supabase proxy"
+          git push origin main
