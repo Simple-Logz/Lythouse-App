@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/fix-intelligence-fetch.yml'
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
