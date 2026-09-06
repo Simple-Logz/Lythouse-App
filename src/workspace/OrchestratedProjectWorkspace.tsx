@@ -1,6 +1,6 @@
 // @ts-nocheck
 import{useCallback,useEffect,useRef,useState}from'react';
-import{ProjectWorkspace as LegacyProjectWorkspace}from'./ProjectWorkspace';
+import{ProjectWorkspace as LegacyProjectWorkspace}from'./ProjectWorkspace.tsx';
 import{supabase,edgeFunctionUrl}from'../lib/supabase';
 
 const terminal=new Set(['completed','failed']);
