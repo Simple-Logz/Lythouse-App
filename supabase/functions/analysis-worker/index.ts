@@ -1,0 +1,62 @@
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
+const nextStage=(stage:string)=>stage==='understand'?'investigate':stage==='investigate'?'resolve':null;
+
+Deno.serve(async req=>{
+  if(req.method!=='POST')return json({error:'Method not allowed'},405);
+  const secret=req.headers.get('x-lythouse-worker-secret');
+  if(!secret||secret!==Deno.env.get('LYTHOUSE_WORKER_SECRET'))return json({error:'Forbidden'},403);
+  const url=Deno.env.get('SUPABASE_URL')!;
+  const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const db=createClient(url,serviceKey);
+  const workerId=`edge-${crypto.randomUUID()}`;
+  const {data:jobs,error:leaseError}=await db.rpc('lease_analysis_job',{p_worker_id:workerId,p_lease_seconds:900});
+  if(leaseError)return json({error:leaseError.message},500);
+  const job=jobs?.[0];
+  if(!job)return json({success:true,status:'idle'});
+
+  try{
+    await db.from('analysis_jobs').update({status:'running'}).eq('id',job.id).eq('worker_id',workerId);
+    await db.from('analysis_runs').update({status:'running'}).eq('id',job.analysis_run_id);
+
+    let output:any={stage:job.stage};
+    if(job.stage==='understand'){
+      const r=await fetch(`${url}/functions/v1/process-validation`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${serviceKey}`,'apikey':serviceKey},body:JSON.stringify({validationId:job.validation_id,analysisRunId:job.analysis_run_id})});
+      const body=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(body.error||`Understand stage failed (${r.status})`);
+      output={...output,validation:body};
+    }else if(job.stage==='investigate'){
+      const r=await fetch(`${url}/functions/v1/ai-validation-review`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${serviceKey}`,'apikey':serviceKey},body:JSON.stringify({validationId:job.validation_id,analysisRunId:job.analysis_run_id})});
+      const body=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(body.error||`Investigate stage failed (${r.status})`);
+      output={...output,intelligence:body};
+    }else if(job.stage==='resolve'){
+      // Resolution is intentionally non-destructive: classify available findings first.
+      // Code changes remain explicit user actions and are verified before a PR is proposed.
+      const {count}=await db.from('intelligence_findings').select('id',{count:'exact',head:true}).eq('analysis_run_id',job.analysis_run_id);
+      output={...output,findingsReady:count||0,policy:'human-authorized-remediation'};
+    }
+
+    const {error:finishError}=await db.rpc('finish_analysis_job',{p_job_id:job.id,p_worker_id:workerId,p_output:output});
+    if(finishError)throw finishError;
+    const stage=nextStage(job.stage);
+    if(stage){
+      await db.from('analysis_jobs').upsert({workspace_id:job.workspace_id,project_id:job.project_id,analysis_run_id:job.analysis_run_id,validation_id:job.validation_id,stage,status:'queued',priority:job.priority,input:job.input},{onConflict:'analysis_run_id,stage',ignoreDuplicates:true});
+      const {data:run}=await db.from('analysis_runs').select('config').eq('id',job.analysis_run_id).single();
+      const config=run?.config||{}; config.stages={...(config.stages||{}),[job.stage]:'completed',[stage]:'queued'};
+      await db.from('analysis_runs').update({config}).eq('id',job.analysis_run_id);
+    }else{
+      const {data:run}=await db.from('analysis_runs').select('config').eq('id',job.analysis_run_id).single();
+      const config=run?.config||{}; config.stages={...(config.stages||{}),resolve:'completed'};
+      await db.from('analysis_runs').update({status:'completed',completed_at:new Date().toISOString(),config}).eq('id',job.analysis_run_id);
+      await db.from('validations').update({status:'completed',completed_at:new Date().toISOString()}).eq('id',job.validation_id).eq('status','pending');
+    }
+    return json({success:true,jobId:job.id,analysisRunId:job.analysis_run_id,stage:job.stage,next:stage});
+  }catch(e){
+    const message=e instanceof Error?e.message:String(e);
+    await db.rpc('fail_analysis_job',{p_job_id:job.id,p_worker_id:workerId,p_error:{message,stage:job.stage},p_retry_seconds:30});
+    await db.from('analysis_runs').update({status:'failed',error:{message,stage:job.stage}}).eq('id',job.analysis_run_id);
+    return json({error:message,jobId:job.id,stage:job.stage},500);
+  }
+});
