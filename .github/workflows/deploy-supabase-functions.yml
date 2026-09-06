@@ -16,21 +16,26 @@ concurrency:
   group: lythouse-supabase-production
   cancel-in-progress: false
 
+env:
+  # Production target used by the Vercel /supabase rewrite. Keeping the public
+  # project ref here prevents a missing repository secret from silently pointing
+  # deployments at a different Supabase project.
+  SUPABASE_PROJECT_REF: kqjyubxrbjyvakpvcymc
+
 jobs:
   deploy-analysis-backend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Validate production deployment configuration
         run: |
           set -euo pipefail
-          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'SUPABASE_ACCESS_TOKEN secret is required'; exit 1; }
-          test -n "$SUPABASE_PROJECT_REF" || { echo 'SUPABASE_PROJECT_REF secret is required'; exit 1; }
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo 'BLOCKED: add the SUPABASE_ACCESS_TOKEN GitHub Actions secret for the production Supabase account.'; exit 1; }
+          test "$SUPABASE_PROJECT_REF" = 'kqjyubxrbjyvakpvcymc' || { echo 'Refusing to deploy to an unexpected Supabase project.'; exit 1; }
 
       - uses: supabase/setup-cli@v1
         with:
@@ -58,9 +63,15 @@ jobs:
             rebuild-intelligence
           )
           for fn in "${functions[@]}"; do
+            test -f "supabase/functions/$fn/index.ts" || { echo "Missing required function: $fn"; exit 1; }
             echo "Deploying $fn"
             supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_REF"
           done
+
+      - name: Verify deployed function inventory
+        run: |
+          set -euo pipefail
+          supabase functions list --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Production backend deployment summary
         run: |
