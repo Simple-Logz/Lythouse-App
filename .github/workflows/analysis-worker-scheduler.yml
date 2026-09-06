@@ -12,6 +12,9 @@ concurrency:
   group: lythouse-analysis-worker-scheduler
   cancel-in-progress: false
 
+env:
+  SUPABASE_URL: https://kqjyubxrbjyvakpvcymc.supabase.co
+
 jobs:
   wake-ready-analysis-jobs:
     runs-on: ubuntu-latest
@@ -19,15 +22,14 @@ jobs:
     steps:
       - name: Validate scheduler configuration
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           LYTHOUSE_WORKER_SECRET: ${{ secrets.LYTHOUSE_WORKER_SECRET }}
         run: |
-          test -n "$SUPABASE_URL" || { echo 'SUPABASE_URL secret is required'; exit 1; }
-          test -n "$LYTHOUSE_WORKER_SECRET" || { echo 'LYTHOUSE_WORKER_SECRET secret is required'; exit 1; }
+          set -euo pipefail
+          test -n "$LYTHOUSE_WORKER_SECRET" || { echo 'BLOCKED: LYTHOUSE_WORKER_SECRET GitHub Actions secret is required'; exit 1; }
+          test "$SUPABASE_URL" = 'https://kqjyubxrbjyvakpvcymc.supabase.co' || { echo 'Refusing to wake jobs on an unexpected backend'; exit 1; }
 
       - name: Wake analysis jobs whose retry delay has elapsed
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           LYTHOUSE_WORKER_SECRET: ${{ secrets.LYTHOUSE_WORKER_SECRET }}
         run: |
           set -euo pipefail
