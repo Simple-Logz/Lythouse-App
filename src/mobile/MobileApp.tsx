@@ -20,58 +20,14 @@ import { Logo } from '../lib/ui';
 import { usePins, removePin, pinKey, type PinType } from '../lib/pins';
 import { getHeadSha } from '../workspace/repoCache';
 import { PlanContext } from '../pages/AppShell';
+import { ALL_NAV_ITEMS, NAV_ACCOUNT, NAV_MORE, NAV_PRIMARY, NAV_SEARCH_EXTRA } from '../lib/nav';
 
-// Same destinations the desktop sidebar exposes (see SECTIONS in
-// pages/AppShell.tsx) — kept in sync by hand so nothing on the web is
-// unreachable on mobile. Selecting one renders the real page inside the
-// mobile chrome.
-// Mirrors AppShell.tsx's NAV_HOME / SECTIONS / NAV_DOCS exactly — same
-// labels, routes, icons, and grouping — so the mobile drawer and the
-// desktop sidebar are the same IA, not two nav systems that drift apart.
-const NAV_HOME = { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard };
-const NAV_DOCS = { to: '/docs', label: 'Documentation', icon: BookOpen };
 const SECTIONS = [
-  { key: 'platform', label: 'Platform', icon: Boxes, items: [
-    { to: '/projects', label: 'Projects', icon: FolderGit2 },
-    { to: '/runs', label: 'Runs', icon: ListFilter },
-    { to: '/workspaces', label: 'Workspaces', icon: Building2 },
-    { to: '/stacks', label: 'Stacks', icon: Layers },
-  ] },
-  { key: 'delivery', label: 'Delivery', icon: Rocket, items: [
-    { to: '/pipeline', label: 'Pipelines', icon: Workflow },
-    { to: '/deployments', label: 'Deployments', icon: Rocket },
-    { to: '/simulator', label: 'Simulator', icon: Zap },
-  ] },
-  { key: 'ops', label: 'Operations', icon: ChartBar, items: [
-    { to: '/analytics', label: 'Analytics', icon: Activity },
-    { to: '/findings', label: 'Findings', icon: Bug },
-    { to: '/executive', label: 'Executive View', icon: ChartBar },
-  ] },
-  { key: 'gov', label: 'Governance', icon: ShieldCheck, items: [
-    { to: '/change-management', label: 'Change Management', icon: FileText },
-    { to: '/approvals', label: 'Approvals', icon: ClipboardCheck },
-    { to: '/compliance', label: 'Compliance', icon: Scale },
-    { to: '/incidents', label: 'Incidents', icon: FileWarning },
-    { to: '/policies', label: 'Policy Studio', icon: ShieldCheck },
-    { to: '/audit', label: 'Audit', icon: ScrollText },
-  ] },
-  { key: 'config', label: 'Configuration', icon: SettingsIcon, items: [
-    { to: '/environment', label: 'Environment', icon: Server },
-    { to: '/integrations', label: 'Integrations', icon: Plug },
-    { to: '/plugins', label: 'Plugins', icon: Boxes },
-  ] },
-  { key: 'org', label: 'Organization', icon: Users, items: [
-    { to: '/organizations', label: 'Organizations', icon: Building2 },
-    { to: '/team', label: 'Team', icon: Users },
-    { to: '/usage', label: 'Usage', icon: Gauge },
-    { to: '/plans', label: 'Plans', icon: CreditCard },
-    { to: '/settings', label: 'Settings', icon: SettingsIcon },
-  ] },
+  { key: 'work', label: 'Work', items: NAV_PRIMARY.filter((i) => i.to !== '/dashboard') },
+  { key: 'more', label: 'More', items: NAV_MORE },
+  { key: 'account', label: 'Account', items: NAV_ACCOUNT },
+  { key: 'extra', label: 'Also in the app', items: NAV_SEARCH_EXTRA },
 ];
-// Flat lookup (all items across every group, plus the two standalone links)
-// — used for things like "what's the title of the page currently open",
-// where the grouping doesn't matter, just the full route→label mapping.
-const ALL_NAV_ITEMS = [NAV_HOME, NAV_DOCS, ...SECTIONS.flatMap((s) => s.items)];
 // Pinned items reuse the same type→icon mapping as the desktop sidebar.
 const PIN_ICONS: Record<PinType, any> = {
   workspace: Boxes, project: FolderGit2, finding: Bug, stack: Layers, environment: Server,
@@ -240,8 +196,8 @@ export function MobileApp({ renderPage }) {
                   <div className="mx-4 my-2 border-t border-gray-100" />
                 </>
               )}
-              <button onClick={() => { navigate(NAV_HOME.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-navy-800 active:bg-gray-50">
-                <NAV_HOME.icon size={17} className="text-brand-500" />{NAV_HOME.label}
+              <button onClick={() => { navigate(NAV_PRIMARY[0].to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-navy-800 active:bg-gray-50">
+                <House size={17} className="text-brand-500" />{NAV_PRIMARY[0].label}
               </button>
               <div className="mx-4 my-1 border-t border-gray-100" />
               {SECTIONS.map((s) => {
@@ -254,7 +210,6 @@ export function MobileApp({ renderPage }) {
                       aria-expanded={isOpen}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold active:bg-gray-50 ${hasActive ? 'text-brand-700' : 'text-navy-800'}`}
                     >
-                      <s.icon size={17} className={hasActive ? 'text-brand-500' : 'text-gray-400'} />
                       <span className="flex-1 text-left">{s.label}</span>
                       <ChevronRight size={15} className={`text-gray-300 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                     </button>
@@ -274,10 +229,6 @@ export function MobileApp({ renderPage }) {
                   </div>
                 );
               })}
-              <div className="mx-4 my-1 border-t border-gray-100" />
-              <button onClick={() => { navigate(NAV_DOCS.to); setBrowsing(true); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-navy-800 active:bg-gray-50">
-                <NAV_DOCS.icon size={17} className="text-gray-400" />{NAV_DOCS.label}
-              </button>
             </div>
             <div className="border-t border-gray-100 p-3">
               <button onClick={() => { setBrowsing(false); setMenuOpen(false); setTab('home'); }} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-brand-50 text-brand-700 text-sm font-semibold"><House size={16} />Back to release view</button>
